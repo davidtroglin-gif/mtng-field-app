@@ -284,7 +284,7 @@ async function submitNow() {
   }
 }
 
-async function postSubmit(payload, isUpdate = false) {
+/*async function postSubmit(payload, isUpdate = false) {
   const url = isUpdate ? `${API_URL}?action=update` : API_URL;
 
   const res = await fetch(url, {
@@ -297,6 +297,19 @@ async function postSubmit(payload, isUpdate = false) {
   });
 
   const txt = await res.text();
+  return txt.includes('"ok":true');
+}*/
+async function postSubmit(payload, isUpdate = false) {
+  const url = isUpdate ? `${API_URL}?action=update` : API_URL;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  });
+
+  const txt = await res.text();
+  alert(`HTTP ${res.status}\n\n${txt.slice(0, 600)}`);
   return txt.includes('"ok":true');
 }
 
@@ -454,3 +467,4 @@ document.getElementById("openQueue").addEventListener("click", () => showList("q
 
 
 formMeta.textContent = `New: ${currentId}`;
+
