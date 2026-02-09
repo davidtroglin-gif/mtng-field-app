@@ -167,7 +167,7 @@ async function loadImg(file) {
     img.src = url;
   });
 }
-async function fileToCompressedDataUrl(file, maxW = 1280, quality = 0.75) {
+async function fileToCompressedDataUrl(file, maxW = 1024, quality = 0.6) {
   const img = await loadImg(file);
   const scale = img.width > maxW ? maxW / img.width : 1;
   const w = Math.round(img.width * scale);
@@ -337,3 +337,4 @@ document.getElementById("newForm").addEventListener("click", () => {
 
   formMeta.textContent = `New: ${currentId}`;
 });
+
