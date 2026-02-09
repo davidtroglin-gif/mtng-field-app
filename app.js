@@ -286,11 +286,16 @@ async function submitNow() {
 
 async function postSubmit(payload, isUpdate = false) {
   const url = isUpdate ? `${API_URL}?action=update` : API_URL;
+
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      // IMPORTANT: avoid CORS preflight
+      "Content-Type": "text/plain;charset=utf-8"
+    },
     body: JSON.stringify(payload)
   });
+
   const txt = await res.text();
   return txt.includes('"ok":true');
 }
@@ -308,6 +313,36 @@ async function trySync() {
     await db.del("queue", item.submissionId);
   }
 }
+
+async function submitNow() {
+  try {
+    const payload = await buildPayload();
+
+    if (!navigator.onLine) {
+      await db.put("queue", payload);
+      formMeta.textContent = `Offline — queued: ${payload.submissionId}`;
+      alert("Offline: saved and queued.");
+      return;
+    }
+
+    const ok = await postSubmit(payload, false);
+
+    if (!ok) {
+      await db.put("queue", payload);
+      formMeta.textContent = `Submit failed — queued: ${payload.submissionId}`;
+      alert("Submit failed (likely permissions). Saved and queued for sync.");
+    } else {
+      await db.del("drafts", payload.submissionId);
+      await db.del("queue", payload.submissionId);
+      formMeta.textContent = `Submitted: ${payload.submissionId}`;
+      alert("Submitted successfully.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Submit error: " + err);
+  }
+}
+
 
 document.getElementById("saveDraft").addEventListener("click", saveDraft);
 document.getElementById("queueForSync").addEventListener("click", queueForSync);
@@ -416,5 +451,6 @@ function loadIntoForm(record, store) {
 
 document.getElementById("openDrafts").addEventListener("click", () => showList("drafts", "Drafts"));
 document.getElementById("openQueue").addEventListener("click", () => showList("queue", "Queued"));
+
 
 formMeta.textContent = `New: ${currentId}`;
