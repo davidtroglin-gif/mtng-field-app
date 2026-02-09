@@ -1,0 +1,211 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="manifest" href="manifest.json" />
+  <title>MTNG Field Forms</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; background:#f6f7f8; }
+    header { position: sticky; top:0; background:white; padding:12px 14px; border-bottom:1px solid #ddd; }
+    main { padding: 14px; max-width: 900px; margin: 0 auto; }
+    .card { background:white; border:1px solid #e5e5e5; border-radius:12px; padding:12px; margin-bottom:12px; }
+    label { display:block; font-weight:700; margin-top:10px; }
+    input, textarea, select, button { width:100%; padding:10px; font-size:16px; margin-top:6px; box-sizing:border-box; }
+    .row { display:flex; gap:10px; }
+    .row > div { flex:1; }
+    .checks { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top:8px; }
+    .check { display:flex; gap:8px; align-items:center; background:#fafafa; padding:8px; border-radius:10px; border:1px solid #eee; }
+    canvas { width:100%; border:1px solid #ccc; border-radius:12px; touch-action:none; background:white; }
+    table { width:100%; border-collapse: collapse; margin-top:8px; }
+    th, td { border:1px solid #ddd; padding:8px; vertical-align: top; }
+    .btnrow { display:flex; gap:10px; }
+    .btnrow button { flex:1; }
+    .small { font-size: 12px; color:#666; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="row">
+      <div>
+        <label style="margin:0;">Page Type</label>
+        <select id="pageType">
+          <option>Leak Repair</option>
+          <option>Line Orders - Mains</option>
+          <option>Line Orders - Retirement</option>
+          <option>Line Orders - Services</option>
+        </select>
+      </div>
+      <div>
+        <label style="margin:0;">Queue</label>
+        <button id="syncNow" type="button">Sync Now</button>
+      </div>
+    </div>
+    <div class="small" id="netStatus">Status: …</div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="btnrow">
+        <button type="button" id="newForm">New Form</button>
+        <button type="button" id="openDrafts">Drafts</button>
+        <button type="button" id="openQueue">Queued</button>
+      </div>
+    </div>
+
+    <form id="form" class="card">
+      <h3 style="margin:0 0 8px;">Page 1 (Leak Repair)</h3>
+
+      <!-- Exact field names from PDF -->
+      <label>Customer Name (input)</label>
+      <input name="Customer Name" />
+
+      <label>Customer Address (input)</label>
+      <input name="Customer Address" />
+
+      <div class="row">
+        <div>
+          <label>Customer City (input)</label>
+          <input name="Customer City" />
+        </div>
+        <div>
+          <label>Customer County (input)</label>
+          <input name="Customer County" />
+        </div>
+      </div>
+
+      <label>Customer Phone (input)</label>
+      <input name="Customer Phone" />
+
+      <label>Service Address (if different than customers) (input)</label>
+      <input name="Service Address (if different than customers)" />
+
+      <label>Date (date picker)</label>
+      <input type="date" name="Date" />
+
+      <div class="row">
+        <div>
+          <label>Contractor (input)</label>
+          <input name="Contractor" />
+        </div>
+        <div>
+          <label>MLO Number (input)</label>
+          <input name="MLO Number" />
+        </div>
+      </div>
+
+      <label>Register Number (input)</label>
+      <input name="Register Number" />
+
+      <label>Specific Location where leak occurred (text area)</label>
+      <textarea name="Specific Location where leak occurred" rows="3"></textarea>
+
+      <label>Date Leak Detected (input)</label>
+      <input name="Date Leak Detected" />
+
+      <label>Leak Occurred on (section)</label>
+      <div class="checks">
+        <div class="check"><input type="checkbox" name="Leak Occurred on - Farm Tap" /> Farm Tap (checkbox)</div>
+        <div class="check"><input type="checkbox" name="Leak Occurred on - Fitting" /> Fitting (checkbox)</div>
+        <div class="check"><input type="checkbox" name="Leak Occurred on - Meter" /> Meter (checkbox)</div>
+        <div class="check"><input type="checkbox" name="Leak Occurred on - Pipe" /> Pipe (checkbox)</div>
+        <div class="check"><input type="checkbox" name="Leak Occurred on - Regulator" /> Regulator (checkbox)</div>
+        <div class="check"><input type="checkbox" name="Leak Occurred on - Tap Connection" /> Tap Connection (checkbox)</div>
+        <div class="check"><input type="checkbox" name="Leak Occurred on - Valve" /> Valve (checkbox)</div>
+      </div>
+
+      <label>Leak Repair Occurred on (section)</label>
+      <div class="row">
+        <div><label>Pipe Type (input)</label><input name="Leak Repair Occurred on - Pipe Type" /></div>
+        <div><label>Size (input)</label><input name="Leak Repair Occurred on - Size" /></div>
+      </div>
+      <div class="row">
+        <div><label>Material (input)</label><input name="Leak Repair Occurred on - Material" /></div>
+        <div><label>Coating Type (input)</label><input name="Leak Repair Occurred on - Coating Type" /></div>
+      </div>
+
+      <div class="row">
+        <div><label>Leak Classification (input)</label><input name="Leak Classification" /></div>
+        <div><label>Damaged By (input)</label><input name="Damaged By" /></div>
+      </div>
+
+      <div class="check" style="margin-top:10px;">
+        <input type="checkbox" name="Odor Readily Detectable" />
+        Odor Readily Detectable (checkbox)
+      </div>
+
+      <label>Pipe Condition (input)</label>
+      <input name="Pipe Condition" />
+
+      <h4 style="margin:14px 0 6px;">Pipe Materials Used for Repair(section)</h4>
+      <div class="small">Needs to be able to add additional inputs</div>
+      <div id="pipeMaterials"></div>
+      <button type="button" id="addPipeMaterial">+ Add Pipe Material Row</button>
+
+      <h4 style="margin:14px 0 6px;">Other Materials Used for Repair (section)</h4>
+      <div class="small">need to be able to add additional inputs</div>
+      <div id="otherMaterials"></div>
+      <button type="button" id="addOtherMaterial">+ Add Other Material Row</button>
+
+      <div class="row">
+        <div><label>Type of Tap (input)</label><input name="Type of Tap" /></div>
+        <div><label>Stab Fittings (input)</label><input name="Stab Fittings" /></div>
+      </div>
+
+      <label>Work Done (Explain Clearly) (Text Area)</label>
+      <textarea name="Work Done (Explain Clearly)" rows="4"></textarea>
+
+      <h4 style="margin:14px 0 6px;">Corrosion Found Complete Items 1-1 (Section)</h4>
+      <label>1. Conditions in area of pipe (input)</label><input name="1. Conditions in area of pipe" />
+      <label>2. Condition of pipe coating (input)</label><input name="2. Condition of pipe coating" />
+      <label>3. Extent of corroded areas (input)</label><input name="3. Extent of corroded areas" />
+      <label>4. Depth of any pits (input)</label><input name="4. Depth of any pits" />
+      <label>5. Reason for pipe exposure (input)</label><input name="5. Reason for pipe exposure" />
+      <label>6. Method of repair (input)</label><input name="6. Method of repair" />
+
+      <h4 style="margin:14px 0 6px;">Pipe Test Information (Section)</h4>
+      <div id="pipeTests"></div>
+      <button type="button" id="addPipeTest">+ Add Pipe Test Row</button>
+
+      <div class="row">
+        <div><label>Foreman (input)</label><input name="Foreman" /></div>
+        <div><label>Fusion Tech (input)</label><input name="Fusion Tech" /></div>
+      </div>
+      <div class="row">
+        <div><label>Steel Welder (input)</label><input name="Steel Welder" /></div>
+        <div><label>Contract Labor Hours (input)</label><input name="Contract Labor Hours" /></div>
+      </div>
+
+      <label>Date Completed (date picker)</label>
+      <input type="date" name="Date Completed" />
+
+      <label>MTNG On-Site Personnel (input)</label>
+      <input name="MTNG On-Site Personnel" />
+
+      <label>Accepted By (input)</label>
+      <input name="Accepted By" />
+
+      <h4 style="margin:14px 0 6px;">Sketch</h4>
+      <canvas id="sketch" width="1200" height="700"></canvas>
+      <div class="btnrow" style="margin-top:10px;">
+        <button type="button" id="clearSketch">Clear Sketch</button>
+        <button type="button" id="saveDraft">Save Draft</button>
+      </div>
+
+      <h4 style="margin:14px 0 6px;">Photos (max 5)</h4>
+      <input id="photos" type="file" accept="image/*" multiple capture="environment" />
+
+      <div class="btnrow" style="margin-top:12px;">
+        <button type="button" id="queueForSync">Queue for Sync</button>
+        <button type="submit">Submit Now (if online)</button>
+      </div>
+
+      <div class="small" id="formMeta"></div>
+    </form>
+
+    <div class="card" id="listCard" style="display:none;"></div>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
