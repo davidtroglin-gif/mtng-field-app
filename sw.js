@@ -1,4 +1,4 @@
-const CACHE = "mtng-forms-v1";
+const CACHE = "mtng-forms-v3";
 const ASSETS = ["./", "./index.html", "./app.js", "./db.js", "./sw.js", "./manifest.json"];
 
 self.addEventListener("install", (e) => {
@@ -9,4 +9,5 @@ self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   e.respondWith(caches.match(e.request).then((m) => m || fetch(e.request)));
+
 });
