@@ -8,6 +8,19 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
 }
 
+
+
+const debugEl = document.getElementById("debug");
+function debug(msg) {
+  console.log(msg);
+  if (debugEl) debugEl.textContent = msg;
+}
+window.addEventListener("unhandledrejection", e => debug("Promise error: " + e.reason));
+window.addEventListener("error", e => debug("JS error: " + e.message));
+
+
+
+
 // ---- device + submission ids ----
 function getDeviceId() {
   const k = "mtng_device_id";
@@ -467,5 +480,6 @@ document.getElementById("openQueue").addEventListener("click", () => showList("q
 
 
 formMeta.textContent = `New: ${currentId}`;
+
 
 
