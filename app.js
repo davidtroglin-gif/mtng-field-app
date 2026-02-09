@@ -1,5 +1,26 @@
 import { db } from "./db.js";
 
+// app.js (no modules)
+const netStatus = document.getElementById("netStatus");
+const debugEl = document.getElementById("debug");
+
+function setStatus(msg) {
+  if (netStatus) netStatus.textContent = msg;
+}
+function debug(msg) {
+  console.log(msg);
+  if (debugEl) debugEl.textContent = msg;
+}
+
+setStatus("Status: app.js loaded ✅");
+debug("app.js running ✅");
+
+// use window.db from db.js
+const db = window.db;
+if (!db) {
+  setStatus("Status: db not loaded ❌");
+}
+
 const netStatus = document.getElementById("netStatus");
 if (netStatus) netStatus.textContent = "Status: app.js loaded ✅";
 
@@ -506,6 +527,7 @@ document.getElementById("openQueue").addEventListener("click", () => showList("q
 
 
 formMeta.textContent = `New: ${currentId}`;
+
 
 
 
