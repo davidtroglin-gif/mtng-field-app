@@ -1,3 +1,4 @@
+alert("app.js started");
 import { db } from "./db.js";
 
 // app.js (no modules)
@@ -527,6 +528,7 @@ document.getElementById("openQueue").addEventListener("click", () => showList("q
 
 
 formMeta.textContent = `New: ${currentId}`;
+
 
 
 
