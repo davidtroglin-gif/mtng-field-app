@@ -8,6 +8,20 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
 }
 
+const netStatus = document.getElementById("netStatus");
+const debugEl = document.getElementById("debug");
+
+function setStatus(msg) {
+  if (netStatus) netStatus.textContent = msg;
+}
+function debug(msg) {
+  console.log(msg);
+  if (debugEl) debugEl.textContent = msg;
+}
+
+setStatus(`Status: ${navigator.onLine ? "Online" : "Offline"}`);
+window.addEventListener("online", () => setStatus("Status: Online"));
+window.addEventListener("offline", () => setStatus("Status: Offline"));
 
 
 const debugEl = document.getElementById("debug");
@@ -489,6 +503,7 @@ document.getElementById("openQueue").addEventListener("click", () => showList("q
 
 
 formMeta.textContent = `New: ${currentId}`;
+
 
 
 
