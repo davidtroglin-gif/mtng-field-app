@@ -312,18 +312,27 @@ async function submitNow() {
   const txt = await res.text();
   return txt.includes('"ok":true');
 }*/
+
+//testing purpose ********************************************************************************************
 async function postSubmit(payload, isUpdate = false) {
   const url = isUpdate ? `${API_URL}?action=update` : API_URL;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload),
-  });
+  debug("Submitting to: " + url);
 
-  const txt = await res.text();
-  alert(`HTTP ${res.status}\n\n${txt.slice(0, 600)}`);
-  return txt.includes('"ok":true');
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+    });
+
+    const txt = await res.text();
+    debug(`Response: HTTP ${res.status} ${txt.slice(0, 120)}`);
+    return txt.includes('"ok":true');
+  } catch (err) {
+    debug("Fetch failed: " + err);
+    throw err;
+  }
 }
 
 async function trySync() {
@@ -480,6 +489,7 @@ document.getElementById("openQueue").addEventListener("click", () => showList("q
 
 
 formMeta.textContent = `New: ${currentId}`;
+
 
 
 
