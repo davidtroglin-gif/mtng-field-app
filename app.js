@@ -1,5 +1,8 @@
 import { db } from "./db.js";
 
+const netStatus = document.getElementById("netStatus");
+if (netStatus) netStatus.textContent = "Status: app.js loaded ✅";
+
 // ===== CONFIG =====
 const API_URL = "https://script.google.com/macros/s/AKfycby4A2Ci8N6IFLB7oORb7KKThB_jqW580SV0EvG67CZ1FFoudWgLttJ8PyOiqPMKXtDiEQ/exec"; // .../exec
 
@@ -503,6 +506,7 @@ document.getElementById("openQueue").addEventListener("click", () => showList("q
 
 
 formMeta.textContent = `New: ${currentId}`;
+
 
 
 
