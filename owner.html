@@ -284,6 +284,36 @@
     selectedId = id;
     setStatus("Loading details…");
 
+    document.getElementById("markPrinted").onclick = async () => {
+  try {
+    setStatus("Marking Printed…");
+    const by = getOwnerName();
+    await ownerPost("printed", id, { by });
+    await fetchList();
+    setStatus("Printed ✅");
+  } catch (e) { setStatus("Error: " + e.message); }
+};
+
+document.getElementById("markSubmitted").onclick = async () => {
+  try {
+    setStatus("Marking Submitted…");
+    await ownerPost("submitted", id);
+    await fetchList();
+    setStatus("Submitted ✅");
+  } catch (e) { setStatus("Error: " + e.message); }
+};
+
+document.getElementById("addNote").onclick = async () => {
+  try {
+    const note = prompt("Notes:", "") || "";
+    if (!note.trim()) return;
+    setStatus("Saving Note…");
+    await ownerPost("note", id, { note });
+    await fetchList();
+    setStatus("Note saved ✅");
+  } catch (e) { setStatus("Error: " + e.message); }
+};
+
     const url = new URL(API_URL);
     url.searchParams.set("action", "get");
     url.searchParams.set("id", id);
