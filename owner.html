@@ -132,182 +132,223 @@
   </main>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycby4A2Ci8N6IFLB7oORb7KKThB_jqW580SV0EvG67CZ1FFoudWgLttJ8PyOiqPMKXtDiEQ/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycby4A2Ci8N6IFLB7oORb7KKThB_jqW580SV0EvG67CZ1FFoudWgLttJ8PyOiqPMKXtDiEQ/exec";
 
-    const statusEl = document.getElementById("status");
-    const metaEl = document.getElementById("meta");
-    const tbody = document.getElementById("tbody");
+  const statusEl = document.getElementById("status");
+  const metaEl = document.getElementById("meta");
+  const tbody = document.getElementById("tbody");
 
-    const qEl = document.getElementById("q");
-    const pageTypeEl = document.getElementById("pageType");
-    const statusFilterEl = document.getElementById("statusFilter");
+  const qEl = document.getElementById("q");
+  const pageTypeEl = document.getElementById("pageType");
+  const statusFilterEl = document.getElementById("statusFilter");
 
-    const detailCard = document.getElementById("detailCard");
-    const detailTitle = document.getElementById("detailTitle");
-    const detailMeta = document.getElementById("detailMeta");
-    const kv = document.getElementById("kv");
-    const rep = document.getElementById("rep");
-    const raw = document.getElementById("raw");
-    const openPrintBtn = document.getElementById("openPrint");
-    const closeDetailBtn = document.getElementById("closeDetail");
+  const detailCard = document.getElementById("detailCard");
+  const detailTitle = document.getElementById("detailTitle");
+  const detailMeta = document.getElementById("detailMeta");
+  const kv = document.getElementById("kv");
+  const rep = document.getElementById("rep");
+  const raw = document.getElementById("raw");
+  const openPrintBtn = document.getElementById("openPrint");
+  const closeDetailBtn = document.getElementById("closeDetail");
 
-    const sketchImg = document.getElementById("sketchImg");
-    const sketchLinks = document.getElementById("sketchLinks");
-    const photoLinks = document.getElementById("photoLinks");
-    const photoImgs = document.getElementById("photoImgs");
+  const sketchImg = document.getElementById("sketchImg");
+  const sketchLinks = document.getElementById("sketchLinks");
+  const photoLinks = document.getElementById("photoLinks");
+  const photoImgs = document.getElementById("photoImgs");
 
-    const key = new URLSearchParams(location.search).get("key") || "";
+  const key = new URLSearchParams(location.search).get("key") || "";
 
-    let items = [];
-    let selectedId = "";
+  let items = [];
+  let selectedId = "";
 
-    function setStatus(msg){ statusEl.textContent = "Status: " + msg; }
+  function setStatus(msg){ statusEl.textContent = "Status: " + msg; }
 
-    function fmtDate(v){
-      if (!v) return "";
-      const d = new Date(v);
-      if (isNaN(d.getTime())) return String(v);
-      return d.toLocaleString();
+  function fmtDate(v){
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return String(v);
+    return d.toLocaleString();
+  }
+
+  function escapeHtml(s){
+    return String(s ?? "")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  async function fetchJsonOrThrow(url) {
+    // Bust caches + avoid Safari weirdness
+    url.searchParams.set("_", String(Date.now()));
+
+    console.log("Fetching:", url.toString());
+
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    const txt = await res.text(); // ALWAYS read text first
+
+    // If Apps Script returns HTML (login page, error page), show it
+    const looksLikeHtml = txt.trim().startsWith("<!doctype") || txt.trim().startsWith("<html");
+    if (looksLikeHtml) {
+      throw new Error(`Server returned HTML (not JSON). HTTP ${res.status}. First 120 chars: ${txt.slice(0,120)}`);
     }
 
-    function escapeHtml(s){
-      return String(s ?? "")
-        .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-    }
-    
-console.log("LIST URL:", `${API_URL}?action=list&key=${encodeURIComponent(key)}`);
-    
-    async function fetchList(){
-      setStatus("Loading list…");
-      const url = `${API_URL}?action=list&key=${encodeURIComponent(key)}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || "List failed");
-      items = json.items || [];
-      setStatus(`Loaded ${items.length}`);
-      metaEl.textContent = `Total: ${items.length}`;
-      renderTable();
+    // Parse JSON safely
+    let json;
+    try {
+      json = JSON.parse(txt);
+    } catch (e) {
+      throw new Error(`Response was not valid JSON. HTTP ${res.status}. First 120 chars: ${txt.slice(0,120)}`);
     }
 
-    function matchesFilters(it){
-      const q = (qEl.value || "").trim().toLowerCase();
-      const pt = pageTypeEl.value || "";
-      const st = statusFilterEl.value || "";
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}. ${json?.error || "Request failed"}`);
+    }
+    if (!json.ok) {
+      throw new Error(json.error || "Request failed");
+    }
+    return json;
+  }
 
-      if (pt && it.pageType !== pt) return false;
-      if (st && it.status !== st) return false;
-
-      if (!q) return true;
-
-      const hay = [
-        it.customerName, it.date, it.mloNumber, it.registerNumber,
-        it.foreman, it.acceptedBy, it.submissionId, it.pageType, it.status
-      ].join(" ").toLowerCase();
-
-      return hay.includes(q);
+  async function fetchList(){
+    if (!key) {
+      setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
+      return;
     }
 
-    function renderTable(){
-      const filtered = items.filter(matchesFilters);
-      metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
+    setStatus("Loading list…");
 
-      tbody.innerHTML = filtered.map(it => `
-        <tr data-id="${escapeHtml(it.submissionId)}">
-          <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
-          <td>${escapeHtml(it.pageType)}</td>
-          <td>${escapeHtml(it.customerName || "")}</td>
-          <td>${escapeHtml(it.date || "")}</td>
-          <td>${escapeHtml(it.mloNumber || "")}</td>
-          <td>${escapeHtml(it.registerNumber || "")}</td>
-          <td>${escapeHtml(it.foreman || "")}</td>
-          <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
-          <td><code>${escapeHtml(it.submissionId)}</code></td>
-        </tr>
-      `).join("");
+    const url = new URL(API_URL);
+    url.searchParams.set("action", "list");
+    url.searchParams.set("key", key);
 
-      tbody.querySelectorAll("tr").forEach(tr => {
-        tr.addEventListener("click", () => openDetail(tr.getAttribute("data-id")));
-      });
+    const json = await fetchJsonOrThrow(url);
+    items = json.items || [];
+
+    setStatus(`Loaded ${items.length}`);
+    metaEl.textContent = `Total: ${items.length}`;
+    renderTable();
+  }
+
+  function matchesFilters(it){
+    const q = (qEl.value || "").trim().toLowerCase();
+    const pt = pageTypeEl.value || "";
+    const st = statusFilterEl.value || "";
+
+    if (pt && it.pageType !== pt) return false;
+    if (st && it.status !== st) return false;
+
+    if (!q) return true;
+
+    const hay = [
+      it.customerName, it.date, it.mloNumber, it.registerNumber,
+      it.foreman, it.acceptedBy, it.submissionId, it.pageType, it.status
+    ].join(" ").toLowerCase();
+
+    return hay.includes(q);
+  }
+
+  function renderTable(){
+    const filtered = items.filter(matchesFilters);
+    metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
+
+    tbody.innerHTML = filtered.map(it => `
+      <tr data-id="${escapeHtml(it.submissionId)}">
+        <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
+        <td>${escapeHtml(it.pageType)}</td>
+        <td>${escapeHtml(it.customerName || "")}</td>
+        <td>${escapeHtml(it.date || "")}</td>
+        <td>${escapeHtml(it.mloNumber || "")}</td>
+        <td>${escapeHtml(it.registerNumber || "")}</td>
+        <td>${escapeHtml(it.foreman || "")}</td>
+        <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
+        <td><code>${escapeHtml(it.submissionId)}</code></td>
+      </tr>
+    `).join("");
+
+    tbody.querySelectorAll("tr").forEach(tr => {
+      tr.addEventListener("click", () => openDetail(tr.getAttribute("data-id")));
+    });
+  }
+
+  async function openDetail(id){
+    if (!key) {
+      setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
+      return;
     }
 
-    async function openDetail(id){
-      selectedId = id;
-      setStatus("Loading details…");
-      const url = `${API_URL}?action=get&id=${encodeURIComponent(id)}&key=${encodeURIComponent(key)}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || "Get failed");
+    selectedId = id;
+    setStatus("Loading details…");
 
-      const p = json.payload || {};
-      const f = p.fields || {};
-      const r = p.repeaters || {};
+    const url = new URL(API_URL);
+    url.searchParams.set("action", "get");
+    url.searchParams.set("id", id);
+    url.searchParams.set("key", key);
 
-      detailTitle.textContent = `${p.pageType || "Submission"} — ${id}`;
-      detailMeta.textContent = `Device: ${p.deviceId || ""} • Created: ${fmtDate(p.createdAt)} • Page: ${p.pageType || ""}`;
-      detailCard.style.display = "block";
+    const json = await fetchJsonOrThrow(url);
 
-      // Key fields (you can tweak)
-      const keyFields = [
-        "Customer Name","Customer Address","Customer City","Customer County","Customer Phone",
-        "Service Address (if different than customers)","Date","Contractor","MLO Number","Register Number",
-        "Foreman","Accepted By","MTNG On-Site Personnel","Date Completed"
-      ];
+    const p = json.payload || {};
+    const f = p.fields || {};
+    const r = p.repeaters || {};
 
-      kv.innerHTML = keyFields.map(k => `
-        <div style="margin:6px 0;">
-          <div class="small">${escapeHtml(k)}</div>
-          <div style="font-weight:700;">${escapeHtml(f[k] || "")}</div>
-        </div>
-      `).join("");
+    detailTitle.textContent = `${p.pageType || "Submission"} — ${id}`;
+    detailMeta.textContent = `Device: ${p.deviceId || ""} • Created: ${fmtDate(p.createdAt)} • Page: ${p.pageType || ""}`;
+    detailCard.style.display = "block";
 
-      rep.textContent = JSON.stringify(r, null, 2);
-      raw.textContent = JSON.stringify(p, null, 2);
+    const keyFields = [
+      "Customer Name","Customer Address","Customer City","Customer County","Customer Phone",
+      "Service Address (if different than customers)","Date","Contractor","MLO Number","Register Number",
+      "Foreman","Accepted By","MTNG On-Site Personnel","Date Completed"
+    ];
 
-      // Media
-      const sketchUrl = p.media?.sketchUrl || "";
-      const photos = Array.isArray(p.media?.photoUrls) ? p.media.photoUrls : [];
+    kv.innerHTML = keyFields.map(k => `
+      <div style="margin:6px 0;">
+        <div class="small">${escapeHtml(k)}</div>
+        <div style="font-weight:700;">${escapeHtml(f[k] || "")}</div>
+      </div>
+    `).join("");
 
-      sketchLinks.innerHTML = sketchUrl ? `<a href="${sketchUrl}" target="_blank">Open Sketch</a>` : "No sketch";
-      if (sketchUrl) {
-        sketchImg.src = sketchUrl;
-        sketchImg.style.display = "block";
-      } else {
-        sketchImg.style.display = "none";
-      }
+    rep.textContent = JSON.stringify(r, null, 2);
+    raw.textContent = JSON.stringify(p, null, 2);
 
-      photoLinks.innerHTML = photos.length
-        ? photos.map((u,i)=>`<div><a href="${u}" target="_blank">Photo ${i+1}</a></div>`).join("")
-        : "No photos";
+    const sketchUrl = p.media?.sketchUrl || "";
+    const photos = Array.isArray(p.media?.photoUrls) ? p.media.photoUrls : [];
 
-      photoImgs.innerHTML = photos.map(u => `<img src="${u}" alt="Photo" style="margin-top:8px;" />`).join("");
-
-      openPrintBtn.onclick = () => {
-        const pr = `${API_URL}?action=print&id=${encodeURIComponent(id)}&key=${encodeURIComponent(key)}`;
-        window.open(pr, "_blank");
-      };
-
-      closeDetailBtn.onclick = () => {
-        detailCard.style.display = "none";
-        selectedId = "";
-      };
-
-      setStatus("Ready");
+    sketchLinks.innerHTML = sketchUrl ? `<a href="${sketchUrl}" target="_blank">Open Sketch</a>` : "No sketch";
+    if (sketchUrl) {
+      sketchImg.src = sketchUrl;
+      sketchImg.style.display = "block";
+    } else {
+      sketchImg.style.display = "none";
     }
 
-    document.getElementById("refresh").addEventListener("click", fetchList);
-    qEl.addEventListener("input", renderTable);
-    pageTypeEl.addEventListener("change", renderTable);
-    statusFilterEl.addEventListener("change", renderTable);
+    photoLinks.innerHTML = photos.length
+      ? photos.map((u,i)=>`<div><a href="${u}" target="_blank">Photo ${i+1}</a></div>`).join("")
+      : "No photos";
 
-    // boot
-    (async () => {
-      try {
-        if (!key) setStatus("Missing ?key=… (owner key required)");
-        await fetchList();
-      } catch (e) {
-        setStatus("Error: " + e.message);
-      }
-    })();
-  </script>
+    photoImgs.innerHTML = photos.map(u => `<img src="${u}" alt="Photo" style="margin-top:8px;" />`).join("");
+
+    openPrintBtn.onclick = () => {
+      const pr = new URL(API_URL);
+      pr.searchParams.set("action","print");
+      pr.searchParams.set("id", id);
+      pr.searchParams.set("key", key);
+      window.open(pr.toString(), "_blank");
+    };
+
+    closeDetailBtn.onclick = () => {
+      detailCard.style.display = "none";
+      selectedId = "";
+    };
+
+    setStatus("Ready");
+  }
+
+  document.getElementById("refresh").addEventListener("click", () => fetchList().catch(e => setStatus("Error: " + e.message)));
+  qEl.addEventListener("input", renderTable);
+  pageTypeEl.addEventListener("change", renderTable);
+  statusFilterEl.addEventListener("change", renderTable);
+
+  // boot
+  fetchList().catch(e => setStatus("Error: " + e.message));
+</script>
+
 </body>
 </html>
