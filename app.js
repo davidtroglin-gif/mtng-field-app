@@ -57,6 +57,22 @@ const form = document.getElementById("form");
 const pageTypeEl = document.getElementById("pageType");
 const listCard = document.getElementById("listCard");
 
+// ---- Section show/hide (4 pages) ----
+const sectionLeakRepair = document.getElementById("sectionLeakRepair");
+const sectionMains = document.getElementById("sectionMains");
+const sectionRetirement = document.getElementById("sectionRetirement");
+const sectionServices = document.getElementById("sectionServices");
+
+function updatePageSections() {
+  const pt = pageTypeEl?.value || "Leak Repair";
+  if (sectionLeakRepair) sectionLeakRepair.style.display = (pt === "Leak Repair") ? "block" : "none";
+  if (sectionMains) sectionMains.style.display = (pt === "Mains") ? "block" : "none";
+  if (sectionRetirement) sectionRetirement.style.display = (pt === "Retirement") ? "block" : "none";
+  if (sectionServices) sectionServices.style.display = (pt === "Services") ? "block" : "none";
+}
+pageTypeEl?.addEventListener("change", updatePageSections);
+updatePageSections();
+
 // ---- Sketch canvas ----
 const canvas = document.getElementById("sketch");
 const ctx = canvas.getContext("2d");
@@ -91,15 +107,11 @@ canvas.addEventListener("touchstart", start, { passive: false });
 canvas.addEventListener("touchmove", move, { passive: false });
 canvas.addEventListener("touchend", end);
 
-document.getElementById("clearSketch").addEventListener("click", () => {
+document.getElementById("clearSketch")?.addEventListener("click", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 });
 
-// ---- Repeaters ----
-const pipeMaterialsEl = document.getElementById("pipeMaterials");
-const otherMaterialsEl = document.getElementById("otherMaterials");
-const pipeTestsEl = document.getElementById("pipeTests");
-
+// ---- Repeater helpers ----
 function makeRow(fieldsHtml) {
   const wrap = document.createElement("div");
   wrap.className = "card";
@@ -111,51 +123,284 @@ function makeRow(fieldsHtml) {
   return wrap;
 }
 
+function readRows(container) {
+  if (!container) return [];
+  const cards = Array.from(container.querySelectorAll(".card"));
+  return cards.map(card => {
+    const row = {};
+    Array.from(card.querySelectorAll("input[data-r]")).forEach(inp => {
+      const k = inp.getAttribute("data-k");
+      row[k] = inp.type === "checkbox" ? inp.checked : inp.value;
+    });
+    return row;
+  }).filter(r => Object.values(r).some(v => v !== "" && v !== false));
+}
+
+// =====================================================
+// LEAK REPAIR REPEATERS
+// =====================================================
+const pipeMaterialsEl = document.getElementById("pipeMaterials");
+const otherMaterialsEl = document.getElementById("otherMaterials");
+const pipeTestsEl = document.getElementById("pipeTests");
+
 function addPipeMaterialRow(data = {}) {
-  pipeMaterialsEl.appendChild(makeRow(`
-    <label>Size </label><input data-r="pipeMaterials" data-k="Size " value="${data["Size "]||""}">
-    <label>Material </label><input data-r="pipeMaterials" data-k="Material " value="${data["Material "]||""}">
-    <label>Manufacturer </label><input data-r="pipeMaterials" data-k="Manufacturer " value="${data["Manufacturer "]||""}">
-    <label>Date </label><input data-r="pipeMaterials" data-k="Date " value="${data["Date "]||""}">
-    <label>Coil # </label><input data-r="pipeMaterials" data-k="Coil # " value="${data["Coil # "]||""}">
-    <label>SDR of PE </label><input data-r="pipeMaterials" data-k="SDR of PE " value="${data["SDR of PE "]||""}">
-    <label>ST Pipe Thickness </label><input data-r="pipeMaterials" data-k="ST Pipe Thickness " value="${data["ST Pipe Thickness "]||""}">
-    <label>Coating Type </label><input data-r="pipeMaterials" data-k="Coating Type " value="${data["Coating Type "]||""}">
-    <label>Depth (inches) </label><input data-r="pipeMaterials" data-k="Depth (inches) " value="${data["Depth (inches) "]||""}">
-    <label>Length (inches) </label><input data-r="pipeMaterials" data-k="Length (inches) " value="${data["Length (inches) "]||""}">
+  pipeMaterialsEl?.appendChild(makeRow(`
+    <label>Size</label><input data-r="pipeMaterials" data-k="Size" value="${data["Size"]||""}">
+    <label>Material</label><input data-r="pipeMaterials" data-k="Material" value="${data["Material"]||""}">
+    <label>Manufacturer</label><input data-r="pipeMaterials" data-k="Manufacturer" value="${data["Manufacturer"]||""}">
+    <label>Date</label><input data-r="pipeMaterials" data-k="Date" value="${data["Date"]||""}">
+    <label>Coil #</label><input data-r="pipeMaterials" data-k="Coil #" value="${data["Coil #"]||""}">
+    <label>SDR of PE</label><input data-r="pipeMaterials" data-k="SDR of PE" value="${data["SDR of PE"]||""}">
+    <label>ST Pipe Thickness</label><input data-r="pipeMaterials" data-k="ST Pipe Thickness" value="${data["ST Pipe Thickness"]||""}">
+    <label>Coating Type</label><input data-r="pipeMaterials" data-k="Coating Type" value="${data["Coating Type"]||""}">
+    <label>Depth (inches)</label><input data-r="pipeMaterials" data-k="Depth (inches)" value="${data["Depth (inches)"]||""}">
+    <label>Length (inches)</label><input data-r="pipeMaterials" data-k="Length (inches)" value="${data["Length (inches)"]||""}">
   `));
 }
 function addOtherMaterialRow(data = {}) {
-  otherMaterialsEl.appendChild(makeRow(`
-    <label>Type </label><input data-r="otherMaterials" data-k="Type " value="${data["Type "]||""}">
-    <label>Size </label><input data-r="otherMaterials" data-k="Size " value="${data["Size "]||""}">
-    <label>Material </label><input data-r="otherMaterials" data-k="Material " value="${data["Material "]||""}">
-    <label>Quantity </label><input data-r="otherMaterials" data-k="Quantity " value="${data["Quantity "]||""}">
+  otherMaterialsEl?.appendChild(makeRow(`
+    <label>Type</label><input data-r="otherMaterials" data-k="Type" value="${data["Type"]||""}">
+    <label>Size</label><input data-r="otherMaterials" data-k="Size" value="${data["Size"]||""}">
+    <label>Material</label><input data-r="otherMaterials" data-k="Material" value="${data["Material"]||""}">
+    <label>Quantity</label><input data-r="otherMaterials" data-k="Quantity" value="${data["Quantity"]||""}">
   `));
 }
 function addPipeTestRow(data = {}) {
-  pipeTestsEl.appendChild(makeRow(`
-    <label>Date Tested </label><input data-r="pipeTests" data-k="Date Tested " value="${data["Date Tested "]||""}">
-    <label>Test Type </label><input data-r="pipeTests" data-k="Test Type " value="${data["Test Type "]||""}">
+  pipeTestsEl?.appendChild(makeRow(`
+    <label>Date Tested</label><input data-r="pipeTests" data-k="Date Tested" value="${data["Date Tested"]||""}">
+    <label>Test Type</label><input data-r="pipeTests" data-k="Test Type" value="${data["Test Type"]||""}">
     <div class="check" style="margin-top:8px;">
       <input type="checkbox" data-r="pipeTests" data-k="Soaped with no Leaks" ${data["Soaped with no Leaks"] ? "checked" : ""}>
       Soaped with no Leaks
     </div>
-    <label>Pressure </label><input data-r="pipeTests" data-k="Pressure " value="${data["Pressure "]||""}">
-    <label>Chart </label><input data-r="pipeTests" data-k="Chart " value="${data["Chart "]||""}">
-    <label>Duration </label><input data-r="pipeTests" data-k="Duration " value="${data["Duration "]||""}">
-    <label>Tested By </label><input data-r="pipeTests" data-k="Tested By " value="${data["Tested By "]||""}">
+    <label>Pressure</label><input data-r="pipeTests" data-k="Pressure" value="${data["Pressure"]||""}">
+    <label>Chart</label><input data-r="pipeTests" data-k="Chart" value="${data["Chart"]||""}">
+    <label>Duration</label><input data-r="pipeTests" data-k="Duration" value="${data["Duration"]||""}">
+    <label>Tested By</label><input data-r="pipeTests" data-k="Tested By" value="${data["Tested By"]||""}">
   `));
 }
 
-document.getElementById("addPipeMaterial").addEventListener("click", () => addPipeMaterialRow());
-document.getElementById("addOtherMaterial").addEventListener("click", () => addOtherMaterialRow());
-document.getElementById("addPipeTest").addEventListener("click", () => addPipeTestRow());
+document.getElementById("addPipeMaterial")?.addEventListener("click", () => addPipeMaterialRow());
+document.getElementById("addOtherMaterial")?.addEventListener("click", () => addOtherMaterialRow());
+document.getElementById("addPipeTest")?.addEventListener("click", () => addPipeTestRow());
 
-// initial rows
-addPipeMaterialRow();
-addOtherMaterialRow();
-addPipeTestRow();
+// initial rows for leak repair containers only if present
+if (pipeMaterialsEl) addPipeMaterialRow();
+if (otherMaterialsEl) addOtherMaterialRow();
+if (pipeTestsEl) addPipeTestRow();
+
+// =====================================================
+// MAINS REPEATERS
+// =====================================================
+const mainsMaterialsEl = document.getElementById("mainsMaterials");
+const mainsOtherMaterialsEl = document.getElementById("mainsOtherMaterials");
+const mainsPipeTestsEl = document.getElementById("mainsPipeTests");
+
+function addMainsMaterialRow(data = {}) {
+  mainsMaterialsEl?.appendChild(makeRow(`
+    <label>Size</label><input data-r="mainsMaterials" data-k="Size" value="${data["Size"]||""}">
+    <label>Material</label><input data-r="mainsMaterials" data-k="Material" value="${data["Material"]||""}">
+    <label>Manufacturer</label><input data-r="mainsMaterials" data-k="Manufacturer" value="${data["Manufacturer"]||""}">
+    <label>Date</label><input data-r="mainsMaterials" data-k="Date" value="${data["Date"]||""}">
+    <label>Coil #</label><input data-r="mainsMaterials" data-k="Coil #" value="${data["Coil #"]||""}">
+    <label>SDR of PE</label><input data-r="mainsMaterials" data-k="SDR of PE" value="${data["SDR of PE"]||""}">
+    <label>ST Pipe Thickness</label><input data-r="mainsMaterials" data-k="ST Pipe Thickness" value="${data["ST Pipe Thickness"]||""}">
+    <label>Coating Types</label><input data-r="mainsMaterials" data-k="Coating Types" value="${data["Coating Types"]||""}">
+    <label>Depth (inches)</label><input data-r="mainsMaterials" data-k="Depth (inches)" value="${data["Depth (inches)"]||""}">
+    <label>Length (inches)</label><input data-r="mainsMaterials" data-k="Length (inches)" value="${data["Length (inches)"]||""}">
+  `));
+}
+function addMainsOtherMaterialRow(data = {}) {
+  mainsOtherMaterialsEl?.appendChild(makeRow(`
+    <label>Type</label><input data-r="mainsOtherMaterials" data-k="Type" value="${data["Type"]||""}">
+    <label>Size</label><input data-r="mainsOtherMaterials" data-k="Size" value="${data["Size"]||""}">
+    <label>Material</label><input data-r="mainsOtherMaterials" data-k="Material" value="${data["Material"]||""}">
+    <label>Quantity</label><input data-r="mainsOtherMaterials" data-k="Quantity" value="${data["Quantity"]||""}">
+  `));
+}
+function addMainsPipeTestRow(data = {}) {
+  mainsPipeTestsEl?.appendChild(makeRow(`
+    <label>Date Tested</label><input data-r="mainsPipeTests" data-k="Date Tested" value="${data["Date Tested"]||""}">
+    <label>Test Type</label><input data-r="mainsPipeTests" data-k="Test Type" value="${data["Test Type"]||""}">
+    <div class="check" style="margin-top:8px;">
+      <input type="checkbox" data-r="mainsPipeTests" data-k="Soaped with no Leaks" ${data["Soaped with no Leaks"] ? "checked" : ""}>
+      Soaped with no Leaks
+    </div>
+    <label>Pressure</label><input data-r="mainsPipeTests" data-k="Pressure" value="${data["Pressure"]||""}">
+    <label>Chart</label><input data-r="mainsPipeTests" data-k="Chart" value="${data["Chart"]||""}">
+    <label>Duration</label><input data-r="mainsPipeTests" data-k="Duration" value="${data["Duration"]||""}">
+    <label>Tested By</label><input data-r="mainsPipeTests" data-k="Tested By" value="${data["Tested By"]||""}">
+  `));
+}
+document.getElementById("addMainsMaterial")?.addEventListener("click", () => addMainsMaterialRow());
+document.getElementById("addMainsOtherMaterial")?.addEventListener("click", () => addMainsOtherMaterialRow());
+document.getElementById("addMainsPipeTest")?.addEventListener("click", () => addMainsPipeTestRow());
+
+if (mainsMaterialsEl) addMainsMaterialRow();
+if (mainsOtherMaterialsEl) addMainsOtherMaterialRow();
+if (mainsPipeTestsEl) addMainsPipeTestRow();
+
+// =====================================================
+// SERVICES REPEATERS
+// =====================================================
+const svcMaterialsEl = document.getElementById("svcMaterials");
+const svcOtherMaterialsEl = document.getElementById("svcOtherMaterials");
+const svcPipeTestsEl = document.getElementById("svcPipeTests");
+
+function addSvcMaterialRow(data = {}) {
+  svcMaterialsEl?.appendChild(makeRow(`
+    <label>Size</label><input data-r="svcMaterials" data-k="Size" value="${data["Size"]||""}">
+    <label>Material</label><input data-r="svcMaterials" data-k="Material" value="${data["Material"]||""}">
+    <label>Manufacturer</label><input data-r="svcMaterials" data-k="Manufacturer" value="${data["Manufacturer"]||""}">
+    <label>Date</label><input data-r="svcMaterials" data-k="Date" value="${data["Date"]||""}">
+    <label>Coil #</label><input data-r="svcMaterials" data-k="Coil #" value="${data["Coil #"]||""}">
+    <label>SDR of PE</label><input data-r="svcMaterials" data-k="SDR of PE" value="${data["SDR of PE"]||""}">
+    <label>ST Pipe Thickness</label><input data-r="svcMaterials" data-k="ST Pipe Thickness" value="${data["ST Pipe Thickness"]||""}">
+    <label>Coating Types</label><input data-r="svcMaterials" data-k="Coating Types" value="${data["Coating Types"]||""}">
+    <label>Depth (inches)</label><input data-r="svcMaterials" data-k="Depth (inches)" value="${data["Depth (inches)"]||""}">
+    <label>Length (inches)</label><input data-r="svcMaterials" data-k="Length (inches)" value="${data["Length (inches)"]||""}">
+  `));
+}
+function addSvcOtherMaterialRow(data = {}) {
+  svcOtherMaterialsEl?.appendChild(makeRow(`
+    <label>Type</label><input data-r="svcOtherMaterials" data-k="Type" value="${data["Type"]||""}">
+    <label>Size</label><input data-r="svcOtherMaterials" data-k="Size" value="${data["Size"]||""}">
+    <label>Material</label><input data-r="svcOtherMaterials" data-k="Material" value="${data["Material"]||""}">
+    <label>Quantity</label><input data-r="svcOtherMaterials" data-k="Quantity" value="${data["Quantity"]||""}">
+  `));
+}
+function addSvcPipeTestRow(data = {}) {
+  svcPipeTestsEl?.appendChild(makeRow(`
+    <label>Date Tested</label><input data-r="svcPipeTests" data-k="Date Tested" value="${data["Date Tested"]||""}">
+    <label>Test Type</label><input data-r="svcPipeTests" data-k="Test Type" value="${data["Test Type"]||""}">
+    <div class="check" style="margin-top:8px;">
+      <input type="checkbox" data-r="svcPipeTests" data-k="Soaped with no Leaks" ${data["Soaped with no Leaks"] ? "checked" : ""}>
+      Soaped with no Leaks
+    </div>
+    <label>Pressure</label><input data-r="svcPipeTests" data-k="Pressure" value="${data["Pressure"]||""}">
+    <label>Chart</label><input data-r="svcPipeTests" data-k="Chart" value="${data["Chart"]||""}">
+    <label>Duration</label><input data-r="svcPipeTests" data-k="Duration" value="${data["Duration"]||""}">
+    <label>Tested By</label><input data-r="svcPipeTests" data-k="Tested By" value="${data["Tested By"]||""}">
+  `));
+}
+document.getElementById("addSvcMaterial")?.addEventListener("click", () => addSvcMaterialRow());
+document.getElementById("addSvcOtherMaterial")?.addEventListener("click", () => addSvcOtherMaterialRow());
+document.getElementById("addSvcPipeTest")?.addEventListener("click", () => addSvcPipeTestRow());
+
+if (svcMaterialsEl) addSvcMaterialRow();
+if (svcOtherMaterialsEl) addSvcOtherMaterialRow();
+if (svcPipeTestsEl) addSvcPipeTestRow();
+
+// =====================================================
+// RETIREMENT REPEATERS
+// =====================================================
+const retSectionEl = document.getElementById("retSection");
+const retStructuresEl = document.getElementById("retStructures");
+const retNewMaterialsEl = document.getElementById("retNewMaterials");
+
+function addRetSectionRow(data = {}) {
+  retSectionEl?.appendChild(makeRow(`
+    <label>Size</label><input data-r="retSection" data-k="Size" value="${data["Size"]||""}">
+    <label>Material</label><input data-r="retSection" data-k="Material" value="${data["Material"]||""}">
+    <label>Pipe Condition</label><input data-r="retSection" data-k="Pipe Condition" value="${data["Pipe Condition"]||""}">
+    <label>Retired in Place</label><input data-r="retSection" data-k="Retired in Place" value="${data["Retired in Place"]||""}">
+    <label>Riser Removed</label><input data-r="retSection" data-k="Riser Removed" value="${data["Riser Removed"]||""}">
+    <label>Length (feet)</label><input data-r="retSection" data-k="Length (feet)" value="${data["Length (feet)"]||""}">
+  `));
+}
+function addRetStructuresRow(data = {}) {
+  retStructuresEl?.appendChild(makeRow(`
+    <label>Structures Retired</label><input data-r="retStructures" data-k="Structures Retired" value="${data["Structures Retired"]||""}">
+    <label>Number</label><input data-r="retStructures" data-k="Number" value="${data["Number"]||""}">
+    <label>Action Taken</label><input data-r="retStructures" data-k="Action Taken" value="${data["Action Taken"]||""}">
+  `));
+}
+function addRetNewMaterialsRow(data = {}) {
+  retNewMaterialsEl?.appendChild(makeRow(`
+    <label>Materials Used</label><input data-r="retNewMaterials" data-k="Materials Used" value="${data["Materials Used"]||""}">
+    <label>Size</label><input data-r="retNewMaterials" data-k="Size" value="${data["Size"]||""}">
+    <label>Material</label><input data-r="retNewMaterials" data-k="Material" value="${data["Material"]||""}">
+    <label>Quantity</label><input data-r="retNewMaterials" data-k="Quantity" value="${data["Quantity"]||""}">
+  `));
+}
+document.getElementById("addRetSection")?.addEventListener("click", () => addRetSectionRow());
+document.getElementById("addRetStructures")?.addEventListener("click", () => addRetStructuresRow());
+document.getElementById("addRetNewMaterials")?.addEventListener("click", () => addRetNewMaterialsRow());
+
+if (retSectionEl) addRetSectionRow();
+if (retStructuresEl) addRetStructuresRow();
+if (retNewMaterialsEl) addRetNewMaterialsRow();
+
+// ---- Gather payload ----
+function gatherFields() {
+  const fields = {};
+  const fd = new FormData(form);
+  for (const [k, v] of fd.entries()) fields[k] = v;
+
+  // Explicit checkboxes (unchecked checkboxes won't appear in FormData)
+  fields["Odor Readily Detectable"] =
+    !!form.querySelector('input[name="Odor Readily Detectable"]')?.checked;
+
+  // Leak Occurred On checkboxes
+  const occurred = [
+    "Leak Occurred on - Farm Tap",
+    "Leak Occurred on - Fitting",
+    "Leak Occurred on - Meter",
+    "Leak Occurred on - Pipe",
+    "Leak Occurred on - Regulator",
+    "Leak Occurred on - Tap Connection",
+    "Leak Occurred on - Valve",
+  ];
+  occurred.forEach(name => {
+    const el = form.querySelector(`input[name="${name}"]`);
+    fields[name] = !!el?.checked;
+  });
+
+  // Bore/Rock checkboxes used on Mains/Services
+  const boreChecks = [
+    "Bore",
+    "Directional Bore",
+    "Rock Bore",
+    "Rock 6x18",
+    "Rock 12x18",
+    "Rock 18x18",
+    "Rock 24x24",
+  ];
+  boreChecks.forEach(name => {
+    const el = form.querySelector(`input[name="${name}"]`);
+    if (el) fields[name] = !!el.checked;
+  });
+
+  // Retirement checkbox
+  const soapRet = form.querySelector('input[name="Soaped with no leaks"]');
+  if (soapRet) fields["Soaped with no leaks"] = !!soapRet.checked;
+
+  return fields;
+}
+
+function gatherRepeaters() {
+  return {
+    // Leak Repair
+    pipeMaterials: readRows(pipeMaterialsEl),
+    otherMaterials: readRows(otherMaterialsEl),
+    pipeTests: readRows(pipeTestsEl),
+
+    // Mains
+    mainsMaterials: readRows(mainsMaterialsEl),
+    mainsOtherMaterials: readRows(mainsOtherMaterialsEl),
+    mainsPipeTests: readRows(mainsPipeTestsEl),
+
+    // Services
+    svcMaterials: readRows(svcMaterialsEl),
+    svcOtherMaterials: readRows(svcOtherMaterialsEl),
+    svcPipeTests: readRows(svcPipeTestsEl),
+
+    // Retirement
+    retSection: readRows(retSectionEl),
+    retStructures: readRows(retStructuresEl),
+    retNewMaterials: readRows(retNewMaterialsEl),
+  };
+}
 
 // ---- Photos compression ----
 async function loadImg(file) {
@@ -176,52 +421,6 @@ async function fileToCompressedDataUrl(file, maxW = 1024, quality = 0.6) {
   c.width = w; c.height = h;
   c.getContext("2d").drawImage(img, 0, 0, w, h);
   return c.toDataURL("image/jpeg", quality);
-}
-
-// ---- Gather payload ----
-function gatherFields() {
-  const fields = {};
-  const fd = new FormData(form);
-  for (const [k, v] of fd.entries()) fields[k] = v;
-
-  // explicit checkboxes
-  fields["Odor Readily Detectable "] =
-    !!form.querySelector('input[name="Odor Readily Detectable"]')?.checked;
-
-  const occurred = [
-    "Leak Occurred on - Farm Tap",
-    "Leak Occurred on - Fitting",
-    "Leak Occurred on - Meter",
-    "Leak Occurred on - Pipe",
-    "Leak Occurred on - Regulator",
-    "Leak Occurred on - Tap Connection",
-    "Leak Occurred on - Valve",
-  ];
-  occurred.forEach(name => {
-    const el = form.querySelector(`input[name="${name}"]`);
-    fields[name + " "] = !!el?.checked;
-  });
-
-  return fields;
-}
-
-function gatherRepeaters() {
-  function readRows(container) {
-    const cards = Array.from(container.querySelectorAll(".card"));
-    return cards.map(card => {
-      const row = {};
-      Array.from(card.querySelectorAll("input[data-r]")).forEach(inp => {
-        const k = inp.getAttribute("data-k");
-        row[k] = inp.type === "checkbox" ? inp.checked : inp.value;
-      });
-      return row;
-    }).filter(r => Object.values(r).some(v => v !== "" && v !== false));
-  }
-  return {
-    pipeMaterials: readRows(pipeMaterialsEl),
-    otherMaterials: readRows(otherMaterialsEl),
-    pipeTests: readRows(pipeTestsEl),
-  };
 }
 
 async function buildPayload() {
@@ -299,14 +498,14 @@ async function submitNow() {
 }
 
 // ---- Buttons ----
-document.getElementById("saveDraft").addEventListener("click", async () => {
+document.getElementById("saveDraft")?.addEventListener("click", async () => {
   const payload = await buildPayload();
   await db.put("drafts", payload);
   formMeta.textContent = `Saved Draft: ${payload.submissionId}`;
   alert("Draft saved.");
 });
 
-document.getElementById("queueForSync").addEventListener("click", async () => {
+document.getElementById("queueForSync")?.addEventListener("click", async () => {
   const payload = await buildPayload();
   await db.put("queue", payload);
   await db.del("drafts", payload.submissionId);
@@ -315,27 +514,36 @@ document.getElementById("queueForSync").addEventListener("click", async () => {
   await trySync();
 });
 
-document.getElementById("syncNow").addEventListener("click", trySync);
+document.getElementById("syncNow")?.addEventListener("click", trySync);
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   await submitNow();
 });
 
-document.getElementById("newForm").addEventListener("click", () => {
+document.getElementById("newForm")?.addEventListener("click", () => {
   currentId = newSubmissionId();
   mode = "new";
   form.reset();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  pipeMaterialsEl.innerHTML = "";
-  otherMaterialsEl.innerHTML = "";
-  pipeTestsEl.innerHTML = "";
-  addPipeMaterialRow();
-  addOtherMaterialRow();
-  addPipeTestRow();
+  // Clear all repeater containers
+  if (pipeMaterialsEl) { pipeMaterialsEl.innerHTML = ""; addPipeMaterialRow(); }
+  if (otherMaterialsEl) { otherMaterialsEl.innerHTML = ""; addOtherMaterialRow(); }
+  if (pipeTestsEl) { pipeTestsEl.innerHTML = ""; addPipeTestRow(); }
+
+  if (mainsMaterialsEl) { mainsMaterialsEl.innerHTML = ""; addMainsMaterialRow(); }
+  if (mainsOtherMaterialsEl) { mainsOtherMaterialsEl.innerHTML = ""; addMainsOtherMaterialRow(); }
+  if (mainsPipeTestsEl) { mainsPipeTestsEl.innerHTML = ""; addMainsPipeTestRow(); }
+
+  if (svcMaterialsEl) { svcMaterialsEl.innerHTML = ""; addSvcMaterialRow(); }
+  if (svcOtherMaterialsEl) { svcOtherMaterialsEl.innerHTML = ""; addSvcOtherMaterialRow(); }
+  if (svcPipeTestsEl) { svcPipeTestsEl.innerHTML = ""; addSvcPipeTestRow(); }
+
+  if (retSectionEl) { retSectionEl.innerHTML = ""; addRetSectionRow(); }
+  if (retStructuresEl) { retStructuresEl.innerHTML = ""; addRetStructuresRow(); }
+  if (retNewMaterialsEl) { retNewMaterialsEl.innerHTML = ""; addRetNewMaterialsRow(); }
 
   formMeta.textContent = `New: ${currentId}`;
+  updatePageSections();
 });
-
-
