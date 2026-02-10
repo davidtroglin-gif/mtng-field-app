@@ -113,38 +113,38 @@ function makeRow(fieldsHtml) {
 
 function addPipeMaterialRow(data = {}) {
   pipeMaterialsEl.appendChild(makeRow(`
-    <label>Size (input)</label><input data-r="pipeMaterials" data-k="Size (input)" value="${data["Size (input)"]||""}">
-    <label>Material (input)</label><input data-r="pipeMaterials" data-k="Material (input)" value="${data["Material (input)"]||""}">
-    <label>Manufacturer (input)</label><input data-r="pipeMaterials" data-k="Manufacturer (input)" value="${data["Manufacturer (input)"]||""}">
-    <label>Date (input)</label><input data-r="pipeMaterials" data-k="Date (input)" value="${data["Date (input)"]||""}">
-    <label>Coil # (input)</label><input data-r="pipeMaterials" data-k="Coil # (input)" value="${data["Coil # (input)"]||""}">
-    <label>SDR of PE (input)</label><input data-r="pipeMaterials" data-k="SDR of PE (input)" value="${data["SDR of PE (input)"]||""}">
-    <label>ST Pipe Thickness (input)</label><input data-r="pipeMaterials" data-k="ST Pipe Thickness (input)" value="${data["ST Pipe Thickness (input)"]||""}">
-    <label>Coating Type (input)</label><input data-r="pipeMaterials" data-k="Coating Type (input)" value="${data["Coating Type (input)"]||""}">
-    <label>Depth (inches) (input)</label><input data-r="pipeMaterials" data-k="Depth (inches) (input)" value="${data["Depth (inches) (input)"]||""}">
-    <label>Length (inches) (input)</label><input data-r="pipeMaterials" data-k="Length (inches) (input)" value="${data["Length (inches) (input)"]||""}">
+    <label>Size </label><input data-r="pipeMaterials" data-k="Size " value="${data["Size "]||""}">
+    <label>Material </label><input data-r="pipeMaterials" data-k="Material " value="${data["Material "]||""}">
+    <label>Manufacturer </label><input data-r="pipeMaterials" data-k="Manufacturer " value="${data["Manufacturer "]||""}">
+    <label>Date </label><input data-r="pipeMaterials" data-k="Date " value="${data["Date "]||""}">
+    <label>Coil # </label><input data-r="pipeMaterials" data-k="Coil # " value="${data["Coil # "]||""}">
+    <label>SDR of PE </label><input data-r="pipeMaterials" data-k="SDR of PE " value="${data["SDR of PE "]||""}">
+    <label>ST Pipe Thickness </label><input data-r="pipeMaterials" data-k="ST Pipe Thickness " value="${data["ST Pipe Thickness "]||""}">
+    <label>Coating Type </label><input data-r="pipeMaterials" data-k="Coating Type " value="${data["Coating Type "]||""}">
+    <label>Depth (inches) </label><input data-r="pipeMaterials" data-k="Depth (inches) " value="${data["Depth (inches) "]||""}">
+    <label>Length (inches) </label><input data-r="pipeMaterials" data-k="Length (inches) " value="${data["Length (inches) "]||""}">
   `));
 }
 function addOtherMaterialRow(data = {}) {
   otherMaterialsEl.appendChild(makeRow(`
-    <label>Type (input)</label><input data-r="otherMaterials" data-k="Type (input)" value="${data["Type (input)"]||""}">
-    <label>Size (input)</label><input data-r="otherMaterials" data-k="Size (input)" value="${data["Size (input)"]||""}">
-    <label>Material (input)</label><input data-r="otherMaterials" data-k="Material (input)" value="${data["Material (input)"]||""}">
-    <label>Quantity (input)</label><input data-r="otherMaterials" data-k="Quantity (input)" value="${data["Quantity (input)"]||""}">
+    <label>Type </label><input data-r="otherMaterials" data-k="Type " value="${data["Type "]||""}">
+    <label>Size </label><input data-r="otherMaterials" data-k="Size " value="${data["Size "]||""}">
+    <label>Material </label><input data-r="otherMaterials" data-k="Material " value="${data["Material "]||""}">
+    <label>Quantity </label><input data-r="otherMaterials" data-k="Quantity " value="${data["Quantity "]||""}">
   `));
 }
 function addPipeTestRow(data = {}) {
   pipeTestsEl.appendChild(makeRow(`
-    <label>Date Tested (input)</label><input data-r="pipeTests" data-k="Date Tested (input)" value="${data["Date Tested (input)"]||""}">
-    <label>Test Type (input)</label><input data-r="pipeTests" data-k="Test Type (input)" value="${data["Test Type (input)"]||""}">
+    <label>Date Tested </label><input data-r="pipeTests" data-k="Date Tested " value="${data["Date Tested "]||""}">
+    <label>Test Type </label><input data-r="pipeTests" data-k="Test Type " value="${data["Test Type "]||""}">
     <div class="check" style="margin-top:8px;">
-      <input type="checkbox" data-r="pipeTests" data-k="Soaped with no Leaks (checkbox)" ${data["Soaped with no Leaks (checkbox)"] ? "checked" : ""}>
-      Soaped with no Leaks (checkbox)
+      <input type="checkbox" data-r="pipeTests" data-k="Soaped with no Leaks" ${data["Soaped with no Leaks"] ? "checked" : ""}>
+      Soaped with no Leaks
     </div>
-    <label>Pressure (input)</label><input data-r="pipeTests" data-k="Pressure (input)" value="${data["Pressure (input)"]||""}">
-    <label>Chart (input)</label><input data-r="pipeTests" data-k="Chart (input)" value="${data["Chart (input)"]||""}">
-    <label>Duration (input)</label><input data-r="pipeTests" data-k="Duration (input)" value="${data["Duration (input)"]||""}">
-    <label>Tested By (input)</label><input data-r="pipeTests" data-k="Tested By (input)" value="${data["Tested By (input)"]||""}">
+    <label>Pressure </label><input data-r="pipeTests" data-k="Pressure " value="${data["Pressure "]||""}">
+    <label>Chart </label><input data-r="pipeTests" data-k="Chart " value="${data["Chart "]||""}">
+    <label>Duration </label><input data-r="pipeTests" data-k="Duration " value="${data["Duration "]||""}">
+    <label>Tested By </label><input data-r="pipeTests" data-k="Tested By " value="${data["Tested By "]||""}">
   `));
 }
 
@@ -185,7 +185,7 @@ function gatherFields() {
   for (const [k, v] of fd.entries()) fields[k] = v;
 
   // explicit checkboxes
-  fields["Odor Readily Detectable (checkbox)"] =
+  fields["Odor Readily Detectable "] =
     !!form.querySelector('input[name="Odor Readily Detectable"]')?.checked;
 
   const occurred = [
@@ -199,7 +199,7 @@ function gatherFields() {
   ];
   occurred.forEach(name => {
     const el = form.querySelector(`input[name="${name}"]`);
-    fields[name + " (checkbox)"] = !!el?.checked;
+    fields[name + " "] = !!el?.checked;
   });
 
   return fields;
@@ -337,4 +337,5 @@ document.getElementById("newForm").addEventListener("click", () => {
 
   formMeta.textContent = `New: ${currentId}`;
 });
+
 
