@@ -54,19 +54,18 @@
     </div>
 
     <form id="form" class="card">
-
-      <!-- ===================================================== -->
-      <!-- PAGE 1: LEAK REPAIR                                   -->
-      <!-- ===================================================== -->
-      <section id="sectionLeakRepair">
-        <h3>Leak Repair</h3>
-
+    <!-- ===================================================== -->
+    <!-- SHARED: CUSTOMER INFO (ALL PAGES)                     -->
+    <!-- ===================================================== -->
+      <section id="sectionCustomer">
+        <h3>Customer / Job Info</h3>
+      
         <label>Customer Name</label>
         <input name="Customer Name" />
-
+      
         <label>Customer Address</label>
         <input name="Customer Address" />
-
+      
         <div class="row">
           <div>
             <label>Customer City</label>
@@ -77,16 +76,16 @@
             <input name="Customer County" />
           </div>
         </div>
-
+      
         <label>Customer Phone</label>
         <input name="Customer Phone" />
-
+      
         <label>Service Address (if different than customers)</label>
         <input name="Service Address (if different than customers)" />
-
+      
         <label>Date</label>
         <input type="date" name="Date" />
-
+      
         <div class="row">
           <div>
             <label>Contractor</label>
@@ -97,9 +96,15 @@
             <input name="MLO Number" />
           </div>
         </div>
-
+      
         <label>Register Number</label>
         <input name="Register Number" />
+      </section>
+      <!-- ===================================================== -->
+      <!-- PAGE 1: LEAK REPAIR                                   -->
+      <!-- ===================================================== -->
+      <section id="sectionLeakRepair">
+        <h3>Leak Repair</h3>
 
         <label>Specific Location where leak occurred</label>
         <textarea name="Specific Location where leak occurred" rows="3"></textarea>
@@ -426,3 +431,4 @@
   <script type="module" src="./app.js"></script>
 </body>
 </html>
+
