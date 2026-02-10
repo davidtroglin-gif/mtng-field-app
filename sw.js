@@ -1,48 +1,74 @@
-const CACHE = "mtng-forms-v12";
-const ASSETS = ["./", "./index.html", "./app.js", "./db.js", "./sw.js", "./manifest.json"];
+const CACHE = "mtng-forms-v13";
+
+// Include owner.html too so dashboard works offline for the shell
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./owner.html",
+  "./app.js",
+  "./db.js",
+  "./sw.js",
+  "./manifest.json"
+];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+  e.waitUntil(
+    caches.open(CACHE).then((c) => c.addAll(ASSETS))
+  );
   self.skipWaiting();
 });
-self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+
+self.addEventListener("activate", (e) => {
+  e.waitUntil((async () => {
+    // Cleanup old caches
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => (k === CACHE ? null : caches.delete(k))));
+    await self.clients.claim();
+  })());
+});
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // ✅ Always pass-through cross-origin requests (Apps Script, Google, etc.)
-  // This avoids caching bugs and opaque response issues.
+  // ✅ IMPORTANT: Never intercept cross-origin (Google Apps Script, Google Drive, etc.)
   if (url.origin !== self.location.origin) {
-    event.respondWith(fetch(req));
+    event.respondWith(fetch(req).catch(() => new Response("", { status: 502 })));
     return;
   }
 
-  // ✅ For same-origin requests, use cache-first (app shell)
+  // ✅ For navigation requests, serve cached shell first, then network
+  if (req.mode === "navigate") {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      try {
+        const res = await fetch(req);
+        // keep latest HTML
+        if (res && res.ok) cache.put(req, res.clone());
+        return res;
+      } catch {
+        // offline fallback to cached page
+        return (await cache.match(req)) || (await cache.match("./index.html"));
+      }
+    })());
+    return;
+  }
+
+  // ✅ For other same-origin assets: cache-first, then network
   event.respondWith((async () => {
-    const cache = await caches.open("mtng-cache-v1");
+    const cache = await caches.open(CACHE);
     const cached = await cache.match(req);
     if (cached) return cached;
 
     try {
       const res = await fetch(req);
-      // Only cache successful basic responses
       if (res && res.ok && res.type === "basic") {
         cache.put(req, res.clone());
       }
       return res;
-    } catch (err) {
-      // Offline fallback: if you have an offline page, serve it here.
-      // Otherwise, rethrow to let browser handle it.
-      throw err;
+    } catch {
+      // If offline and not cached
+      return new Response("Offline", { status: 503, statusText: "Offline" });
     }
   })());
 });
-
-
-
-
-
-
-
-
-
