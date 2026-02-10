@@ -214,25 +214,29 @@
     return json;
   }
 
-  async function fetchList(){
-    if (!key) {
-      setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
-      return;
-    }
-
-    setStatus("Loading list…");
-
-    const url = new URL(API_URL);
-    url.searchParams.set("action", "list");
-    url.searchParams.set("key", key);
-
-    const json = await fetchJsonOrThrow(url);
-    items = json.items || [];
-
-    setStatus(`Loaded ${items.length}`);
-    metaEl.textContent = `Total: ${items.length}`;
-    renderTable();
+ async function fetchList(){
+  if (!key) {
+    setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
+    return;
   }
+
+  setStatus("Loading list…");
+
+  const url = new URL(API_URL);
+  url.searchParams.set("action", "list");
+  url.searchParams.set("key", key);
+
+  // ✅ A) cache-bust so Safari / SW / browser won't reuse old data
+  url.searchParams.set("_", Date.now().toString());
+
+  const json = await fetchJsonOrThrow(url, { cache: "no-store" });
+  items = json.items || [];
+
+  setStatus(`Loaded ${items.length}`);
+  metaEl.textContent = `Total: ${items.length}`;
+  renderTable();
+}
+
 
   function matchesFilters(it){
     const q = (qEl.value || "").trim().toLowerCase();
