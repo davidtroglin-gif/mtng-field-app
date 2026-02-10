@@ -17,11 +17,10 @@
     .checks { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top:8px; }
     .check { display:flex; gap:8px; align-items:center; background:#fafafa; padding:8px; border-radius:10px; border:1px solid #eee; }
     canvas { width:100%; border:1px solid #ccc; border-radius:12px; touch-action:none; background:white; }
-    table { width:100%; border-collapse: collapse; margin-top:8px; }
-    th, td { border:1px solid #ddd; padding:8px; vertical-align: top; }
     .btnrow { display:flex; gap:10px; }
     .btnrow button { flex:1; }
     .small { font-size: 12px; color:#666; }
+    h3,h4 { margin: 0 0 8px; }
   </style>
 </head>
 <body>
@@ -34,7 +33,7 @@
           <option value="Mains">Mains</option>
           <option value="Retirement">Retirement</option>
           <option value="Services">Services</option>
-          </select>
+        </select>
       </div>
       <div>
         <label style="margin:0;">Queue</label>
@@ -55,137 +54,351 @@
     </div>
 
     <form id="form" class="card">
-      <h3 style="margin:0 0 8px;">Page 1 (Leak Repair)</h3>
 
-      <!-- Exact field names from PDF -->
-      <label>Customer Name </label>
-      <input name="Customer Name" />
+      <!-- ===================================================== -->
+      <!-- PAGE 1: LEAK REPAIR                                   -->
+      <!-- ===================================================== -->
+      <section id="sectionLeakRepair">
+        <h3>Leak Repair</h3>
 
-      <label>Customer Address </label>
-      <input name="Customer Address" />
+        <label>Customer Name</label>
+        <input name="Customer Name" />
 
-      <div class="row">
-        <div>
-          <label>Customer City </label>
-          <input name="Customer City" />
+        <label>Customer Address</label>
+        <input name="Customer Address" />
+
+        <div class="row">
+          <div>
+            <label>Customer City</label>
+            <input name="Customer City" />
+          </div>
+          <div>
+            <label>Customer County</label>
+            <input name="Customer County" />
+          </div>
         </div>
-        <div>
-          <label>Customer County </label>
-          <input name="Customer County" />
+
+        <label>Customer Phone</label>
+        <input name="Customer Phone" />
+
+        <label>Service Address (if different than customers)</label>
+        <input name="Service Address (if different than customers)" />
+
+        <label>Date</label>
+        <input type="date" name="Date" />
+
+        <div class="row">
+          <div>
+            <label>Contractor</label>
+            <input name="Contractor" />
+          </div>
+          <div>
+            <label>MLO Number</label>
+            <input name="MLO Number" />
+          </div>
         </div>
-      </div>
 
-      <label>Customer Phone </label>
-      <input name="Customer Phone" />
+        <label>Register Number</label>
+        <input name="Register Number" />
 
-      <label>Service Address (if different than customers) </label>
-      <input name="Service Address (if different than customers)" />
+        <label>Specific Location where leak occurred</label>
+        <textarea name="Specific Location where leak occurred" rows="3"></textarea>
 
-      <label>Date (date picker)</label>
-      <input type="date" name="Date" />
+        <label>Date Leak Detected</label>
+        <input name="Date Leak Detected" />
 
-      <div class="row">
-        <div>
-          <label>Contractor </label>
-          <input name="Contractor" />
+        <label>Leak Occurred On</label>
+        <div class="checks">
+          <div class="check"><input type="checkbox" name="Leak Occurred on - Farm Tap" /> Farm Tap</div>
+          <div class="check"><input type="checkbox" name="Leak Occurred on - Fitting" /> Fitting</div>
+          <div class="check"><input type="checkbox" name="Leak Occurred on - Meter" /> Meter</div>
+          <div class="check"><input type="checkbox" name="Leak Occurred on - Pipe" /> Pipe</div>
+          <div class="check"><input type="checkbox" name="Leak Occurred on - Regulator" /> Regulator</div>
+          <div class="check"><input type="checkbox" name="Leak Occurred on - Tap Connection" /> Tap Connection</div>
+          <div class="check"><input type="checkbox" name="Leak Occurred on - Valve" /> Valve</div>
         </div>
-        <div>
-          <label>MLO Number </label>
-          <input name="MLO Number" />
+
+        <label>Leak Repair Occurred On</label>
+        <div class="row">
+          <div><label>Pipe Type</label><input name="Leak Repair Occurred on - Pipe Type" /></div>
+          <div><label>Size</label><input name="Leak Repair Occurred on - Size" /></div>
         </div>
-      </div>
+        <div class="row">
+          <div><label>Material</label><input name="Leak Repair Occurred on - Material" /></div>
+          <div><label>Coating Type</label><input name="Leak Repair Occurred on - Coating Type" /></div>
+        </div>
 
-      <label>Register Number </label>
-      <input name="Register Number" />
+        <div class="row">
+          <div><label>Leak Classification</label><input name="Leak Classification" /></div>
+          <div><label>Damaged By</label><input name="Damaged By" /></div>
+        </div>
 
-      <label>Specific Location where leak occurred</label>
-      <textarea name="Specific Location where leak occurred" rows="3"></textarea>
+        <div class="check" style="margin-top:10px;">
+          <input type="checkbox" name="Odor Readily Detectable" />
+          Odor Readily Detectable
+        </div>
 
-      <label>Date Leak Detected </label>
-      <input name="Date Leak Detected" />
+        <label>Pipe Condition</label>
+        <input name="Pipe Condition" />
 
-      <label>Leak Occurred On:</label>
-      <div class="checks">
-        <div class="check"><input type="checkbox" name="Leak Occurred on - Farm Tap" /> Farm Tap</div>
-        <div class="check"><input type="checkbox" name="Leak Occurred on - Fitting" /> Fitting</div>
-        <div class="check"><input type="checkbox" name="Leak Occurred on - Meter" /> Meter</div>
-        <div class="check"><input type="checkbox" name="Leak Occurred on - Pipe" /> Pipe</div>
-        <div class="check"><input type="checkbox" name="Leak Occurred on - Regulator" /> Regulator</div>
-        <div class="check"><input type="checkbox" name="Leak Occurred on - Tap Connection" /> Tap Connection</div>
-        <div class="check"><input type="checkbox" name="Leak Occurred on - Valve" /> Valve</div>
-      </div>
+        <h4 style="margin:14px 0 6px;">Pipe Materials Used for Repair</h4>
+        <div class="small">Add additional rows as needed.</div>
+        <div id="pipeMaterials"></div>
+        <button type="button" id="addPipeMaterial">+ Add Pipe Material Row</button>
 
-      <label>Leak Repair Occurred On</label>
-      <div class="row">
-        <div><label>Pipe Type </label><input name="Leak Repair Occurred on - Pipe Type" /></div>
-        <div><label>Size </label><input name="Leak Repair Occurred on - Size" /></div>
-      </div>
-      <div class="row">
-        <div><label>Material </label><input name="Leak Repair Occurred on - Material" /></div>
-        <div><label>Coating Type </label><input name="Leak Repair Occurred on - Coating Type" /></div>
-      </div>
+        <h4 style="margin:14px 0 6px;">Other Materials Used for Repair</h4>
+        <div class="small">Add additional rows as needed.</div>
+        <div id="otherMaterials"></div>
+        <button type="button" id="addOtherMaterial">+ Add Other Material Row</button>
 
-      <div class="row">
-        <div><label>Leak Classification </label><input name="Leak Classification" /></div>
-        <div><label>Damaged By </label><input name="Damaged By" /></div>
-      </div>
+        <div class="row">
+          <div><label>Type of Tap</label><input name="Type of Tap" /></div>
+          <div><label>Stab Fittings</label><input name="Stab Fittings" /></div>
+        </div>
 
-      <div class="check" style="margin-top:10px;">
-        <input type="checkbox" name="Odor Readily Detectable" />
-        Odor Readily Detectable
-      </div>
+        <label>Work Done (Explain Clearly)</label>
+        <textarea name="Work Done (Explain Clearly)" rows="4"></textarea>
 
-      <label>Pipe Condition </label>
-      <input name="Pipe Condition" />
+        <h4 style="margin:14px 0 6px;">Corrosion Found Complete Items 1-1</h4>
+        <label>1. Conditions in area of pipe</label><input name="1. Conditions in area of pipe" />
+        <label>2. Condition of pipe coating</label><input name="2. Condition of pipe coating" />
+        <label>3. Extent of corroded areas</label><input name="3. Extent of corroded areas" />
+        <label>4. Depth of any pits</label><input name="4. Depth of any pits" />
+        <label>5. Reason for pipe exposure</label><input name="5. Reason for pipe exposure" />
+        <label>6. Method of repair</label><input name="6. Method of repair" />
 
-      <h4 style="margin:14px 0 6px;">Pipe Materials Used for Repair</h4>
-      <div class="small">Needs to be able to add additional inputs</div>
-      <div id="pipeMaterials"></div>
-      <button type="button" id="addPipeMaterial">+ Add Pipe Material Row</button>
+        <h4 style="margin:14px 0 6px;">Pipe Test Information</h4>
+        <div id="pipeTests"></div>
+        <button type="button" id="addPipeTest">+ Add Pipe Test Row</button>
 
-      <h4 style="margin:14px 0 6px;">Other Materials Used for Repair</h4>
-      <div class="small">need to be able to add additional inputs</div>
-      <div id="otherMaterials"></div>
-      <button type="button" id="addOtherMaterial">+ Add Other Material Row</button>
+        <div class="row">
+          <div><label>Foreman</label><input name="Foreman" /></div>
+          <div><label>Fusion Tech</label><input name="Fusion Tech" /></div>
+        </div>
+        <div class="row">
+          <div><label>Steel Welder</label><input name="Steel Welder" /></div>
+          <div><label>Contract Labor Hours</label><input name="Contract Labor Hours" /></div>
+        </div>
 
-      <div class="row">
-        <div><label>Type of Tap </label><input name="Type of Tap" /></div>
-        <div><label>Stab Fittings </label><input name="Stab Fittings" /></div>
-      </div>
+        <label>Date Completed</label>
+        <input type="date" name="Date Completed" />
 
-      <label>Work Done (Explain Clearly)</label>
-      <textarea name="Work Done (Explain Clearly)" rows="4"></textarea>
+        <label>MTNG On-Site Personnel</label>
+        <input name="MTNG On-Site Personnel" />
 
-      <h4 style="margin:14px 0 6px;">Corrosion Found Complete Items 1-1</h4>
-      <label>1. Conditions in area of pipe </label><input name="1. Conditions in area of pipe" />
-      <label>2. Condition of pipe coating </label><input name="2. Condition of pipe coating" />
-      <label>3. Extent of corroded areas </label><input name="3. Extent of corroded areas" />
-      <label>4. Depth of any pits </label><input name="4. Depth of any pits" />
-      <label>5. Reason for pipe exposure </label><input name="5. Reason for pipe exposure" />
-      <label>6. Method of repair </label><input name="6. Method of repair" />
+        <label>Accepted By</label>
+        <input name="Accepted By" />
+      </section>
 
-      <h4 style="margin:14px 0 6px;">Pipe Test Information</h4>
-      <div id="pipeTests"></div>
-      <button type="button" id="addPipeTest">+ Add Pipe Test Row</button>
+      <!-- ===================================================== -->
+      <!-- PAGE 2: MAINS                                         -->
+      <!-- ===================================================== -->
+      <section id="sectionMains" style="display:none;">
+        <h3>Mains</h3>
 
-      <div class="row">
-        <div><label>Foreman </label><input name="Foreman" /></div>
-        <div><label>Fusion Tech </label><input name="Fusion Tech" /></div>
-      </div>
-      <div class="row">
-        <div><label>Steel Welder </label><input name="Steel Welder" /></div>
-        <div><label>Contract Labor Hours </label><input name="Contract Labor Hours" /></div>
-      </div>
+        <div class="card" style="margin-top:12px;">
+          <h4>Bore / Rock</h4>
 
-      <label>Date Completed</label>
-      <input type="date" name="Date Completed" />
+          <div class="check"><input type="checkbox" name="Bore" /> Bore</div>
+          <label>Bore Length (feet)</label><input name="Bore Length (feet)" />
 
-      <label>MTNG On-Site Personnel </label>
-      <input name="MTNG On-Site Personnel" />
+          <div class="check"><input type="checkbox" name="Directional Bore" /> Directional Bore</div>
+          <label>Directional Bore Length (feet)</label><input name="Directional Bore Length (feet)" />
 
-      <label>Accepted By </label>
-      <input name="Accepted By" />
+          <div class="check"><input type="checkbox" name="Rock Bore" /> Rock Bore</div>
+          <label>Rock Bore Length (feet)</label><input name="Rock Bore Length (feet)" />
 
+          <div class="check"><input type="checkbox" name="Rock 6x18" /> Rock 6x18</div>
+          <label>Rock 6x18 Length (feet)</label><input name="Rock 6x18 Length (feet)" />
+
+          <div class="check"><input type="checkbox" name="Rock 12x18" /> Rock 12x18</div>
+          <label>Rock 12x18 Length (feet)</label><input name="Rock 12x18 Length (feet)" />
+
+          <div class="check"><input type="checkbox" name="Rock 18x18" /> Rock 18x18</div>
+          <label>Rock 18x18 Length (feet)</label><input name="Rock 18x18 Length (feet)" />
+
+          <div class="check"><input type="checkbox" name="Rock 24x24" /> Rock 24x24</div>
+          <label>Rock 24x24 Length (feet)</label><input name="Rock 24x24 Length (feet)" />
+        </div>
+
+        <h4 style="margin:14px 0 6px;">Materials</h4>
+        <div id="mainsMaterials"></div>
+        <button type="button" id="addMainsMaterial">+ Add Materials Row</button>
+
+        <h4 style="margin:14px 0 6px;">Other Materials</h4>
+        <div id="mainsOtherMaterials"></div>
+        <button type="button" id="addMainsOtherMaterial">+ Add Other Materials Row</button>
+
+        <label>Total Footage</label>
+        <input name="Total Footage" />
+
+        <label>Type of Tap</label>
+        <input name="Type of Tap" />
+
+        <div class="check" style="margin-top:10px;">
+          <input type="checkbox" name="Odor Readily Detectable" />
+          Odor Readily Detectable
+        </div>
+
+        <label>Pipe Condition</label>
+        <input name="Pipe Condition" />
+
+        <label>Description of Work Completed</label>
+        <textarea name="Description of Work Completed" rows="4"></textarea>
+
+        <h4 style="margin:14px 0 6px;">Pipe Test Information</h4>
+        <div id="mainsPipeTests"></div>
+        <button type="button" id="addMainsPipeTest">+ Add Pipe Test Row</button>
+
+        <div class="row">
+          <div><label>Foreman</label><input name="Foreman" /></div>
+          <div><label>Fusion Tech</label><input name="Fusion Tech" /></div>
+        </div>
+        <div class="row">
+          <div><label>Steel Welder</label><input name="Steel Welder" /></div>
+          <div><label>Contract Labor Hours</label><input name="Contract Labor Hours" /></div>
+        </div>
+
+        <label>Date Completed</label>
+        <input type="date" name="Date Completed" />
+
+        <label>MTNG On-Site Personnel</label>
+        <input name="MTNG On-Site Personnel" />
+
+        <label>Accepted By</label>
+        <input name="Accepted By" />
+      </section>
+
+      <!-- ===================================================== -->
+      <!-- PAGE 3: RETIREMENT                                    -->
+      <!-- ===================================================== -->
+      <section id="sectionRetirement" style="display:none;">
+        <h3>Retirement</h3>
+
+        <h4 style="margin:14px 0 6px;">Section</h4>
+        <div id="retSection"></div>
+        <button type="button" id="addRetSection">+ Add Section Row</button>
+
+        <h4 style="margin:14px 0 6px;">Materials &amp; Structures Retired</h4>
+        <div id="retStructures"></div>
+        <button type="button" id="addRetStructures">+ Add Row</button>
+
+        <h4 style="margin:14px 0 6px;">New Materials Used for Retirement</h4>
+        <div id="retNewMaterials"></div>
+        <button type="button" id="addRetNewMaterials">+ Add Row</button>
+
+        <label>Description of Work Completed</label>
+        <textarea name="Description of Work Completed" rows="4"></textarea>
+
+        <h4 style="margin:14px 0 6px;">Pipe Test Information</h4>
+        <label>Date Tested</label>
+        <input type="date" name="Date Tested" />
+        <div class="check" style="margin-top:10px;">
+          <input type="checkbox" name="Soaped with no leaks" />
+          Soaped with no leaks
+        </div>
+
+        <div class="row">
+          <div><label>Foreman</label><input name="Foreman" /></div>
+          <div><label>Fusion Tech</label><input name="Fusion Tech" /></div>
+        </div>
+        <div class="row">
+          <div><label>Steel Welder</label><input name="Steel Welder" /></div>
+          <div><label>Contract Labor Hours</label><input name="Contract Labor Hours" /></div>
+        </div>
+
+        <label>Date Completed</label>
+        <input type="date" name="Date Completed" />
+
+        <label>MTNG On-Site Personnel</label>
+        <input name="MTNG On-Site Personnel" />
+
+        <label>Accepted By</label>
+        <input name="Accepted By" />
+      </section>
+
+      <!-- ===================================================== -->
+      <!-- PAGE 4: SERVICES                                      -->
+      <!-- ===================================================== -->
+      <section id="sectionServices" style="display:none;">
+        <h3>Services</h3>
+
+        <div class="card" style="margin-top:12px;">
+          <h4>Bore / Rock</h4>
+
+          <div class="check"><input type="checkbox" name="Bore" /> Bore</div>
+          <label>Bore Length (feet)</label><input name="Bore Length (feet)" />
+
+          <div class="check"><input type="checkbox" name="Directional Bore" /> Directional Bore</div>
+          <label>Directional Bore Length (feet)</label><input name="Directional Bore Length (feet)" />
+
+          <div class="check"><input type="checkbox" name="Rock Bore" /> Rock Bore</div>
+          <label>Rock Bore Length (feet)</label><input name="Rock Bore Length (feet)" />
+
+          <div class="check"><input type="checkbox" name="Rock 6x18" /> Rock 6x18</div>
+          <label>Rock 6x18 Length (feet)</label><input name="Rock 6x18 Length (feet)" />
+
+          <div class="check"><input type="checkbox" name="Rock 12x18" /> Rock 12x18</div>
+          <label>Rock 12x18 Length (feet)</label><input name="Rock 12x18 Length (feet)" />
+
+          <div class="check"><input type="checkbox" name="Rock 18x18" /> Rock 18x18</div>
+          <label>Rock 18x18 Length (feet)</label><input name="Rock 18x18 Length (feet)" />
+
+          <div class="check"><input type="checkbox" name="Rock 24x24" /> Rock 24x24</div>
+          <label>Rock 24x24 Length (feet)</label><input name="Rock 24x24 Length (feet)" />
+        </div>
+
+        <h4 style="margin:14px 0 6px;">Materials</h4>
+        <div id="svcMaterials"></div>
+        <button type="button" id="addSvcMaterial">+ Add Materials Row</button>
+
+        <h4 style="margin:14px 0 6px;">Other Materials</h4>
+        <div id="svcOtherMaterials"></div>
+        <button type="button" id="addSvcOtherMaterial">+ Add Other Materials Row</button>
+
+        <label>Total Length including riser (feet)</label>
+        <input name="Total Length including riser (feet)" />
+
+        <label>Excess Footage to be billed (feet)</label>
+        <input name="Excess Footage to be billed (feet)" />
+
+        <div class="check" style="margin-top:10px;">
+          <input type="checkbox" name="Odor Readily Detectable" />
+          Odor Readily Detectable
+        </div>
+
+        <label>Pipe Condition</label>
+        <input name="Pipe Condition" />
+
+        <label>Description of Work Completed</label>
+        <textarea name="Description of Work Completed" rows="4"></textarea>
+
+        <h4 style="margin:14px 0 6px;">Pipe Test Information</h4>
+        <div id="svcPipeTests"></div>
+        <button type="button" id="addSvcPipeTest">+ Add Pipe Test Row</button>
+
+        <div class="row">
+          <div><label>Foreman</label><input name="Foreman" /></div>
+          <div><label>Fusion Tech</label><input name="Fusion Tech" /></div>
+        </div>
+        <div class="row">
+          <div><label>Steel Welder</label><input name="Steel Welder" /></div>
+          <div><label>Contract Labor Hours</label><input name="Contract Labor Hours" /></div>
+        </div>
+
+        <label>Date Completed</label>
+        <input type="date" name="Date Completed" />
+
+        <label>MTNG On-Site Personnel</label>
+        <input name="MTNG On-Site Personnel" />
+
+        <label>Accepted By</label>
+        <input name="Accepted By" />
+      </section>
+
+      <!-- ===================================================== -->
+      <!-- SHARED: SKETCH + PHOTOS + SUBMIT (ALL PAGES)           -->
+      <!-- ===================================================== -->
       <h4 style="margin:14px 0 6px;">Sketch</h4>
       <canvas id="sketch" width="1200" height="700"></canvas>
       <div class="btnrow" style="margin-top:10px;">
@@ -194,7 +407,7 @@
       </div>
 
       <h4 style="margin:14px 0 6px;">Photos (max 5)</h4>
-      <input id="photos" type="file" accept="image/*" multiple/>
+      <input id="photos" type="file" accept="image/*" multiple />
 
       <div class="btnrow" style="margin-top:12px;">
         <button type="button" id="queueForSync">Queue for Sync</button>
@@ -206,17 +419,10 @@
 
     <div class="card" id="listCard" style="display:none;"></div>
   </main>
-<script>
-  document.getElementById("netStatus").textContent = "Status: Inline JS loaded ✅";
-</script>
-<script type="module" src="./app.js"></script>
+
+  <script>
+    document.getElementById("netStatus").textContent = "Status: Inline JS loaded ✅";
+  </script>
+  <script type="module" src="./app.js"></script>
 </body>
-
 </html>
-
-
-
-
-
-
-
