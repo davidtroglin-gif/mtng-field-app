@@ -174,7 +174,9 @@
       return String(s ?? "")
         .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     }
-
+    
+console.log("LIST URL:", `${API_URL}?action=list&key=${encodeURIComponent(key)}`);
+    
     async function fetchList(){
       setStatus("Loading list…");
       const url = `${API_URL}?action=list&key=${encodeURIComponent(key)}`;
