@@ -355,6 +355,34 @@
 
   // boot
   fetchList().catch(e => setStatus("Error: " + e.message));
+
+    async function ownerPost(op, submissionId, extra = {}) {
+  const url = new URL(API_URL);
+  url.searchParams.set("action", "owner");
+  url.searchParams.set("key", key);
+
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ op, submissionId, ...extra })
+  });
+
+  const txt = await res.text();
+  let json;
+  try { json = JSON.parse(txt); } catch { throw new Error("Owner update not JSON: " + txt.slice(0,120)); }
+  if (!json.ok) throw new Error(json.error || "Owner update failed");
+  return true;
+}
+
+function getOwnerName() {
+  const k = "mtng_owner_name";
+  let v = localStorage.getItem(k) || "";
+  if (!v) {
+    v = prompt("Printed By (name):") || "";
+    if (v) localStorage.setItem(k, v);
+  }
+  return v;
+}
 </script>
 
 </body>
