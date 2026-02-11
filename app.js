@@ -428,16 +428,29 @@ async function buildPayload() {
   const fields = gatherFields();
   const repeaters = gatherRepeaters();
 
-  const sketch = { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") };
+  // sketch
+  const sketch = {
+    filename: `sketch_${currentId}.png`,
+    dataUrl: canvas.toDataURL("image/png"),
+  };
 
- const photoInput = form.querySelector('input[type="file"][data-photos]');
+  // photos (max 5)
+  const photoInput = form.querySelector('input[type="file"][data-photos]');
   const files = Array.from(photoInput?.files || []).slice(0, 5);
-  
+
   debug(`Photos selected: ${files.length}`);
+
+  if (!files.length) {
+    debug("No photos were attached.");
+  }
+
   const photos = [];
   for (const f of files) {
     const dataUrl = await fileToCompressedDataUrl(f);
-    photos.push({ filename: f.name || `photo_${currentId}.jpg`, dataUrl });
+    photos.push({
+      filename: f.name || `photo_${currentId}.jpg`,
+      dataUrl,
+    });
   }
 
   return {
@@ -448,7 +461,7 @@ async function buildPayload() {
     fields,
     repeaters,
     sketch,
-    photos
+    photos,
   };
 }
 
@@ -549,4 +562,5 @@ document.getElementById("newForm")?.addEventListener("click", () => {
   formMeta.textContent = `New: ${currentId}`;
   updatePageSections();
 });
+
 
