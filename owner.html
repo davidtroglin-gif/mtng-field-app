@@ -144,6 +144,15 @@
   const statusEl = document.getElementById("status");
   const metaEl = document.getElementById("meta");
   const tbody = document.getElementById("tbody");
+      tbody.addEventListener("click", (e) => {
+    const tr = e.target.closest("tr");
+    if (!tr) return;
+  
+    const id = tr.dataset.id;
+    if (!id) return;
+  
+    openDetail(id);
+  });
 
   const qEl = document.getElementById("q");
   const pageTypeEl = document.getElementById("pageType");
@@ -181,6 +190,14 @@
     return String(s ?? "")
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
+  function attrEscape(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+    
 
   async function fetchJsonOrThrow(url, fetchOpts = {}) {
   console.log("Fetching:", url.toString());
@@ -260,27 +277,23 @@
   }
 
   function renderTable(){
-    const filtered = items.filter(matchesFilters);
-    metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
+  const filtered = items.filter(matchesFilters);
+  metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
 
-    tbody.innerHTML = filtered.map(it => `
-      <tr data-id="${escapeHtml(it.submissionId)}">
-        <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
-        <td>${escapeHtml(it.pageType)}</td>
-        <td>${escapeHtml(it.customerName || "")}</td>
-        <td>${escapeHtml(it.date || "")}</td>
-        <td>${escapeHtml(it.mloNumber || "")}</td>
-        <td>${escapeHtml(it.registerNumber || "")}</td>
-        <td>${escapeHtml(it.foreman || "")}</td>
-        <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
-        <td><code>${escapeHtml(it.submissionId)}</code></td>
-      </tr>
-    `).join("");
-
-    tbody.querySelectorAll("tr").forEach(tr => {
-      tr.addEventListener("click", () => openDetail(tr.getAttribute("data-id")));
-    });
-  }
+  tbody.innerHTML = filtered.map(it => `
+    <tr data-id="${attrEscape(it.submissionId)}">
+      <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
+      <td>${escapeHtml(it.pageType)}</td>
+      <td>${escapeHtml(it.customerName || "")}</td>
+      <td>${escapeHtml(it.date || "")}</td>
+      <td>${escapeHtml(it.mloNumber || "")}</td>
+      <td>${escapeHtml(it.registerNumber || "")}</td>
+      <td>${escapeHtml(it.foreman || "")}</td>
+      <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
+      <td><code>${escapeHtml(it.submissionId)}</code></td>
+    </tr>
+  `).join("");
+}
 
   async function openDetail(id){
     if (!key) {
