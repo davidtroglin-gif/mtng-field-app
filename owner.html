@@ -295,59 +295,70 @@
   `).join("");
 }
 
-  async function openDetail(id){
-    if (!key) {
-      setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
-      return;
-    }
+let openingDetail = false;
 
+async function openDetail(id){
+  if (!key) {
+    setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
+    return;
+  }
+
+  // Prevent re-entrancy (important because buttons call openDetail again)
+  if (openingDetail) return;
+  openingDetail = true;
+
+  try {
     selectedId = id;
     setStatus("Loading details…");
 
+    // ---- Wire buttons (use selectedId, not the original id param) ----
     document.getElementById("markPrinted").onclick = async () => {
-  try {
-    setStatus("Marking Printed…");
-    const by = getOwnerName();
-    await ownerPost("printed", selectedId, { by });
-    await fetchList();
-    await openDetail(selectedId);   // ✅ refresh detail view too
-    setStatus("Printed ✅");
-  } catch (e) { setStatus("Error: " + e.message); }
-};
+      try {
+        setStatus("Marking Printed…");
+        const by = getOwnerName();
+        await ownerPost("printed", selectedId, { by });
+        await fetchList();
+        await openDetail(selectedId);   // refresh detail view too
+        setStatus("Printed ✅");
+      } catch (e) { setStatus("Error: " + e.message); }
+    };
 
-document.getElementById("markSubmitted").onclick = async () => {
-  try {
-    setStatus("Marking Submitted…");
-    await ownerPost("submitted", selectedId);
-    await fetchList();
-    await openDetail(selectedId);   // ✅ refresh detail view too
-    setStatus("Submitted ✅");
-  } catch (e) { setStatus("Error: " + e.message); }
-};
+    document.getElementById("markSubmitted").onclick = async () => {
+      try {
+        setStatus("Marking Submitted…");
+        await ownerPost("submitted", selectedId);
+        await fetchList();
+        await openDetail(selectedId);
+        setStatus("Submitted ✅");
+      } catch (e) { setStatus("Error: " + e.message); }
+    };
 
-document.getElementById("addNote").onclick = async () => {
-  try {
-    const note = prompt("Notes:", "") || "";
-    if (!note.trim()) return;
-    setStatus("Saving Note…");
-    await ownerPost("note", selectedId, { note });
-    await fetchList();
-    await openDetail(selectedId);   // ✅ refresh detail view too
-    setStatus("Note saved ✅");
-  } catch (e) { setStatus("Error: " + e.message); }
-};
+    document.getElementById("addNote").onclick = async () => {
+      try {
+        const note = prompt("Notes:", "") || "";
+        if (!note.trim()) return;
+        setStatus("Saving Note…");
+        await ownerPost("note", selectedId, { note });
+        await fetchList();
+        await openDetail(selectedId);
+        setStatus("Note saved ✅");
+      } catch (e) { setStatus("Error: " + e.message); }
+    };
+
+    // ---- Fetch payload ----
     const url = new URL(API_URL);
     url.searchParams.set("action", "get");
-    url.searchParams.set("id", id);
+    url.searchParams.set("id", selectedId);
     url.searchParams.set("key", key);
+    url.searchParams.set("_", Date.now().toString()); // cache-bust
 
-    const json = await fetchJsonOrThrow(url);
+    const json = await fetchJsonOrThrow(url, { cache: "no-store" });
 
     const p = json.payload || {};
     const f = p.fields || {};
     const r = p.repeaters || {};
 
-    detailTitle.textContent = `${p.pageType || "Submission"} — ${id}`;
+    detailTitle.textContent = `${p.pageType || "Submission"} — ${selectedId}`;
     detailMeta.textContent = `Device: ${p.deviceId || ""} • Created: ${fmtDate(p.createdAt)} • Page: ${p.pageType || ""}`;
     detailCard.style.display = "block";
 
@@ -387,7 +398,7 @@ document.getElementById("addNote").onclick = async () => {
     openPrintBtn.onclick = () => {
       const pr = new URL(API_URL);
       pr.searchParams.set("action","print");
-      pr.searchParams.set("id", id);
+      pr.searchParams.set("id", selectedId);
       pr.searchParams.set("key", key);
       window.open(pr.toString(), "_blank");
     };
@@ -398,15 +409,10 @@ document.getElementById("addNote").onclick = async () => {
     };
 
     setStatus("Ready");
+  } finally {
+    openingDetail = false;
   }
-
-  document.getElementById("refresh").addEventListener("click", () => fetchList().catch(e => setStatus("Error: " + e.message)));
-  qEl.addEventListener("input", renderTable);
-  pageTypeEl.addEventListener("change", renderTable);
-  statusFilterEl.addEventListener("change", renderTable);
-
-  // boot
-  fetchList().catch(e => setStatus("Error: " + e.message));
+}
 
    async function ownerPost(op, submissionId, extra = {}) {
   const url = new URL(API_URL);
