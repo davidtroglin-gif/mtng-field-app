@@ -217,13 +217,7 @@
   return json;
 }
 
-    // Parse JSON safely
-    let json;
-    try {
-      json = JSON.parse(txt);
-    } catch (e) {
-      throw new Error(`Response was not valid JSON. HTTP ${res.status}. First 120 chars: ${txt.slice(0,120)}`);
-    }
+   
 
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}. ${json?.error || "Request failed"}`);
