@@ -430,8 +430,10 @@ async function buildPayload() {
 
   const sketch = { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") };
 
-  const photoInput = document.getElementById("photos");
-  const files = Array.from(photoInput.files || []).slice(0, 5);
+ const photoInput = form.querySelector('input[type="file"][data-photos]');
+  const files = Array.from(photoInput?.files || []).slice(0, 5);
+  
+  debug(`Photos selected: ${files.length}`);
   const photos = [];
   for (const f of files) {
     const dataUrl = await fileToCompressedDataUrl(f);
@@ -547,3 +549,4 @@ document.getElementById("newForm")?.addEventListener("click", () => {
   formMeta.textContent = `New: ${currentId}`;
   updatePageSections();
 });
+
