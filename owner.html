@@ -308,8 +308,9 @@
   try {
     setStatus("Marking Printed…");
     const by = getOwnerName();
-    await ownerPost("printed", id, { by });
+    await ownerPost("printed", selectedId, { by });
     await fetchList();
+    await openDetail(selectedId);   // ✅ refresh detail view too
     setStatus("Printed ✅");
   } catch (e) { setStatus("Error: " + e.message); }
 };
@@ -317,8 +318,9 @@
 document.getElementById("markSubmitted").onclick = async () => {
   try {
     setStatus("Marking Submitted…");
-    await ownerPost("submitted", id);
+    await ownerPost("submitted", selectedId);
     await fetchList();
+    await openDetail(selectedId);   // ✅ refresh detail view too
     setStatus("Submitted ✅");
   } catch (e) { setStatus("Error: " + e.message); }
 };
@@ -328,12 +330,12 @@ document.getElementById("addNote").onclick = async () => {
     const note = prompt("Notes:", "") || "";
     if (!note.trim()) return;
     setStatus("Saving Note…");
-    await ownerPost("note", id, { note });
+    await ownerPost("note", selectedId, { note });
     await fetchList();
+    await openDetail(selectedId);   // ✅ refresh detail view too
     setStatus("Note saved ✅");
   } catch (e) { setStatus("Error: " + e.message); }
 };
-
     const url = new URL(API_URL);
     url.searchParams.set("action", "get");
     url.searchParams.set("id", id);
