@@ -59,6 +59,16 @@
           </select>
         </div>
         <div>
+      <label>Filter</label>
+      <select id="paperworkFilter">
+        <option value="">All</option>
+        <option value="not-turned">Not Turned In</option>
+        <option value="turned">Turned In</option>
+        <option value="not-printed">Not Printed</option>
+        <option value="printed">Printed</option>
+      </select>
+    </div>
+        <div>
           <label>Actions</label>
           <button id="refresh" type="button">Refresh</button>
         </div>
@@ -149,6 +159,7 @@
     const qEl = document.getElementById("q");
     const pageTypeEl = document.getElementById("pageType");
     const statusFilterEl = document.getElementById("statusFilter");
+    const paperworkFilterEl = document.getElementById("paperworkFilter");
 
     const detailCard = document.getElementById("detailCard");
     const detailTitle = document.getElementById("detailTitle");
@@ -230,24 +241,32 @@
       renderTable();
     }
 
-    function matchesFilters(it){
-      const q = (qEl.value || "").trim().toLowerCase();
-      const pt = pageTypeEl.value || "";
-      const st = statusFilterEl.value || "";
+   function matchesFilters(it){
+  const q = (qEl.value || "").trim().toLowerCase();
+  const pt = pageTypeEl.value || "";
+  const st = statusFilterEl.value || "";
+  const pw = paperworkFilterEl.value || "";
 
-      if (pt && it.pageType !== pt) return false;
-      if (st && it.status !== st) return false;
+  if (pt && it.pageType !== pt) return false;
+  if (st && it.status !== st) return false;
 
-      if (!q) return true;
+  // ---- Paperwork filter ----
+  if (pw === "not-turned" && it.turnedInOn) return false;
+  if (pw === "turned" && !it.turnedInOn) return false;
+  if (pw === "not-printed" && it.printedAt) return false;
+  if (pw === "printed" && !it.printedAt) return false;
 
-      const hay = [
-        it.customerName, it.date, it.mloNumber, it.registerNumber,
-        it.foreman, it.acceptedBy, it.submissionId, it.pageType, it.status,
-        it.printedBy, it.notes
-      ].join(" ").toLowerCase();
+  if (!q) return true;
 
-      return hay.includes(q);
-    }
+  const hay = [
+    it.customerName, it.date, it.mloNumber, it.registerNumber,
+    it.foreman, it.acceptedBy, it.submissionId, it.pageType,
+    it.status, it.printedBy, it.notes
+  ].join(" ").toLowerCase();
+
+  return hay.includes(q);
+}
+
 
     function renderTable(){
       const filtered = items.filter(matchesFilters);
@@ -431,6 +450,7 @@
     qEl.addEventListener("input", renderTable);
     pageTypeEl.addEventListener("change", renderTable);
     statusFilterEl.addEventListener("change", renderTable);
+    paperworkFilterEl.addEventListener("change", renderTable);
 
     // boot
     fetchList().catch(e => setStatus("Error: " + e.message));
