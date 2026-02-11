@@ -11,6 +11,7 @@
     .card { background:white; border:1px solid #e5e5e5; border-radius:12px; padding:12px; margin-bottom:12px; }
     .row { display:flex; gap:10px; flex-wrap: wrap; }
     .row > * { flex: 1; min-width: 220px; }
+    label { display:block; font-weight:700; }
     input, select, button { width:100%; padding:10px; font-size:16px; margin-top:6px; box-sizing:border-box; }
     .small { font-size: 12px; color:#666; }
     table { width:100%; border-collapse: collapse; margin-top: 10px; }
@@ -20,8 +21,8 @@
     .pill { display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #ddd; font-size:12px; background:#fafafa; }
     .mediaGrid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
     img { max-width:100%; border-radius:12px; border:1px solid #ddd; background:white; }
-    .btnrow { display:flex; gap:10px; }
-    .btnrow button { flex:1; }
+    .btnrow { display:flex; gap:10px; flex-wrap: wrap; }
+    .btnrow button { flex:1; min-width: 160px; }
     code { font-size: 12px; }
     @media (max-width: 900px) { .mediaGrid { grid-template-columns: 1fr; } }
   </style>
@@ -59,7 +60,7 @@
         </div>
         <div>
           <label>Actions</label>
-          <button id="refresh">Refresh</button>
+          <button id="refresh" type="button">Refresh</button>
         </div>
       </div>
       <div class="small" id="meta"></div>
@@ -139,305 +140,300 @@
   </main>
 
   <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycby4A2Ci8N6IFLB7oORb7KKThB_jqW580SV0EvG67CZ1FFoudWgLttJ8PyOiqPMKXtDiEQ/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycby4A2Ci8N6IFLB7oORb7KKThB_jqW580SV0EvG67CZ1FFoudWgLttJ8PyOiqPMKXtDiEQ/exec";
 
-  const statusEl = document.getElementById("status");
-  const metaEl = document.getElementById("meta");
-  const tbody = document.getElementById("tbody");
-      tbody.addEventListener("click", (e) => {
-    const tr = e.target.closest("tr");
-    if (!tr) return;
-  
-    const id = tr.dataset.id;
-    if (!id) return;
-  
-    openDetail(id);
-  });
+    const statusEl = document.getElementById("status");
+    const metaEl = document.getElementById("meta");
+    const tbody = document.getElementById("tbody");
 
-  const qEl = document.getElementById("q");
-  const pageTypeEl = document.getElementById("pageType");
-  const statusFilterEl = document.getElementById("statusFilter");
+    const qEl = document.getElementById("q");
+    const pageTypeEl = document.getElementById("pageType");
+    const statusFilterEl = document.getElementById("statusFilter");
 
-  const detailCard = document.getElementById("detailCard");
-  const detailTitle = document.getElementById("detailTitle");
-  const detailMeta = document.getElementById("detailMeta");
-  const kv = document.getElementById("kv");
-  const rep = document.getElementById("rep");
-  const raw = document.getElementById("raw");
-  const openPrintBtn = document.getElementById("openPrint");
-  const closeDetailBtn = document.getElementById("closeDetail");
+    const detailCard = document.getElementById("detailCard");
+    const detailTitle = document.getElementById("detailTitle");
+    const detailMeta = document.getElementById("detailMeta");
+    const kv = document.getElementById("kv");
+    const rep = document.getElementById("rep");
+    const raw = document.getElementById("raw");
+    const openPrintBtn = document.getElementById("openPrint");
+    const closeDetailBtn = document.getElementById("closeDetail");
 
-  const sketchImg = document.getElementById("sketchImg");
-  const sketchLinks = document.getElementById("sketchLinks");
-  const photoLinks = document.getElementById("photoLinks");
-  const photoImgs = document.getElementById("photoImgs");
+    const sketchImg = document.getElementById("sketchImg");
+    const sketchLinks = document.getElementById("sketchLinks");
+    const photoLinks = document.getElementById("photoLinks");
+    const photoImgs = document.getElementById("photoImgs");
 
-  const key = new URLSearchParams(location.search).get("key") || "";
+    const key = new URLSearchParams(location.search).get("key") || "";
 
-  let items = [];
-  let selectedId = "";
+    let items = [];
+    let selectedId = "";
+    let openingDetail = false;
 
-  function setStatus(msg){ statusEl.textContent = "Status: " + msg; }
+    function setStatus(msg){ statusEl.textContent = "Status: " + msg; }
 
-  function fmtDate(v){
-    if (!v) return "";
-    const d = new Date(v);
-    if (isNaN(d.getTime())) return String(v);
-    return d.toLocaleString();
-  }
-
-  function escapeHtml(s){
-    return String(s ?? "")
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  }
-  function attrEscape(s) {
-    return String(s ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-    
-
-  async function fetchJsonOrThrow(url, fetchOpts = {}) {
-  console.log("Fetching:", url.toString());
-
-  const res = await fetch(url.toString(), {
-    cache: "no-store",
-    ...fetchOpts
-  });
-
-  const txt = await res.text();
-
-  let json;
-  try { json = JSON.parse(txt); }
-  catch { throw new Error(`Response was not valid JSON. HTTP ${res.status}, First 120: ${txt.slice(0,120)}`); }
-
-  if (!json.ok) throw new Error(json.error || "Request failed");
-  return json;
-}
-
-   
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}. ${json?.error || "Request failed"}`);
-    }
-    if (!json.ok) {
-      throw new Error(json.error || "Request failed");
-    }
-    return json;
-  }
-
- async function fetchList(){
-  if (!key) {
-    setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
-    return;
-  }
-
-  setStatus("Loading list…");
-
-  const url = new URL(API_URL);
-  url.searchParams.set("action", "list");
-  url.searchParams.set("key", key);
-
-  // ✅ A) cache-bust so Safari / SW / browser won't reuse old data
-  url.searchParams.set("_", Date.now().toString());
-
-  const json = await fetchJsonOrThrow(url, { cache: "no-store" });
-  items = json.items || [];
-
-  setStatus(`Loaded ${items.length}`);
-  metaEl.textContent = `Total: ${items.length}`;
-  renderTable();
-}
-
-
-  function matchesFilters(it){
-    const q = (qEl.value || "").trim().toLowerCase();
-    const pt = pageTypeEl.value || "";
-    const st = statusFilterEl.value || "";
-
-    if (pt && it.pageType !== pt) return false;
-    if (st && it.status !== st) return false;
-
-    if (!q) return true;
-
-    const hay = [
-      it.customerName, it.date, it.mloNumber, it.registerNumber,
-      it.foreman, it.acceptedBy, it.submissionId, it.pageType, it.status
-    ].join(" ").toLowerCase();
-
-    return hay.includes(q);
-  }
-
-  function renderTable(){
-  const filtered = items.filter(matchesFilters);
-  metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
-
-  tbody.innerHTML = filtered.map(it => `
-    <tr data-id="${attrEscape(it.submissionId)}">
-      <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
-      <td>${escapeHtml(it.pageType)}</td>
-      <td>${escapeHtml(it.customerName || "")}</td>
-      <td>${escapeHtml(it.date || "")}</td>
-      <td>${escapeHtml(it.mloNumber || "")}</td>
-      <td>${escapeHtml(it.registerNumber || "")}</td>
-      <td>${escapeHtml(it.foreman || "")}</td>
-      <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
-      <td><code>${escapeHtml(it.submissionId)}</code></td>
-    </tr>
-  `).join("");
-}
-
-let openingDetail = false;
-
-async function openDetail(id){
-  if (!key) {
-    setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
-    return;
-  }
-
-  // Prevent re-entrancy (important because buttons call openDetail again)
-  if (openingDetail) return;
-  openingDetail = true;
-
-  try {
-    selectedId = id;
-    setStatus("Loading details…");
-
-    // ---- Wire buttons (use selectedId, not the original id param) ----
-    document.getElementById("markPrinted").onclick = async () => {
-      try {
-        setStatus("Marking Printed…");
-        const by = getOwnerName();
-        await ownerPost("printed", selectedId, { by });
-        await fetchList();
-        await openDetail(selectedId);   // refresh detail view too
-        setStatus("Printed ✅");
-      } catch (e) { setStatus("Error: " + e.message); }
-    };
-
-    document.getElementById("markSubmitted").onclick = async () => {
-      try {
-        setStatus("Marking Submitted…");
-        await ownerPost("submitted", selectedId);
-        await fetchList();
-        await openDetail(selectedId);
-        setStatus("Submitted ✅");
-      } catch (e) { setStatus("Error: " + e.message); }
-    };
-
-    document.getElementById("addNote").onclick = async () => {
-      try {
-        const note = prompt("Notes:", "") || "";
-        if (!note.trim()) return;
-        setStatus("Saving Note…");
-        await ownerPost("note", selectedId, { note });
-        await fetchList();
-        await openDetail(selectedId);
-        setStatus("Note saved ✅");
-      } catch (e) { setStatus("Error: " + e.message); }
-    };
-
-    // ---- Fetch payload ----
-    const url = new URL(API_URL);
-    url.searchParams.set("action", "get");
-    url.searchParams.set("id", selectedId);
-    url.searchParams.set("key", key);
-    url.searchParams.set("_", Date.now().toString()); // cache-bust
-
-    const json = await fetchJsonOrThrow(url, { cache: "no-store" });
-
-    const p = json.payload || {};
-    const f = p.fields || {};
-    const r = p.repeaters || {};
-
-    detailTitle.textContent = `${p.pageType || "Submission"} — ${selectedId}`;
-    detailMeta.textContent = `Device: ${p.deviceId || ""} • Created: ${fmtDate(p.createdAt)} • Page: ${p.pageType || ""}`;
-    detailCard.style.display = "block";
-
-    const keyFields = [
-      "Customer Name","Customer Address","Customer City","Customer County","Customer Phone",
-      "Service Address (if different than customers)","Date","Contractor","MLO Number","Register Number",
-      "Foreman","Accepted By","MTNG On-Site Personnel","Date Completed"
-    ];
-
-    kv.innerHTML = keyFields.map(k => `
-      <div style="margin:6px 0;">
-        <div class="small">${escapeHtml(k)}</div>
-        <div style="font-weight:700;">${escapeHtml(f[k] || "")}</div>
-      </div>
-    `).join("");
-
-    rep.textContent = JSON.stringify(r, null, 2);
-    raw.textContent = JSON.stringify(p, null, 2);
-
-    const sketchUrl = p.media?.sketchUrl || "";
-    const photos = Array.isArray(p.media?.photoUrls) ? p.media.photoUrls : [];
-
-    sketchLinks.innerHTML = sketchUrl ? `<a href="${sketchUrl}" target="_blank">Open Sketch</a>` : "No sketch";
-    if (sketchUrl) {
-      sketchImg.src = sketchUrl;
-      sketchImg.style.display = "block";
-    } else {
-      sketchImg.style.display = "none";
+    function fmtDate(v){
+      if (!v) return "";
+      const d = new Date(v);
+      if (isNaN(d.getTime())) return String(v);
+      return d.toLocaleString();
     }
 
-    photoLinks.innerHTML = photos.length
-      ? photos.map((u,i)=>`<div><a href="${u}" target="_blank">Photo ${i+1}</a></div>`).join("")
-      : "No photos";
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
 
-    photoImgs.innerHTML = photos.map(u => `<img src="${u}" alt="Photo" style="margin-top:8px;" />`).join("");
+    function attrEscape(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
 
-    openPrintBtn.onclick = () => {
-      const pr = new URL(API_URL);
-      pr.searchParams.set("action","print");
-      pr.searchParams.set("id", selectedId);
-      pr.searchParams.set("key", key);
-      window.open(pr.toString(), "_blank");
-    };
+    async function fetchJsonOrThrow(url, fetchOpts = {}) {
+      console.log("Fetching:", url.toString());
 
-    closeDetailBtn.onclick = () => {
-      detailCard.style.display = "none";
-      selectedId = "";
-    };
+      const res = await fetch(url.toString(), {
+        cache: "no-store",
+        ...fetchOpts
+      });
 
-    setStatus("Ready");
-  } finally {
-    openingDetail = false;
-  }
-}
+      const txt = await res.text();
 
-   async function ownerPost(op, submissionId, extra = {}) {
-  const url = new URL(API_URL);
-  url.searchParams.set("action", "owner");
-  url.searchParams.set("key", key);
+      let json;
+      try { json = JSON.parse(txt); }
+      catch { throw new Error(`Response was not valid JSON. HTTP ${res.status}, First 160: ${txt.slice(0,160)}`); }
 
-  const res = await fetch(url.toString(), {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ key, op, submissionId, ...extra })
-  });
+      if (!json.ok) throw new Error(json.error || "Request failed");
+      return json;
+    }
 
-  const txt = await res.text();
-  let json;
-  try { json = JSON.parse(txt); }
-  catch { throw new Error("Owner update not JSON: " + txt.slice(0, 160)); }
+    async function fetchList(){
+      if (!key) {
+        setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
+        return;
+      }
 
-  if (!json.ok) throw new Error(json.error || "Owner update failed");
-  return json;
-}
+      setStatus("Loading list…");
 
-function getOwnerName() {
-  const k = "mtng_owner_name";
-  let v = localStorage.getItem(k) || "";
-  if (!v) {
-    v = prompt("Printed By (name):") || "";
-    if (v) localStorage.setItem(k, v);
-  }
-  return v;
-}
-</script>
+      const url = new URL(API_URL);
+      url.searchParams.set("action", "list");
+      url.searchParams.set("key", key);
+      url.searchParams.set("_", Date.now().toString()); // cache-bust
 
+      const json = await fetchJsonOrThrow(url, { cache: "no-store" });
+      items = json.items || [];
+
+      setStatus(`Loaded ${items.length}`);
+      renderTable();
+    }
+
+    function matchesFilters(it){
+      const q = (qEl.value || "").trim().toLowerCase();
+      const pt = pageTypeEl.value || "";
+      const st = statusFilterEl.value || "";
+
+      if (pt && it.pageType !== pt) return false;
+      if (st && it.status !== st) return false;
+
+      if (!q) return true;
+
+      const hay = [
+        it.customerName, it.date, it.mloNumber, it.registerNumber,
+        it.foreman, it.acceptedBy, it.submissionId, it.pageType, it.status,
+        it.printedBy, it.notes
+      ].join(" ").toLowerCase();
+
+      return hay.includes(q);
+    }
+
+    function renderTable(){
+      const filtered = items.filter(matchesFilters);
+      metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
+
+      tbody.innerHTML = filtered.map(it => `
+        <tr data-id="${attrEscape(it.submissionId)}">
+          <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
+          <td>${escapeHtml(it.pageType || "")}</td>
+          <td>${escapeHtml(it.customerName || "")}</td>
+          <td>${escapeHtml(it.date || "")}</td>
+          <td>${escapeHtml(it.mloNumber || "")}</td>
+          <td>${escapeHtml(it.registerNumber || "")}</td>
+          <td>${escapeHtml(it.foreman || "")}</td>
+          <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
+          <td><code>${escapeHtml(it.submissionId || "")}</code></td>
+          <td style="text-align:center;">${it.printedAt ? "✅" : ""}</td>
+          <td>${escapeHtml(it.printedBy || "")}</td>
+          <td style="text-align:center;">${it.turnedInOn ? "✅" : ""}</td>
+          <td>${escapeHtml((it.notes || "").slice(0, 40))}</td>
+        </tr>
+      `).join("");
+    }
+
+    // ✅ Row clicks (event delegation)
+    tbody.addEventListener("click", (e) => {
+      const tr = e.target.closest("tr");
+      if (!tr) return;
+      const id = tr.dataset.id;
+      if (!id) return;
+      openDetail(id);
+    });
+
+    async function ownerPost(op, submissionId, extra = {}) {
+      const url = new URL(API_URL);
+      url.searchParams.set("action", "owner");
+      url.searchParams.set("key", key);
+      url.searchParams.set("_", Date.now().toString()); // cache-bust
+
+      const res = await fetch(url.toString(), {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ key, op, submissionId, ...extra })
+      });
+
+      const txt = await res.text();
+      let json;
+      try { json = JSON.parse(txt); }
+      catch { throw new Error("Owner update not JSON: " + txt.slice(0, 160)); }
+
+      if (!json.ok) throw new Error(json.error || "Owner update failed");
+      return json;
+    }
+
+    function getOwnerName() {
+      const k = "mtng_owner_name";
+      let v = localStorage.getItem(k) || "";
+      if (!v) {
+        v = prompt("Printed By (name):") || "";
+        if (v) localStorage.setItem(k, v);
+      }
+      return v;
+    }
+
+    async function openDetail(id){
+      if (!key) {
+        setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
+        return;
+      }
+
+      if (openingDetail) return;
+      openingDetail = true;
+
+      try {
+        selectedId = id;
+        setStatus("Loading details…");
+
+        document.getElementById("markPrinted").onclick = async () => {
+          try {
+            setStatus("Marking Printed…");
+            const by = getOwnerName();
+            await ownerPost("printed", selectedId, { by });
+            await fetchList();
+            await openDetail(selectedId);
+            setStatus("Printed ✅");
+          } catch (e) { setStatus("Error: " + e.message); }
+        };
+
+        document.getElementById("markSubmitted").onclick = async () => {
+          try {
+            setStatus("Marking Submitted…");
+            await ownerPost("submitted", selectedId);
+            await fetchList();
+            await openDetail(selectedId);
+            setStatus("Submitted ✅");
+          } catch (e) { setStatus("Error: " + e.message); }
+        };
+
+        document.getElementById("addNote").onclick = async () => {
+          try {
+            const note = prompt("Notes:", "") || "";
+            if (!note.trim()) return;
+            setStatus("Saving Note…");
+            await ownerPost("note", selectedId, { note });
+            await fetchList();
+            await openDetail(selectedId);
+            setStatus("Note saved ✅");
+          } catch (e) { setStatus("Error: " + e.message); }
+        };
+
+        const url = new URL(API_URL);
+        url.searchParams.set("action", "get");
+        url.searchParams.set("id", selectedId);
+        url.searchParams.set("key", key);
+        url.searchParams.set("_", Date.now().toString());
+
+        const json = await fetchJsonOrThrow(url, { cache: "no-store" });
+
+        const p = json.payload || {};
+        const f = p.fields || {};
+        const r = p.repeaters || {};
+
+        detailTitle.textContent = `${p.pageType || "Submission"} — ${selectedId}`;
+        detailMeta.textContent = `Device: ${p.deviceId || ""} • Created: ${fmtDate(p.createdAt)} • Page: ${p.pageType || ""}`;
+        detailCard.style.display = "block";
+
+        const keyFields = [
+          "Customer Name","Customer Address","Customer City","Customer County","Customer Phone",
+          "Service Address (if different than customers)","Date","Contractor","MLO Number","Register Number",
+          "Foreman","Accepted By","MTNG On-Site Personnel","Date Completed"
+        ];
+
+        kv.innerHTML = keyFields.map(k => `
+          <div style="margin:6px 0;">
+            <div class="small">${escapeHtml(k)}</div>
+            <div style="font-weight:700;">${escapeHtml(f[k] || "")}</div>
+          </div>
+        `).join("");
+
+        rep.textContent = JSON.stringify(r, null, 2);
+        raw.textContent = JSON.stringify(p, null, 2);
+
+        const sketchUrl = p.media?.sketchUrl || "";
+        const photos = Array.isArray(p.media?.photoUrls) ? p.media.photoUrls : [];
+
+        sketchLinks.innerHTML = sketchUrl ? `<a href="${sketchUrl}" target="_blank">Open Sketch</a>` : "No sketch";
+        if (sketchUrl) {
+          sketchImg.src = sketchUrl;
+          sketchImg.style.display = "block";
+        } else {
+          sketchImg.style.display = "none";
+        }
+
+        photoLinks.innerHTML = photos.length
+          ? photos.map((u,i)=>`<div><a href="${u}" target="_blank">Photo ${i+1}</a></div>`).join("")
+          : "No photos";
+
+        photoImgs.innerHTML = photos.map(u => `<img src="${u}" alt="Photo" style="margin-top:8px;" />`).join("");
+
+        openPrintBtn.onclick = () => {
+          const pr = new URL(API_URL);
+          pr.searchParams.set("action","print");
+          pr.searchParams.set("id", selectedId);
+          pr.searchParams.set("key", key);
+          window.open(pr.toString(), "_blank");
+        };
+
+        closeDetailBtn.onclick = () => {
+          detailCard.style.display = "none";
+          selectedId = "";
+        };
+
+        setStatus("Ready");
+      } finally {
+        openingDetail = false;
+      }
+    }
+
+    // UI hooks
+    document.getElementById("refresh").addEventListener("click", () => fetchList().catch(e => setStatus("Error: " + e.message)));
+    qEl.addEventListener("input", renderTable);
+    pageTypeEl.addEventListener("change", renderTable);
+    statusFilterEl.addEventListener("change", renderTable);
+
+    // boot
+    fetchList().catch(e => setStatus("Error: " + e.message));
+  </script>
 </body>
 </html>
