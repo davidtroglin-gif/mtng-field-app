@@ -182,20 +182,23 @@
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
-  async function fetchJsonOrThrow(url) {
-    // Bust caches + avoid Safari weirdness
-    url.searchParams.set("_", String(Date.now()));
+  async function fetchJsonOrThrow(url, fetchOpts = {}) {
+  console.log("Fetching:", url.toString());
 
-    console.log("Fetching:", url.toString());
+  const res = await fetch(url.toString(), {
+    cache: "no-store",
+    ...fetchOpts
+  });
 
-    const res = await fetch(url.toString(), { cache: "no-store" });
-    const txt = await res.text(); // ALWAYS read text first
+  const txt = await res.text();
 
-    // If Apps Script returns HTML (login page, error page), show it
-    const looksLikeHtml = txt.trim().startsWith("<!doctype") || txt.trim().startsWith("<html");
-    if (looksLikeHtml) {
-      throw new Error(`Server returned HTML (not JSON). HTTP ${res.status}. First 120 chars: ${txt.slice(0,120)}`);
-    }
+  let json;
+  try { json = JSON.parse(txt); }
+  catch { throw new Error(`Response was not valid JSON. HTTP ${res.status}, First 120: ${txt.slice(0,120)}`); }
+
+  if (!json.ok) throw new Error(json.error || "Request failed");
+  return json;
+}
 
     // Parse JSON safely
     let json;
