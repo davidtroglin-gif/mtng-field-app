@@ -181,7 +181,10 @@
     let selectedId = "";
     let openingDetail = false;
 
-    function setStatus(msg){ statusEl.textContent = "Status: " + msg; }
+    function setStatus(msg){
+  const el = document.getElementById("status");
+  if (el) el.textContent = "Status: " + msg;
+}
 
     function fmtDate(v){
       if (!v) return "";
