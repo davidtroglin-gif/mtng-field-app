@@ -152,7 +152,7 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycby4A2Ci8N6IFLB7oORb7KKThB_jqW580SV0EvG67CZ1FFoudWgLttJ8PyOiqPMKXtDiEQ/exec";
 
-    const statusEl = document.getElementById("status");
+    //const statusEl = document.getElementById("status");
     const metaEl = document.getElementById("meta");
     const tbody = document.getElementById("tbody");
 
@@ -244,11 +244,11 @@
    function matchesFilters(it){
   const q = (qEl.value || "").trim().toLowerCase();
   const pt = pageTypeEl.value || "";
-  const st = statusFilterEl.value || "";
+  //const st = statusFilterEl.value || "";
   const pw = paperworkFilterEl.value || "";
 
   if (pt && it.pageType !== pt) return false;
-  if (st && it.status !== st) return false;
+  //if (st && it.status !== st) return false;
 
   // ---- Paperwork filter ----
   if (pw === "not-turned" && it.turnedInOn) return false;
@@ -449,7 +449,7 @@
     document.getElementById("refresh").addEventListener("click", () => fetchList().catch(e => setStatus("Error: " + e.message)));
     qEl.addEventListener("input", renderTable);
     pageTypeEl.addEventListener("change", renderTable);
-    statusFilterEl.addEventListener("change", renderTable);
+    //statusFilterEl.addEventListener("change", renderTable);
     paperworkFilterEl.addEventListener("change", renderTable);
 
     // boot
