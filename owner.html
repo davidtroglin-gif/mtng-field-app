@@ -412,7 +412,7 @@
         kv.innerHTML = keyFields.map(k => `
           <div style="margin:6px 0;">
             <div class="small">${escapeHtml(k)}</div>
-            <div style="font-weight:700;">${escapeHtml(f[k] || "")}</div>
+            <div style="font-weight:700;">${escapeHtml(getF(f, k) || "")}</div>
           </div>
         `).join("");
 
@@ -453,6 +453,16 @@
       } finally {
         openingDetail = false;
       }
+    }
+
+    function getF(f, k) {
+      if (!f) return "";
+      if (f[k] !== undefined) return f[k];
+      if (f[k + " "] !== undefined) return f[k + " "];
+      const t = String(k).trim();
+      if (f[t] !== undefined) return f[t];
+      if (f[t + " "] !== undefined) return f[t + " "];
+      return "";
     }
 
     // UI hooks
