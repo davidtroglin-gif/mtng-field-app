@@ -334,50 +334,49 @@ if (retNewMaterialsEl) addRetNewMaterialsRow();
 // ---- Gather payload ----
 function gatherFields() {
   const fields = {};
-  const fd = new FormData(form);
-  for (const [k, v] of fd.entries()) fields[k] = v;
 
-  // Explicit checkboxes (unchecked checkboxes won't appear in FormData)
-  fields["Odor Readily Detectable"] =
-    !!form.querySelector('input[name="Odor Readily Detectable"]')?.checked;
+  // Always include shared customer section
+  const customerSection = document.getElementById("sectionCustomer");
 
-  // Leak Occurred On checkboxes
-  const occurred = [
-    "Leak Occurred on - Farm Tap",
-    "Leak Occurred on - Fitting",
-    "Leak Occurred on - Meter",
-    "Leak Occurred on - Pipe",
-    "Leak Occurred on - Regulator",
-    "Leak Occurred on - Tap Connection",
-    "Leak Occurred on - Valve",
-  ];
-  occurred.forEach(name => {
-    const el = form.querySelector(`input[name="${name}"]`);
-    fields[name] = !!el?.checked;
+  // Include ONLY the active page section (Leak/Mains/Retirement/Services)
+  const pageType = (document.getElementById("pageType")?.value || "").trim();
+  const pageSectionMap = {
+    "Leak Repair": "sectionLeakRepair",
+    "Mains": "sectionMains",
+    "Retirement": "sectionRetirement",
+    "Services": "sectionServices",
+  };
+  const activeSection = document.getElementById(pageSectionMap[pageType] || "");
+
+  // Gather from: customer + active page section
+  const roots = [customerSection, activeSection].filter(Boolean);
+
+  roots.forEach(root => {
+    // inputs, textareas, selects with a name
+    root.querySelectorAll("input[name], textarea[name], select[name]").forEach(el => {
+      // ignore hidden inputs/sections just in case
+      if (!isVisible(el)) return;
+
+      const key = normKey(el.name);
+      if (!key) return;
+
+      let value = "";
+
+      if (el.type === "checkbox") {
+        value = !!el.checked; // boolean
+      } else if (el.type === "radio") {
+        if (!el.checked) return;
+        value = normVal(el.value);
+      } else {
+        value = normVal(el.value);
+      }
+
+      fields[key] = value;
+    });
   });
-
-  // Bore/Rock checkboxes used on Mains/Services
-  const boreChecks = [
-    "Bore",
-    "Directional Bore",
-    "Rock Bore",
-    "Rock 6x18",
-    "Rock 12x18",
-    "Rock 18x18",
-    "Rock 24x24",
-  ];
-  boreChecks.forEach(name => {
-    const el = form.querySelector(`input[name="${name}"]`);
-    if (el) fields[name] = !!el.checked;
-  });
-
-  // Retirement checkbox
-  const soapRet = form.querySelector('input[name="Soaped with no leaks"]');
-  if (soapRet) fields["Soaped with no leaks"] = !!soapRet.checked;
 
   return fields;
 }
-
 function gatherRepeaters() {
   return {
     // Leak Repair
@@ -562,5 +561,24 @@ document.getElementById("newForm")?.addEventListener("click", () => {
   formMeta.textContent = `New: ${currentId}`;
   updatePageSections();
 });
+
+function normKey(k) {
+  return String(k ?? "")
+    .replace(/\s+/g, " ")   // collapse multi-spaces
+    .trim();               // remove leading/trailing spaces
+}
+
+function normVal(v) {
+  if (v === null || v === undefined) return "";
+  // keep booleans as-is
+  if (typeof v === "boolean") return v;
+  return String(v).trim();
+}
+
+function isVisible(el) {
+  // visible = not display:none and not within a hidden parent
+  return !!(el && el.offsetParent !== null);
+}
+
 
 
