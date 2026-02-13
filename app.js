@@ -378,33 +378,59 @@ function gatherFields() {
   return fields;
 }
 function gatherRepeaters() {
-  const pageType = (document.getElementById("pageType")?.value || "").trim();
+  const repeaters = {};
 
-  // helper so missing containers don't throw
-  const safeRows = (el) => (el ? readRows(el) : []);
+  // Grab every input/select/textarea that belongs to a repeater
+  const els = Array.from(document.querySelectorAll("[data-r][data-k]"));
 
-  // Start with a stable schema (always present keys)
-  const rep = {
-    // Leak Repair
-    pipeMaterials: [],
-    otherMaterials: [],
-    pipeTests: [],
+  els.forEach(el => {
+    if (!isVisible(el)) return;
 
-    // Mains
-    mainsMaterials: [],
-    mainsOtherMaterials: [],
-    mainsPipeTests: [],
+    const r = normKey(el.dataset.r);   // repeater name
+    const k = normKey(el.dataset.k);   // column name
 
-    // Services
-    svcMaterials: [],
-    svcOtherMaterials: [],
-    svcPipeTests: [],
+    if (!r || !k) return;
 
-    // Retirement
-    retSection: [],
-    retStructures: [],
-    retNewMaterials: [],
-  };
+    // Find the row container (the wrapper your makeRow() creates)
+    const rowEl = el.closest("[data-row]") || el.closest(".rowItem") || el.parentElement;
+    if (!rowEl) return;
+
+    // Assign row index
+    if (!rowEl.dataset.rowId) {
+      rowEl.dataset.rowId = crypto.randomUUID();
+    }
+
+    const rowId = rowEl.dataset.rowId;
+
+    repeaters[r] = repeaters[r] || {};
+
+    repeaters[r][rowId] = repeaters[r][rowId] || {};
+
+    let value;
+    if (el.type === "checkbox") {
+      value = !!el.checked;
+    } else if (el.type === "radio") {
+      if (!el.checked) return;
+      value = normVal(el.value);
+    } else {
+      value = normVal(el.value);
+    }
+
+    repeaters[r][rowId][k] = value;
+  });
+
+  // Convert rowId maps → arrays
+  const final = {};
+  Object.keys(repeaters).forEach(r => {
+    final[r] = Object.values(repeaters[r]).filter(obj =>
+      Object.values(obj).some(v =>
+        typeof v === "boolean" ? v === true : String(v ?? "").trim() !== ""
+      )
+    );
+  });
+
+  return final;
+}
 
   // Only populate the active page repeaters
   if (pageType === "Leak Repair") {
@@ -683,6 +709,7 @@ function isVisible(el) {
   // visible = not display:none and not within a hidden parent
   return !!(el && el.offsetParent !== null);
 }
+
 
 
 
