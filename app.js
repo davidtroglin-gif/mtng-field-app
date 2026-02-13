@@ -378,28 +378,132 @@ function gatherFields() {
   return fields;
 }
 function gatherRepeaters() {
-  return {
+  const pageType = (document.getElementById("pageType")?.value || "").trim();
+
+  // helper so missing containers don't throw
+  const safeRows = (el) => (el ? readRows(el) : []);
+
+  // Start with a stable schema (always present keys)
+  const rep = {
     // Leak Repair
-    pipeMaterials: readRows(pipeMaterialsEl),
-    otherMaterials: readRows(otherMaterialsEl),
-    pipeTests: readRows(pipeTestsEl),
+    pipeMaterials: [],
+    otherMaterials: [],
+    pipeTests: [],
 
     // Mains
-    mainsMaterials: readRows(mainsMaterialsEl),
-    mainsOtherMaterials: readRows(mainsOtherMaterialsEl),
-    mainsPipeTests: readRows(mainsPipeTestsEl),
+    mainsMaterials: [],
+    mainsOtherMaterials: [],
+    mainsPipeTests: [],
 
     // Services
-    svcMaterials: readRows(svcMaterialsEl),
-    svcOtherMaterials: readRows(svcOtherMaterialsEl),
-    svcPipeTests: readRows(svcPipeTestsEl),
+    svcMaterials: [],
+    svcOtherMaterials: [],
+    svcPipeTests: [],
 
     // Retirement
-    retSection: readRows(retSectionEl),
-    retStructures: readRows(retStructuresEl),
-    retNewMaterials: readRows(retNewMaterialsEl),
+    retSection: [],
+    retStructures: [],
+    retNewMaterials: [],
   };
+
+  // Only populate the active page repeaters
+  if (pageType === "Leak Repair") {
+    rep.pipeMaterials = safeRows(pipeMaterialsEl);
+    rep.otherMaterials = safeRows(otherMaterialsEl);
+    rep.pipeTests = safeRows(pipeTestsEl);
+  } else if (pageType === "Mains") {
+    rep.mainsMaterials = safeRows(mainsMaterialsEl);
+    rep.mainsOtherMaterials = safeRows(mainsOtherMaterialsEl);
+    rep.mainsPipeTests = safeRows(mainsPipeTestsEl);
+  } else if (pageType === "Services") {
+    rep.svcMaterials = safeRows(svcMaterialsEl);
+    rep.svcOtherMaterials = safeRows(svcOtherMaterialsEl);
+    rep.svcPipeTests = safeRows(svcPipeTestsEl);
+  } else if (pageType === "Retirement") {
+    rep.retSection = safeRows(retSectionEl);
+    rep.retStructures = safeRows(retStructuresEl);
+    rep.retNewMaterials = safeRows(retNewMaterialsEl);
+  }
+
+  return rep;
 }
+
+/**
+ * Reads a repeater container and returns an array of row objects.
+ * Assumptions:
+ * - Each row is a wrapper element (div, tr, etc.)
+ * - Inside each row are inputs/selects/textareas with a name OR data-col OR placeholder/label
+ * You may need to tweak `getColNameFromEl_` to match your repeater row markup.
+ */
+function readRows(containerEl) {
+  if (!containerEl) return [];
+
+  // If the section is hidden, don't accidentally read stale DOM
+  if (!isVisible(containerEl)) return [];
+
+  // Try common row wrappers. Adjust if your markup differs.
+  const rowEls = Array.from(containerEl.querySelectorAll("[data-row], .rowItem, .repRow, tr, .row"));
+  const rows = [];
+
+  for (const rowEl of rowEls) {
+    // skip nested "row" layout divs that aren’t actual repeater items if needed
+    // (If this ever skips real rows, tell me what your repeater HTML looks like and I’ll tune it.)
+    const cells = Array.from(rowEl.querySelectorAll("input, select, textarea")).filter(el => {
+      if (!el) return false;
+      if (!isVisible(el)) return false;
+      // ignore buttons / file inputs inside repeaters
+      if (el.tagName === "INPUT" && (el.type === "button" || el.type === "submit" || el.type === "file")) return false;
+      return true;
+    });
+
+    if (!cells.length) continue;
+
+    const obj = {};
+    for (const el of cells) {
+      const col = normKey(getColNameFromEl_(el));
+      if (!col) continue;
+
+      let v;
+      if (el.type === "checkbox") {
+        v = !!el.checked;
+      } else if (el.type === "radio") {
+        if (!el.checked) continue;
+        v = normVal(el.value);
+      } else {
+        v = normVal(el.value);
+      }
+
+      obj[col] = v;
+    }
+
+    // Remove truly empty rows
+    const hasAny = Object.values(obj).some(v => {
+      if (typeof v === "boolean") return v === true; // a checked box counts
+      return String(v ?? "").trim() !== "";
+    });
+
+    if (hasAny) rows.push(obj);
+  }
+
+  return rows;
+}
+
+function getColNameFromEl_(el) {
+  // Best options first
+  if (el.name) return el.name;
+  if (el.dataset && el.dataset.col) return el.dataset.col;
+
+  // Fallback: try aria-label or placeholder
+  if (el.getAttribute("aria-label")) return el.getAttribute("aria-label");
+  if (el.placeholder) return el.placeholder;
+
+  // Last resort: if there's a label immediately before it
+  const prev = el.previousElementSibling;
+  if (prev && prev.tagName === "LABEL") return prev.textContent || "";
+
+  return "";
+}
+
 
 // ---- Photos compression ----
 async function loadImg(file) {
@@ -579,6 +683,7 @@ function isVisible(el) {
   // visible = not display:none and not within a hidden parent
   return !!(el && el.offsetParent !== null);
 }
+
 
 
 
