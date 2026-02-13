@@ -6,7 +6,7 @@
   <title>MTNG Owner Dashboard</title>
   <style>
     body { font-family: system-ui, Arial, sans-serif; margin: 0; background:#f6f7f8; }
-    header { position: sticky; top:0; background:white; padding:12px 14px; border-bottom:1px solid #ddd; }
+    header { position: sticky; top:0; background:white; padding:12px 14px; border-bottom:1px solid #ddd; z-index:10; }
     main { padding: 14px; max-width: 1100px; margin: 0 auto; }
     .card { background:white; border:1px solid #e5e5e5; border-radius:12px; padding:12px; margin-bottom:12px; }
     .row { display:flex; gap:10px; flex-wrap: wrap; }
@@ -24,14 +24,11 @@
     .btnrow { display:flex; gap:10px; flex-wrap: wrap; }
     .btnrow button { flex:1; min-width: 160px; }
     code { font-size: 12px; }
-    @media (max-width: 900px) { .mediaGrid { grid-template-columns: 1fr; } 
-    .cb{
-  font-size: 12px;
-  font-weight: 700;
-  display:inline-block;
-  width: 14px;
-  text-align:center;
-}  
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    @media (max-width: 900px) {
+      .mediaGrid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -51,30 +48,24 @@
           <label>Page Type</label>
           <select id="pageType">
             <option value="">All</option>
-            <option>Leak Repair</option>
-            <option>Mains</option>
-            <option>Retirement</option>
-            <option>Services</option>
+            <option value="Leak Repair">Leak Repair</option>
+            <option value="Mains">Mains</option>
+            <option value="Retirement">Retirement</option>
+            <option value="Services">Services</option>
           </select>
         </div>
-        <!--div>
-          <label>Status</label>
-          <select id="statusFilter">
-            <option value="">All</option>
-            <option>RECEIVED</option>
-            <option>UPDATED</option>
-          </select>
-      </div-->
+
         <div>
-      <label>Filter</label>
-      <select id="paperworkFilter">
-        <option value="">All</option>
-        <option value="not-turned">Not Turned In</option>
-        <option value="turned">Turned In</option>
-        <option value="not-printed">Not Printed</option>
-        <option value="printed">Printed</option>
-      </select>
-    </div>
+          <label>Filter</label>
+          <select id="paperworkFilter">
+            <option value="">All</option>
+            <option value="not-turned">Not Turned In</option>
+            <option value="turned">Turned In</option>
+            <option value="not-printed">Not Printed</option>
+            <option value="printed">Printed</option>
+          </select>
+        </div>
+
         <div>
           <label>Actions</label>
           <button id="refresh" type="button">Refresh</button>
@@ -131,7 +122,7 @@
         </div>
         <div class="card" style="margin:0;">
           <div style="font-weight:700; margin-bottom:6px;">Repeaters (quick view)</div>
-          <div class="small">We’ll format these nicely in the print layout step.</div>
+          <div class="small">Print layout formats these; this is just raw reference.</div>
           <pre id="rep" style="white-space:pre-wrap; font-size:12px; margin:8px 0 0;"></pre>
         </div>
       </div>
@@ -165,7 +156,6 @@
 
     const qEl = document.getElementById("q");
     const pageTypeEl = document.getElementById("pageType");
-    //const statusFilterEl = document.getElementById("statusFilter");
     const paperworkFilterEl = document.getElementById("paperworkFilter");
 
     const detailCard = document.getElementById("detailCard");
@@ -189,9 +179,8 @@
     let openingDetail = false;
 
     function setStatus(msg){
-  const el = document.getElementById("status");
-  if (el) el.textContent = "Status: " + msg;
-}
+      statusEl.textContent = "Status: " + msg;
+    }
 
     function fmtDate(v){
       if (!v) return "";
@@ -213,19 +202,50 @@
         .replace(/>/g, "&gt;");
     }
 
+    function normKey(k){
+      return String(k ?? "").replace(/\s+/g, " ").trim();
+    }
+
+    // Aliases let owner dashboard show the same value even if the form label changed
+    const FIELD_ALIASES = {
+      "Date Completed": ["Date Completed", "Date Repair Completed", "Date Completed (Repair)"],
+      "MTNG On-Site Personnel": ["MTNG On-Site Personnel", "MTNG On Site Personnel", "MTNG On-Site Personell", "MTNG On-Site Personnel "],
+      "Foreman": ["Foreman"],
+      "Accepted By": ["Accepted By", "Accepted by"],
+      "Customer Name": ["Customer Name", "Customer"],
+      "Register Number": ["Register Number", "Register #"],
+      "MLO Number": ["MLO Number", "MLO #"],
+      "Customer Address": ["Customer Address", "Address"],
+      "Customer City": ["Customer City", "City"],
+      "Customer County": ["Customer County", "County"],
+      "Customer Phone": ["Customer Phone", "Phone"],
+      "Service Address (if different than customers)": ["Service Address (if different than customers)", "Service Address"],
+      "Date": ["Date"],
+      "Contractor": ["Contractor"],
+    };
+
+    function getF(fields, label){
+      if (!fields) return "";
+      const want = FIELD_ALIASES[label] || [label];
+
+      // Build a normalized lookup once per call (fields are small enough; OK)
+      const map = {};
+      Object.keys(fields).forEach(k => { map[normKey(k)] = fields[k]; });
+
+      for (const candidate of want) {
+        const v = map[normKey(candidate)];
+        if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+      }
+      return "";
+    }
+
     async function fetchJsonOrThrow(url, fetchOpts = {}) {
-      console.log("Fetching:", url.toString());
-
-      const res = await fetch(url.toString(), {
-        cache: "no-store",
-        ...fetchOpts
-      });
-
+      const res = await fetch(url.toString(), { cache: "no-store", ...fetchOpts });
       const txt = await res.text();
 
       let json;
       try { json = JSON.parse(txt); }
-      catch { throw new Error(`Response was not valid JSON. HTTP ${res.status}, First 160: ${txt.slice(0,160)}`); }
+      catch { throw new Error(`Not valid JSON. HTTP ${res.status}. First 160: ${txt.slice(0,160)}`); }
 
       if (!json.ok) throw new Error(json.error || "Request failed");
       return json;
@@ -251,32 +271,32 @@
       renderTable();
     }
 
-   function matchesFilters(it){
-  const q = (qEl.value || "").trim().toLowerCase();
-  const pt = pageTypeEl.value || "";
-  //const st = statusFilterEl.value || "";
-  const pw = paperworkFilterEl.value || "";
+    function samePageType(a, b){
+      return String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
+    }
 
-  if (pt && it.pageType !== pt) return false;
-  //if (st && it.status !== st) return false;
+    function matchesFilters(it){
+      const q = (qEl.value || "").trim().toLowerCase();
+      const pt = pageTypeEl.value || "";
+      const pw = paperworkFilterEl.value || "";
 
-  // ---- Paperwork filter ----
-  if (pw === "not-turned" && it.turnedInOn) return false;
-  if (pw === "turned" && !it.turnedInOn) return false;
-  if (pw === "not-printed" && it.printedAt) return false;
-  if (pw === "printed" && !it.printedAt) return false;
+      if (pt && !samePageType(it.pageType, pt)) return false;
 
-  if (!q) return true;
+      if (pw === "not-turned" && it.turnedInOn) return false;
+      if (pw === "turned" && !it.turnedInOn) return false;
+      if (pw === "not-printed" && it.printedAt) return false;
+      if (pw === "printed" && !it.printedAt) return false;
 
-  const hay = [
-    it.customerName, it.date, it.mloNumber, it.registerNumber,
-    it.foreman, it.acceptedBy, it.submissionId, it.pageType,
-    it.status, it.printedBy, it.notes
-  ].join(" ").toLowerCase();
+      if (!q) return true;
 
-  return hay.includes(q);
-}
+      const hay = [
+        it.customerName, it.date, it.mloNumber, it.registerNumber,
+        it.foreman, it.acceptedBy, it.mtngOnSitePersonnel, it.dateCompleted,
+        it.submissionId, it.pageType, it.status, it.printedBy, it.notes
+      ].join(" ").toLowerCase();
 
+      return hay.includes(q);
+    }
 
     function renderTable(){
       const filtered = items.filter(matchesFilters);
@@ -292,7 +312,7 @@
           <td>${escapeHtml(it.registerNumber || "")}</td>
           <td>${escapeHtml(it.foreman || "")}</td>
           <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
-          <td><code>${escapeHtml(it.submissionId || "")}</code></td>
+          <td><code class="mono">${escapeHtml(it.submissionId || "")}</code></td>
           <td style="text-align:center;">${it.printedAt ? "✅" : ""}</td>
           <td>${escapeHtml(it.printedBy || "")}</td>
           <td style="text-align:center;">${it.turnedInOn ? "✅" : ""}</td>
@@ -301,7 +321,7 @@
       `).join("");
     }
 
-    // ✅ Row clicks (event delegation)
+    // Row click
     tbody.addEventListener("click", (e) => {
       const tr = e.target.closest("tr");
       if (!tr) return;
@@ -314,7 +334,7 @@
       const url = new URL(API_URL);
       url.searchParams.set("action", "owner");
       url.searchParams.set("key", key);
-      url.searchParams.set("_", Date.now().toString()); // cache-bust
+      url.searchParams.set("_", Date.now().toString());
 
       const res = await fetch(url.toString(), {
         method: "POST",
@@ -412,7 +432,7 @@
         kv.innerHTML = keyFields.map(k => `
           <div style="margin:6px 0;">
             <div class="small">${escapeHtml(k)}</div>
-            <div style="font-weight:700;">${escapeHtml(getF(f, k) || "")}</div>
+            <div style="font-weight:700;">${escapeHtml(String(getF(f, k) || ""))}</div>
           </div>
         `).join("");
 
@@ -422,7 +442,10 @@
         const sketchUrl = p.media?.sketchUrl || "";
         const photos = Array.isArray(p.media?.photoUrls) ? p.media.photoUrls : [];
 
-        sketchLinks.innerHTML = sketchUrl ? `<a href="${sketchUrl}" target="_blank">Open Sketch</a>` : "No sketch";
+        sketchLinks.innerHTML = sketchUrl
+          ? `<a href="${attrEscape(sketchUrl)}" target="_blank" rel="noopener">Open Sketch</a>`
+          : "No sketch";
+
         if (sketchUrl) {
           sketchImg.src = sketchUrl;
           sketchImg.style.display = "block";
@@ -431,10 +454,10 @@
         }
 
         photoLinks.innerHTML = photos.length
-          ? photos.map((u,i)=>`<div><a href="${u}" target="_blank">Photo ${i+1}</a></div>`).join("")
+          ? photos.map((u,i)=>`<div><a href="${attrEscape(u)}" target="_blank" rel="noopener">Photo ${i+1}</a></div>`).join("")
           : "No photos";
 
-        photoImgs.innerHTML = photos.map(u => `<img src="${u}" alt="Photo" style="margin-top:8px;" />`).join("");
+        photoImgs.innerHTML = photos.map(u => `<img src="${attrEscape(u)}" alt="Photo" style="margin-top:8px;" />`).join("");
 
         openPrintBtn.onclick = () => {
           const pr = new URL(API_URL);
@@ -455,21 +478,10 @@
       }
     }
 
-    function getF(f, k) {
-      if (!f) return "";
-      if (f[k] !== undefined) return f[k];
-      if (f[k + " "] !== undefined) return f[k + " "];
-      const t = String(k).trim();
-      if (f[t] !== undefined) return f[t];
-      if (f[t + " "] !== undefined) return f[t + " "];
-      return "";
-    }
-
     // UI hooks
     document.getElementById("refresh").addEventListener("click", () => fetchList().catch(e => setStatus("Error: " + e.message)));
     qEl.addEventListener("input", renderTable);
     pageTypeEl.addEventListener("change", renderTable);
-    //statusFilterEl.addEventListener("change", renderTable);
     paperworkFilterEl.addEventListener("change", renderTable);
 
     // boot
