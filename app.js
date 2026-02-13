@@ -8,6 +8,32 @@ const netStatusEl = document.getElementById("netStatus");
 const debugEl = document.getElementById("debug");
 const formMeta = document.getElementById("formMeta");
 
+// ---------- Normalization helpers (CLIENT) ----------
+function normKey(k) {
+  return String(k ?? "")
+    .replace(/\u00A0/g, " ")     // non-breaking spaces
+    .replace(/\s+/g, " ")        // collapse whitespace
+    .trim();
+}
+
+function normVal(v) {
+  if (v === null || v === undefined) return "";
+  return String(v);
+}
+
+function isCheckedVal(v) {
+  if (v === true) return true;
+  if (v === false || v === null || v === undefined) return false;
+  const s = String(v).trim().toLowerCase();
+  return ["true", "yes", "y", "1", "checked", "on"].includes(s);
+}
+
+function isVisible(el) {
+  // avoids picking up hidden sections from other page types
+  const style = window.getComputedStyle(el);
+  return style.display !== "none" && style.visibility !== "hidden";
+}
+
 function setStatus(msg) {
   if (netStatusEl) netStatusEl.textContent = msg;
 }
@@ -138,7 +164,8 @@ function readRows(container) {
 
 function makeRow(innerHtml) {
   const div = document.createElement("div");
-  div.dataset.row = "1";
+  div.setAttribute("data-row", "1");
+  div.className = "repRow";
   div.innerHTML = innerHtml;
   return div;
 }
@@ -339,51 +366,59 @@ if (retStructuresEl) addRetStructuresRow();
 if (retNewMaterialsEl) addRetNewMaterialsRow();
 
 // ---- Gather payload ----
-function gatherFields() {
+function gatherFieldsNormalized(formEl) {
   const fields = {};
 
-  // Always include shared customer section
-  const customerSection = document.getElementById("sectionCustomer");
+  const els = Array.from(formEl.querySelectorAll("input[name], textarea[name], select[name]"));
 
-  // Include ONLY the active page section (Leak/Mains/Retirement/Services)
-  const pageType = (document.getElementById("pageType")?.value || "").trim();
-  const pageSectionMap = {
-    "Leak Repair": "sectionLeakRepair",
-    "Mains": "sectionMains",
-    "Retirement": "sectionRetirement",
-    "Services": "sectionServices",
-  };
-  const activeSection = document.getElementById(pageSectionMap[pageType] || "");
+  els.forEach(el => {
+    if (!isVisible(el)) return;
 
-  // Gather from: customer + active page section
-  const roots = [customerSection, activeSection].filter(Boolean);
+    const name = normKey(el.name);
+    if (!name) return;
 
-  roots.forEach(root => {
-    // inputs, textareas, selects with a name
-    root.querySelectorAll("input[name], textarea[name], select[name]").forEach(el => {
-      // ignore hidden inputs/sections just in case
-      if (!isVisible(el)) return;
+    let value = "";
+    if (el.type === "checkbox") {
+      value = !!el.checked;
+    } else if (el.type === "radio") {
+      if (!el.checked) return;
+      value = normVal(el.value);
+    } else {
+      value = normVal(el.value);
+    }
 
-      const key = normKey(el.name);
-      if (!key) return;
-
-      let value = "";
-
-      if (el.type === "checkbox") {
-        value = !!el.checked; // boolean
-      } else if (el.type === "radio") {
-        if (!el.checked) return;
-        value = normVal(el.value);
-      } else {
-        value = normVal(el.value);
-      }
-
-      fields[key] = value;
-    });
+    fields[name] = value;
   });
 
   return fields;
 }
+function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields, repeaters, sketch, photos }) {
+  return {
+    submissionId: String(submissionId || "").trim(),
+    pageType: normKey(pageType),
+    deviceId: String(deviceId || "").trim(),
+    createdAt: createdAt || new Date().toISOString(),
+
+    // force normalized keys
+    fields: Object.fromEntries(
+      Object.entries(fields || {}).map(([k, v]) => [normKey(k), v])
+    ),
+
+    // force normalized repeater names + column keys
+    repeaters: Object.fromEntries(
+      Object.entries(repeaters || {}).map(([r, rows]) => [
+        normKey(r),
+        Array.isArray(rows)
+          ? rows.map(row => Object.fromEntries(Object.entries(row).map(([k, v]) => [normKey(k), v])))
+          : []
+      ])
+    ),
+
+    sketch: sketch || null,
+    photos: Array.isArray(photos) ? photos : []
+  };
+}
+
 function gatherRepeaters() {
   const repeaters = {};
 
@@ -561,14 +596,32 @@ async function fileToCompressedDataUrl(file, maxW = 1024, quality = 0.6) {
 
 async function buildPayload() {
   const deviceId = getDeviceId();
-  const fields = gatherFields();
-  const repeaters = gatherRepeaters();
 
-  // sketch
-  const sketch = {
-    filename: `sketch_${currentId}.png`,
-    dataUrl: canvas.toDataURL("image/png"),
-  };
+  const fields = gatherFieldsNormalized(form);
+  const repeaters = gatherRepeatersNormalized();
+
+  const sketch = { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") };
+
+  const photoInput = form.querySelector('input[type="file"][data-photos]');
+  const files = Array.from(photoInput?.files || []).slice(0, 5);
+
+  const photos = [];
+  for (const f of files) {
+    const dataUrl = await fileToCompressedDataUrl(f);
+    photos.push({ filename: f.name || `photo_${currentId}.jpg`, dataUrl });
+  }
+
+  return normalizePayload({
+    submissionId: currentId,
+    pageType: pageTypeEl.value,
+    deviceId,
+    createdAt: new Date().toISOString(),
+    fields,
+    repeaters,
+    sketch,
+    photos
+  });
+}
 
   // photos (max 5)
   const photoInput = form.querySelector('input[type="file"][data-photos]');
@@ -716,6 +769,7 @@ function isVisible(el) {
   // visible = not display:none and not within a hidden parent
   return !!(el && el.offsetParent !== null);
 }
+
 
 
 
