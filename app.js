@@ -204,8 +204,8 @@ function addPipeTestRow(data = {}) {
     <label>Date Tested</label><input data-r="pipeTests" data-k="Date Tested" value="${data["Date Tested"]||""}">
     <label>Test Type</label><input data-r="pipeTests" data-k="Test Type" value="${data["Test Type"]||""}">
     <div class="check" style="margin-top:8px;">
-      <input type="checkbox" data-r="pipeTests" data-k="Soaped with no Leaks" ${data["Soaped with no Leaks"] ? "checked" : ""}>
       Soaped with no Leaks
+      <input type="checkbox" data-r="pipeTests" data-k="Soaped with no Leaks" ${data["Soaped with no Leaks"] ? "checked" : ""}>
     </div>
     <label>Pressure</label><input data-r="pipeTests" data-k="Pressure" value="${data["Pressure"]||""}">
     <label>Chart</label><input data-r="pipeTests" data-k="Chart" value="${data["Chart"]||""}">
@@ -769,6 +769,7 @@ function isVisible(el) {
   // visible = not display:none and not within a hidden parent
   return !!(el && el.offsetParent !== null);
 }
+
 
 
 
