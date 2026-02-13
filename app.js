@@ -136,6 +136,13 @@ function readRows(container) {
   }).filter(r => Object.values(r).some(v => v !== "" && v !== false));
 }
 
+function makeRow(innerHtml) {
+  const div = document.createElement("div");
+  div.dataset.row = "1";
+  div.innerHTML = innerHtml;
+  return div;
+}
+
 // =====================================================
 // LEAK REPAIR REPEATERS
 // =====================================================
@@ -709,6 +716,7 @@ function isVisible(el) {
   // visible = not display:none and not within a hidden parent
   return !!(el && el.offsetParent !== null);
 }
+
 
 
 
