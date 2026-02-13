@@ -16,6 +16,7 @@
     .row > div { flex:1; }
     .checks { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top:8px; }
     .check { display:flex; gap:8px; align-items:center; background:#fafafa; padding:8px; border-radius:10px; border:1px solid #eee; }
+    .checkp {padding-right:10px;}
     canvas { width:100%; border:1px solid #ccc; border-radius:12px; touch-action:none; background:white; }
     .btnrow { display:flex; gap:10px; }
     .btnrow button { flex:1; }
@@ -112,7 +113,7 @@
 
         <label>Leak Occurred On</label>
         <div class="checks">
-          <div class="check">Farm Tap<input type="checkbox" name="Leak Occurred on - Farm Tap" /></div>
+          <div class="check"><p class="checkp">Farm Tap</p><input type="checkbox" name="Leak Occurred on - Farm Tap" /></div>
           <div class="check">Fitting<input type="checkbox" name="Leak Occurred on - Fitting" /></div>
           <div class="check">Meter<input type="checkbox" name="Leak Occurred on - Meter" /></div>
           <div class="check">Pipe<input type="checkbox" name="Leak Occurred on - Pipe" /></div>
@@ -429,6 +430,7 @@
   <script type="module" src="./app.js"></script>
 </body>
 </html>
+
 
 
 
