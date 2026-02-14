@@ -11,7 +11,7 @@
     main { padding: 14px; max-width: 900px; margin: 0 auto; }
     .card { background:white; border:1px solid #e5e5e5; border-radius:12px; padding:12px; margin-bottom:12px; }
     label { display:block; font-weight:700; margin-top:10px; }
-    input, textarea, select, button { width:100%; padding:10px; font-size:16px; margin-top:6px; box-sizing:border-box; }
+    input, textarea, select, button, date { width:100%; padding:10px; font-size:16px; margin-top:6px; box-sizing:border-box; }
     .row { display:flex; gap:10px; }
     .row > div { flex:1; }
     .checks { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top:8px; }
@@ -110,7 +110,7 @@
         <textarea name="Specific Location where leak occurred" rows="3"></textarea>
 
         <label>Date Leak Detected</label>
-        <input name="Date Leak Detected" />
+        <input type="date" name="Date Leak Detected" />
 
         <label>Leak Occurred On</label>
         <div class="checks">
@@ -431,6 +431,7 @@
   <script type="module" src="./app.js"></script>
 </body>
 </html>
+
 
 
 
