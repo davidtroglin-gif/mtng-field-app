@@ -201,7 +201,7 @@ function addOtherMaterialRow(data = {}) {
 }
 function addPipeTestRow(data = {}) {
   pipeTestsEl?.appendChild(makeRow(`
-    <label>Date Tested</label><input data-r="pipeTests" data-k="Date Tested" value="${data["Date Tested"]||""}">
+    <label>Date Tested</label><input type="date" data-r="pipeTests" data-k="Date Tested" value="${data["Date Tested"]||""}">
     <label>Test Type</label><input data-r="pipeTests" data-k="Test Type" value="${data["Test Type"]||""}">
     <div class="check" style="margin-top:8px;">
       <input type="checkbox" data-r="pipeTests" data-k="Soaped with no Leaks" ${data["Soaped with no Leaks"] ? "checked" : ""}>
@@ -254,7 +254,7 @@ function addMainsOtherMaterialRow(data = {}) {
 }
 function addMainsPipeTestRow(data = {}) {
   mainsPipeTestsEl?.appendChild(makeRow(`
-    <label>Date Tested</label><input data-r="mainsPipeTests" data-k="Date Tested" value="${data["Date Tested"]||""}">
+    <label>Date Tested</label><input type="date" data-r="mainsPipeTests" data-k="Date Tested" value="${data["Date Tested"]||""}">
     <label>Test Type</label><input data-r="mainsPipeTests" data-k="Test Type" value="${data["Test Type"]||""}">
     <div class="check" style="margin-top:8px;">
       <input type="checkbox" data-r="mainsPipeTests" data-k="Soaped with no Leaks" ${data["Soaped with no Leaks"] ? "checked" : ""}>
@@ -305,7 +305,7 @@ function addSvcOtherMaterialRow(data = {}) {
 }
 function addSvcPipeTestRow(data = {}) {
   svcPipeTestsEl?.appendChild(makeRow(`
-    <label>Date Tested</label><input data-r="svcPipeTests" data-k="Date Tested" value="${data["Date Tested"]||""}">
+    <label>Date Tested</label><input type="date" data-r="svcPipeTests" data-k="Date Tested" value="${data["Date Tested"]||""}">
     <label>Test Type</label><input data-r="svcPipeTests" data-k="Test Type" value="${data["Test Type"]||""}">
     <div class="check" style="margin-top:8px;">
       <input type="checkbox" data-r="svcPipeTests" data-k="Soaped with no Leaks" ${data["Soaped with no Leaks"] ? "checked" : ""}>
@@ -769,6 +769,7 @@ function isVisible(el) {
   // visible = not display:none and not within a hidden parent
   return !!(el && el.offsetParent !== null);
 }
+
 
 
 
