@@ -205,8 +205,9 @@
 
         <div class="card" style="margin-top:12px;">
           <h4>Bore / Rock</h4>
-
-          <div class="check"><input type="checkbox" name="Bore" /> Bore</div>
+        <div class="row">
+          <div>
+          <div class="check"> Bore<input type="checkbox" name="Bore" /></div>
           <label>Bore Length (feet)</label><input name="Bore Length (feet)" />
 
           <div class="check"><input type="checkbox" name="Directional Bore" /> Directional Bore</div>
@@ -214,7 +215,8 @@
 
           <div class="check"><input type="checkbox" name="Rock Bore" /> Rock Bore</div>
           <label>Rock Bore Length (feet)</label><input name="Rock Bore Length (feet)" />
-
+          </div>
+        </div>
           <div class="check"><input type="checkbox" name="Rock 6x18" /> Rock 6x18</div>
           <label>Rock 6x18 Length (feet)</label><input name="Rock 6x18 Length (feet)" />
 
@@ -280,9 +282,10 @@
       <!-- PAGE 3: RETIREMENT                                    -->
       <!-- ===================================================== -->
       <section id="sectionRetirement" style="display:none;">
+        <br><br>
         <h3>Retirement</h3>
 
-        <h4 style="margin:14px 0 6px;">Section</h4>
+        <h4 style="margin:14px 0 6px;"></h4>
         <div id="retSection"></div>
         <button type="button" id="addRetSection">+ Add Section Row</button>
 
@@ -328,6 +331,7 @@
       <!-- PAGE 4: SERVICES                                      -->
       <!-- ===================================================== -->
       <section id="sectionServices" style="display:none;">
+        <br><br>
         <h3>Services</h3>
 
         <div class="card" style="margin-top:12px;">
@@ -433,6 +437,7 @@
   <script type="module" src="./app.js"></script>
 </body>
 </html>
+
 
 
 
