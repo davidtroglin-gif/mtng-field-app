@@ -665,7 +665,6 @@ let _editLoading = false;
 // EDIT: Drop-in replacement loader + field population
 // =====================================================
 
-let _editLoading = false;
 
 // safe CSS escape
 function cssEsc_(s) {
@@ -1164,6 +1163,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
