@@ -640,8 +640,11 @@ function populateRepeatersForPage(pageType, repeaters) {
   console.log("✅ Repeaters populated for", pt, "→", pageRepeaterKeys);
 }
 
+let _editLoading = false;
 
 async function loadForEdit(submissionId) {
+   if (_editLoading) return;          // ✅ prevents double-run
+  _editLoading = true;
   try {
     setStatus("Loading for edit…");
     console.log("EDIT submissionId:", submissionId);
@@ -921,57 +924,24 @@ document.getElementById("newForm")?.addEventListener("click", () => {
   if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Clear repeater containers and add a starter row again
-  if (pipeMaterialsEl) {
-    pipeMaterialsEl.innerHTML = "";
-    addPipeMaterialRow();
-  }
-  if (otherMaterialsEl) {
-    otherMaterialsEl.innerHTML = "";
-    addOtherMaterialRow();
-  }
-  if (pipeTestsEl) {
-    pipeTestsEl.innerHTML = "";
-    addPipeTestRow();
-  }
+ // initial starter rows (only if NOT editing)
+if (!editId) {
+  if (pipeMaterialsEl) addPipeMaterialRow();
+  if (otherMaterialsEl) addOtherMaterialRow();
+  if (pipeTestsEl) addPipeTestRow();
 
-  if (mainsMaterialsEl) {
-    mainsMaterialsEl.innerHTML = "";
-    addMainsMaterialRow();
-  }
-  if (mainsOtherMaterialsEl) {
-    mainsOtherMaterialsEl.innerHTML = "";
-    addMainsOtherMaterialRow();
-  }
-  if (mainsPipeTestsEl) {
-    mainsPipeTestsEl.innerHTML = "";
-    addMainsPipeTestRow();
-  }
+  if (mainsMaterialsEl) addMainsMaterialRow();
+  if (mainsOtherMaterialsEl) addMainsOtherMaterialRow();
+  if (mainsPipeTestsEl) addMainsPipeTestRow();
 
-  if (svcMaterialsEl) {
-    svcMaterialsEl.innerHTML = "";
-    addSvcMaterialRow();
-  }
-  if (svcOtherMaterialsEl) {
-    svcOtherMaterialsEl.innerHTML = "";
-    addSvcOtherMaterialRow();
-  }
-  if (svcPipeTestsEl) {
-    svcPipeTestsEl.innerHTML = "";
-    addSvcPipeTestRow();
-  }
+  if (svcMaterialsEl) addSvcMaterialRow();
+  if (svcOtherMaterialsEl) addSvcOtherMaterialRow();
+  if (svcPipeTestsEl) addSvcPipeTestRow();
 
-  if (retSectionEl) {
-    retSectionEl.innerHTML = "";
-    addRetSectionRow();
-  }
-  if (retStructuresEl) {
-    retStructuresEl.innerHTML = "";
-    addRetStructuresRow();
-  }
-  if (retNewMaterialsEl) {
-    retNewMaterialsEl.innerHTML = "";
-    addRetNewMaterialsRow();
-  }
+  if (retSectionEl) addRetSectionRow();
+  if (retStructuresEl) addRetStructuresRow();
+  if (retNewMaterialsEl) addRetNewMaterialsRow();
+}
 
   formMeta.textContent = `New: ${currentId}`;
   updatePageSections();
@@ -989,6 +959,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
