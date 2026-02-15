@@ -1097,10 +1097,22 @@ function _nk(s) {
 
 function _setElValue(el, v) {
   if (!el) return;
-  if (el.type === "checkbox") el.checked = !!v;
+ if (el.type === "checkbox") el.checked = isCheckedVal(v);
   else if (el.type === "radio") el.checked = (String(el.value) === String(v));
   else el.value = (v ?? "");
 }
+
+const els = form.querySelectorAll(`[name="${esc}"]`);
+if (!els.length) return;
+
+els.forEach((el) => {
+  if (el.type === "checkbox") el.checked = isCheckedVal(v);
+  else if (el.type === "radio") {
+    // handled below as a group
+  } else {
+    el.value = (v ?? "");
+  }
+});
 
 // fill inputs inside ONE repeater row by matching data-k
 function applyRepeaterRowValues(rowEl, rowObj) {
@@ -1163,6 +1175,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
