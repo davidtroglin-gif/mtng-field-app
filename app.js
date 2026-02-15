@@ -29,9 +29,520 @@ const sectionServices = document.getElementById("sectionServices");
 const urlParams = new URLSearchParams(window.location.search);
 //const editId = urlParams.get("edit");
 
+/* ===========================
+   app.js (DROP-IN CORE)
+   - Edit load (fields + repeaters + sketch)
+   - Save payload (fields + repeaters + sketch preserve)
+   - Page scoping (no isVisible() data loss)
+   =========================== */
+
+/* ---------- CONFIG: REQUIRED GLOBALS YOU ALREADY HAVE ----------
+
+Required existing globals in your project:
+- API_URL (string)
+- form (HTMLFormElement)
+- pageTypeEl (select)
+- sectionLeakRepair, sectionMains, sectionServices, sectionRetirement (containers)
+- updatePageSections() (your existing function; shows/hides page sections)
+- addXRow(...) functions + repeater container elements (see REPEATER_BINDINGS below)
+- canvas + ctx (for sketch), and your drawDataUrlToCanvas_(dataUrl) helper (or include below)
+
+Optional existing globals:
+- setStatus(msg) or debug(msg)
+- ownerKey (string)
+- db (indexedDB wrapper you already have)
+- updateNet()
+
+---------------------------------------------------------------- */
+
+function logStatus(msg) {
+  if (typeof setStatus === "function") setStatus(msg);
+  else if (typeof debug === "function") debug(msg);
+  else console.log(msg);
+}
+
+function normKey(s) {
+  return String(s ?? "").trim();
+}
+function normVal(v) {
+  if (v === null || v === undefined) return "";
+  return String(v).trim();
+}
+
+/* ---------- EDIT BOOT ---------- */
+const qs = new URLSearchParams(location.search);
+const editId = qs.get("edit") || "";
+// If you pass key in URL, uncomment:
+// const ownerKey = qs.get("key") || (window.ownerKey || "");
+// Otherwise rely on your existing ownerKey global.
+window.editId = editId;
+
+/* ---------- SKETCH STATE (prevents blank overwrite) ---------- */
+let existingSketch = null;
+let sketchDirty = false;
+
+function markSketchDirty() {
+  sketchDirty = true;
+}
+
+// Hook dirty tracking if you have pointer events
+// If you already have drawing handlers, just call markSketchDirty() inside them.
+if (window.canvas) {
+  canvas.addEventListener("pointerdown", () => markSketchDirty(), { passive: true });
+}
+
+/* ---------- HELPERS ---------- */
+function getActivePageType() {
+  return String(pageTypeEl?.value || "Leak Repair").trim();
+}
+
+function getActiveSectionByPageType(pt) {
+  const p = String(pt || "").trim();
+  return (
+    p === "Leak Repair" ? sectionLeakRepair :
+    p === "Mains"       ? sectionMains :
+    p === "Services"    ? sectionServices :
+    p === "Retirement"  ? sectionRetirement :
+    form
+  );
+}
+
+/* ---------- FIELD GATHER (NO isVisible gating) ---------- */
+function gatherFieldsNormalized() {
+  const fields = {};
+  const pt = getActivePageType();
+  const scope = getActiveSectionByPageType(pt) || form;
+
+  const els = Array.from(scope.querySelectorAll("input[name], textarea[name], select[name]"));
+  els.forEach((el) => {
+    const name = normKey(el.name);
+    if (!name) return;
+
+    let value = "";
+    if (el.type === "checkbox") value = !!el.checked;
+    else if (el.type === "radio") {
+      if (!el.checked) return;
+      value = normVal(el.value);
+    } else value = normVal(el.value);
+
+    fields[name] = value;
+  });
+
+  return fields;
+}
+
+/* ---------- REPEATER GATHER (NO isVisible gating) ---------- */
+function gatherRepeatersForPage() {
+  const pt = getActivePageType();
+  const scope = getActiveSectionByPageType(pt) || form;
+
+  // expects repeater inputs have data-r + data-k
+  const inputs = Array.from(scope.querySelectorAll("[data-r][data-k]"));
+
+  const map = {}; // { repeaterName: { rowId: { key: value } } }
+
+  inputs.forEach((el) => {
+    const r = normKey(el.dataset.r);
+    const k = normKey(el.dataset.k);
+    if (!r || !k) return;
+
+    const rowEl = el.closest("[data-row]") || el.closest(".card");
+    if (!rowEl) return;
+
+    if (!rowEl.dataset.rowId) {
+      rowEl.dataset.rowId = crypto.randomUUID?.() || (Date.now() + "_" + Math.random());
+    }
+    const rowId = rowEl.dataset.rowId;
+
+    map[r] = map[r] || {};
+    map[r][rowId] = map[r][rowId] || {};
+
+    let value = "";
+    if (el.type === "checkbox") value = !!el.checked;
+    else if (el.type === "radio") {
+      if (!el.checked) return;
+      value = normVal(el.value);
+    } else value = normVal(el.value);
+
+    map[r][rowId][k] = value;
+  });
+
+  // rowId maps -> arrays; drop empty rows
+  const out = {};
+  Object.keys(map).forEach((r) => {
+    out[r] = Object.values(map[r]).filter((row) =>
+      Object.values(row).some((v) => (typeof v === "boolean" ? v === true : String(v ?? "").trim() !== ""))
+    );
+  });
+
+  return out;
+}
+
+/* ---------- REPEATERS: CLEAR + POPULATE ---------- */
+// IMPORTANT: your addRow fns must accept (rowObj) and set inputs with data-k, etc.
+function clearRepeaterContainer(containerEl) {
+  if (!containerEl) return;
+  containerEl.querySelectorAll("[data-row]").forEach((row) => row.remove());
+}
+
+// ✅ PLUG YOUR EXISTING CONTAINERS + ADD ROW FUNCTIONS HERE
+const REPEATER_BINDINGS = {
+  // Leak Repair
+  pipeMaterials:   { container: () => window.pipeMaterialsEl,   addRow: window.addPipeMaterialRow },
+  otherMaterials:  { container: () => window.otherMaterialsEl,  addRow: window.addOtherMaterialRow },
+  pipeTests:       { container: () => window.pipeTestsEl,       addRow: window.addPipeTestRow },
+
+  // Mains
+  mainsMaterials:      { container: () => window.mainsMaterialsEl,      addRow: window.addMainsMaterialRow },
+  mainsOtherMaterials: { container: () => window.mainsOtherMaterialsEl, addRow: window.addMainsOtherMaterialRow },
+  mainsPipeTests:      { container: () => window.mainsPipeTestsEl,      addRow: window.addMainsPipeTestRow },
+
+  // Services
+  svcMaterials:      { container: () => window.svcMaterialsEl,      addRow: window.addSvcMaterialRow },
+  svcOtherMaterials: { container: () => window.svcOtherMaterialsEl, addRow: window.addSvcOtherMaterialRow },
+  svcPipeTests:      { container: () => window.svcPipeTestsEl,      addRow: window.addSvcPipeTestRow },
+
+  // Retirement
+  retSection:      { container: () => window.retSectionEl,      addRow: window.addRetSectionRow },
+  retStructures:   { container: () => window.retStructuresEl,   addRow: window.addRetStructuresRow },
+  retNewMaterials: { container: () => window.retNewMaterialsEl, addRow: window.addRetNewMaterialsRow },
+};
+
+function getPageRepeaterKeys(pt) {
+  const p = String(pt || "").trim();
+  return (
+    p === "Leak Repair" ? ["pipeMaterials","otherMaterials","pipeTests"] :
+    p === "Mains"       ? ["mainsMaterials","mainsOtherMaterials","mainsPipeTests"] :
+    p === "Services"    ? ["svcMaterials","svcOtherMaterials","svcPipeTests"] :
+    p === "Retirement"  ? ["retSection","retStructures","retNewMaterials"] :
+    []
+  );
+}
+
+function populateRepeatersForPage(pt, repeaters) {
+  const keys = getPageRepeaterKeys(pt);
+  const reps = (repeaters && typeof repeaters === "object") ? repeaters : {};
+
+  // Clear only current page repeaters (removes starter rows)
+  keys.forEach((key) => {
+    const b = REPEATER_BINDINGS[key];
+    if (!b || typeof b.container !== "function") return;
+    clearRepeaterContainer(b.container());
+  });
+
+  // Add payload rows (or one blank row)
+  keys.forEach((key) => {
+    const b = REPEATER_BINDINGS[key];
+    if (!b || typeof b.addRow !== "function") return;
+
+    const arr = Array.isArray(reps[key]) ? reps[key] : [];
+    if (arr.length) arr.forEach((rowObj) => b.addRow(rowObj || {}));
+    else b.addRow({});
+  });
+
+  console.log("✅ Repeaters populated:", pt, keys);
+}
+
+/* ---------- NORMALIZE PAYLOAD ---------- */
+function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields, repeaters, sketch, photos }) {
+  return {
+    submissionId: String(submissionId || "").trim(),
+    pageType: normKey(pageType),
+    deviceId: String(deviceId || "").trim(),
+    createdAt: createdAt || new Date().toISOString(),
+    fields: Object.fromEntries(Object.entries(fields || {}).map(([k, v]) => [normKey(k), v])),
+    repeaters: Object.fromEntries(
+      Object.entries(repeaters || {}).map(([r, rows]) => [
+        normKey(r),
+        Array.isArray(rows)
+          ? rows.map((row) => Object.fromEntries(Object.entries(row).map(([k, v]) => [normKey(k), v])))
+          : [],
+      ])
+    ),
+    sketch: sketch || null,
+    photos: Array.isArray(photos) ? photos : [],
+  };
+}
+
+/* ---------- SKETCH DRAW HELPER (use yours if already exists) ---------- */
+async function drawDataUrlToCanvas_(dataUrl) {
+  if (!window.canvas || !window.ctx || !dataUrl) return false;
+
+  return await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      const x = (canvas.width - w) / 2;
+      const y = (canvas.height - h) / 2;
+
+      ctx.drawImage(img, x, y, w, h);
+      resolve(true);
+    };
+    img.onerror = () => resolve(false);
+    img.src = dataUrl;
+  });
+}
+
+/* ---------- EDIT LOAD ---------- */
+let _editLoading = false;
+let currentId = window.currentId || "";
+let mode = window.mode || "new";
+
+async function loadForEdit(submissionId) {
+  if (_editLoading) return;
+  _editLoading = true;
+
+  try {
+    logStatus("Loading for edit…");
+    console.log("EDIT submissionId:", submissionId);
+
+    const url = new URL(API_URL);
+    url.searchParams.set("action", "get");
+    url.searchParams.set("id", submissionId);
+    if (typeof ownerKey !== "undefined" && ownerKey) url.searchParams.set("key", ownerKey);
+
+    console.log("GET URL:", url.toString());
+
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    const text = await res.text();
+    const json = JSON.parse(text);
+
+    if (!json.ok) throw new Error(json.error || "Failed to load");
+
+    const p = json.payload || {};
+    const pt = String(p.pageType || "Leak Repair").trim();
+    const fields = p.fields || {};
+    const repeaters = p.repeaters || {};
+    const sketch = p.sketch || null;
+
+    // set global mode
+    currentId = submissionId;
+    mode = "edit";
+
+    // reset form first
+    form?.reset?.();
+
+    // set page type BEFORE populate
+    if (pageTypeEl) {
+      const exists = [...pageTypeEl.options].some((o) => o.value === pt);
+      pageTypeEl.value = exists ? pt : "Leak Repair";
+    }
+    if (typeof updatePageSections === "function") updatePageSections();
+
+    // populate repeaters
+    populateRepeatersForPage(pt, repeaters);
+
+    // populate fields (by name)
+    Object.entries(fields).forEach(([k, v]) => {
+      const name = String(k);
+      const esc = (window.CSS && CSS.escape) ? CSS.escape(name) : name.replace(/"/g, '\\"');
+      const el = form.querySelector(`[name="${esc}"]`);
+      if (!el) return;
+
+      if (el.type === "checkbox") el.checked = !!v;
+      else if (el.type === "radio") {
+        form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)
+          .forEach((r) => (r.checked = (String(r.value) === String(v))));
+      } else {
+        el.value = (v ?? "");
+      }
+    });
+
+    // restore sketch + prevent blank overwrite
+    existingSketch = sketch;
+    sketchDirty = false;
+
+    if (existingSketch?.dataUrl && window.canvas && window.ctx) {
+      await drawDataUrlToCanvas_(existingSketch.dataUrl);
+    } else if (window.canvas && window.ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // update submit button label
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = "Update Submission";
+
+    logStatus("Edit mode ready ✅");
+  } catch (err) {
+    console.error(err);
+    logStatus("Edit load failed: " + (err?.message || err));
+  } finally {
+    _editLoading = false;
+  }
+}
+
+/* ---------- BUILD PAYLOAD ---------- */
+// You already have getDeviceId() / newSubmissionId() etc.
+// If not, keep your own versions and this will use them.
+async function buildPayload() {
+  const deviceId = (typeof getDeviceId === "function") ? getDeviceId() : "";
+  const fields = gatherFieldsNormalized();
+  const repeaters = gatherRepeatersForPage();
+
+  // preserve sketch unless user actually drew
+  let sketchOut = existingSketch || null;
+  if (window.canvas) {
+    if (sketchDirty) {
+      sketchOut = { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") };
+    }
+  }
+
+  // photos: keep your existing compression flow if you want;
+  // here we leave photos empty unless you already manage them elsewhere
+  const photos = [];
+
+  return normalizePayload({
+    submissionId: currentId,
+    pageType: getActivePageType(),
+    deviceId,
+    createdAt: new Date().toISOString(),
+    fields,
+    repeaters,
+    sketch: sketchOut,
+    photos,
+  });
+}
+
+/* ---------- SUBMIT ---------- */
+async function postSubmit(payload) {
+  const url = new URL(API_URL);
+  if (typeof ownerKey !== "undefined" && ownerKey) url.searchParams.set("key", ownerKey);
+
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  });
+
+  const txt = await res.text();
+  try {
+    const j = JSON.parse(txt);
+    return !!j.ok;
+  } catch {
+    return txt.includes('"ok":true') || txt.includes('"ok": true');
+  }
+}
+
+async function submitNow() {
+  const payload = await buildPayload();
+
+  // if you have offline queue logic, keep using it — here’s a simple direct submit:
+  const ok = await postSubmit(payload);
+  if (!ok) {
+    alert("Submit failed.");
+    return;
+  }
+  alert("Submitted ✅");
+}
+
+/* ---------- NEW FORM ---------- */
+function startNewForm() {
+  currentId = (typeof newSubmissionId === "function") ? newSubmissionId() : (crypto.randomUUID?.() || String(Date.now()));
+  mode = "new";
+  existingSketch = null;
+  sketchDirty = false;
+
+  form?.reset?.();
+  if (window.canvas && window.ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Set default page type (optional)
+  if (pageTypeEl && !pageTypeEl.value) pageTypeEl.value = "Leak Repair";
+  if (typeof updatePageSections === "function") updatePageSections();
+
+  // Add starter rows ONLY for active page
+  const pt = getActivePageType();
+  populateRepeatersForPage(pt, {}); // will add 1 blank row each
+
+  const submitBtn = document.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = "Submit";
+
+  logStatus("New form ✅");
+}
+
+/* ---------- EVENTS ---------- */
+form?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  await submitNow();
+});
+
+document.getElementById("newForm")?.addEventListener("click", () => startNewForm());
+
+pageTypeEl?.addEventListener("change", () => {
+  if (typeof updatePageSections === "function") updatePageSections();
+
+  // When switching page type in NEW mode, rebuild starter repeaters for that page
+  if (!editId && mode !== "edit") {
+    const pt = getActivePageType();
+    populateRepeatersForPage(pt, {});
+  }
+});
+
+/* ---------- BOOT ---------- */
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("app.js running ✅");
+  if (typeof updatePageSections === "function") updatePageSections();
+
+  if (editId) {
+    // edit boot
+    loadForEdit(editId);
+  } else {
+    // new form boot
+    startNewForm();
+  }
+
+  if (typeof updateNet === "function") updateNet();
+});
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*  OLD CODE OLD CODE OLD CODE
 // =====================================================
 // Normalization helpers (CLIENT)
 // =====================================================
@@ -463,23 +974,6 @@ if (!editId) {
   if (retNewMaterialsEl) addRetNewMaterialsRow();
 }
 
-
-/*if (pipeMaterialsEl) addPipeMaterialRow();
-if (otherMaterialsEl) addOtherMaterialRow();
-if (pipeTestsEl) addPipeTestRow();
-
-if (mainsMaterialsEl) addMainsMaterialRow();
-if (mainsOtherMaterialsEl) addMainsOtherMaterialRow();
-if (mainsPipeTestsEl) addMainsPipeTestRow();
-
-if (svcMaterialsEl) addSvcMaterialRow();
-if (svcOtherMaterialsEl) addSvcOtherMaterialRow();
-if (svcPipeTestsEl) addSvcPipeTestRow();
-
-if (retSectionEl) addRetSectionRow();
-if (retStructuresEl) addRetStructuresRow();
-if (retNewMaterialsEl) addRetNewMaterialsRow();*/
-
 // =====================================================
 // Gather fields + repeaters
 // =====================================================
@@ -597,12 +1091,6 @@ function fillRepeater(el, addRowFn, rows) {
 // Repeaters: clear + populate from saved payload
 // Drop-in (single version)
 // =====================================================
-
-// Removes only repeater rows created by makeRow() ([data-row] wrapper)
-/*function clearRepeaterContainer(containerEl) {
-  if (!containerEl) return;
-  containerEl.querySelectorAll('[data-row]').forEach(row => row.remove());
-}*/
 
 // Safe normalizer
 function normalizeRepeatersObj(repeaters) {
@@ -1096,41 +1584,10 @@ function populateRepeater(bindingKey, rows) {
   console.log(`✅ populated ${bindingKey}:`, arr.length);
 }
 
-// --- page-aware populate ------------------------------------
-/*function populateRepeatersForPage(pageType, repeaters) {
-  const pt = String(pageType || "").trim();
-  const reps = (repeaters && typeof repeaters === "object") ? repeaters : {};
-
-  const pageKeys =
-    pt === "Leak Repair" ? ["pipeMaterials","otherMaterials","pipeTests"] :
-    pt === "Mains"       ? ["mainsMaterials","mainsOtherMaterials","mainsPipeTests"] :
-    pt === "Services"    ? ["svcMaterials","svcOtherMaterials","svcPipeTests"] :
-    pt === "Retirement"  ? ["retSection","retStructures","retNewMaterials"] :
-    [];
-
-  pageKeys.forEach((k) => populateRepeater(k, reps[k]));
-
-  // quick sanity log
-  pageKeys.forEach((k) => {
-    const c = REPEATER_BINDINGS[k]?.container?.();
-    console.log("Rows now in", k, "=", c?.querySelectorAll("[data-row]")?.length);
-  });
-}
-
-
-// optional: if you have these buttons wired elsewhere, keep them harmless
-document.getElementById("openDrafts")?.addEventListener("click", () => {
-  debug("openDrafts clicked (handler not implemented in this drop-in).");
-});
-document.getElementById("openQueue")?.addEventListener("click", () => {
-  debug("openQueue clicked (handler not implemented in this drop-in).");
-});*/
-
-
-
 updatePageSections();
 updateNet();
 
+*/
 
 
 
