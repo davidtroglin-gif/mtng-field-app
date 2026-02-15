@@ -19,9 +19,7 @@ const pageTypeEl = document.getElementById("pageType");
 console.log("pageTypeEl now:", pageTypeEl.value);
 const listCard = document.getElementById("listCard");
 const editId = params.get("edit");
-if (editId) {
-  loadForEdit(editId);
-}
+
 
 // ---- Section show/hide (4 pages) ----
 const sectionLeakRepair = document.getElementById("sectionLeakRepair");
@@ -645,7 +643,7 @@ async function loadForEdit(submissionId) {
 
 
 
-if (editId) {
+//if (editId) {
   loadForEdit(editId);
 }
 
@@ -655,7 +653,7 @@ const ownerKey = qs.get("key") || "";
 const editId = qs.get("edit") || "";
 
 window.addEventListener("DOMContentLoaded", () => {
-  if (editId) loadForEdit(editId);
+  //if (editId) loadForEdit(editId);
 });
 
 
@@ -928,19 +926,23 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 (function bootEditMode() {
   const qs = new URLSearchParams(window.location.search);
   const editId = qs.get("edit") || "";
-  if (editId) loadForEdit(editId);
+  //if (editId) loadForEdit(editId);
 })();
 
 window.addEventListener("DOMContentLoaded", () => {
   const qs = new URLSearchParams(location.search);
   ownerKey = qs.get("key") || "";
   const editId = qs.get("edit") || "";
-  if (editId) loadForEdit(editId);
+  //if (editId) loadForEdit(editId);
 });
 
+if (editId) {
+  loadForEdit(editId);
+}
 
 updatePageSections();
 updateNet();
+
 
 
 
