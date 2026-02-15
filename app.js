@@ -704,38 +704,48 @@ async function loadForEdit(submissionId) {
     if (!json.ok) throw new Error(json.error || "Failed to load");
 
     const p = json.payload || {};
-    const fields = p.fields || {};         // ✅ ADD THIS
-    const repeaters = p.repeaters || {};   // ✅ ADD THIS
-  
+const fields = p.fields || {};
+const repeaters = p.repeaters || {};
 
-    console.log("PAGE TYPE:", p.pageType);
-    console.log("REPEATERS OBJECT:", repeaters);
-    console.log("REPEATER KEYS:", Object.keys(repeaters));
+// ---- SET EDIT MODE ----
+currentId = submissionId;
+mode = "edit";
 
-    // ---- SET EDIT MODE ----
-    currentId = submissionId;
-    mode = "edit";
+// reset first
+form.reset();
 
-    // reset first
-    form.reset();
+// set page type BEFORE populating anything
+const pt = String(p.pageType || "").trim();
+console.log("EDIT pageType:", JSON.stringify(pt));
 
-    // set page type BEFORE populating fields
-    const pt = String(p.pageType || "").trim();
-    console.log("EDIT pageType:", JSON.stringify(pt));
+if (pageTypeEl) {
+  const exists = [...pageTypeEl.options].some(o => o.value === pt);
+  pageTypeEl.value = exists ? pt : "Leak Repair";
+  updatePageSections();
+}
 
-    if (pageTypeEl) {
-      const exists = [...pageTypeEl.options].some(o => o.value === pt);
-      pageTypeEl.value = exists ? pt : "Leak Repair";
-      updatePageSections();
-    }
+// ✅ NOW populate repeaters (pt is defined + correct section is visible)
+populateRepeatersForPage(pt, repeaters);
 
-    requestAnimationFrame(() => {
-  requestAnimationFrame(() => {
-    populateRepeatersForPage(pt, p.repeaters || {});
-  });
+console.log("REPEATERS OBJECT:", repeaters);
+console.log("REPEATER KEYS:", Object.keys(repeaters));
+
+// ---- Populate fields ----
+Object.entries(fields).forEach(([k, v]) => {
+  const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : String(k).replace(/"/g, '\\"');
+  const el = form.querySelector(`[name="${esc}"]`);
+  if (!el) return;
+
+  if (el.type === "checkbox") el.checked = !!v;
+  else if (el.type === "radio") {
+    form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)
+      .forEach(r => r.checked = (String(r.value) === String(v)));
+  } else {
+    el.value = (v ?? "");
+  }
 });
 
-      populateRepeatersForPage(pt, repeaters);
+      //populateRepeatersForPage(pt, repeaters);
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
@@ -1005,6 +1015,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
