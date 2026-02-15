@@ -1148,12 +1148,11 @@ async function buildPayload() {
 async function postSubmit(payload) {
   debug("Submitting…");
 
+  // ✅ include key if needed
   const url = new URL(API_URL);
-
-  // ✅ if your backend expects key for edits, pass it
   if (ownerKey) url.searchParams.set("key", ownerKey);
-  
-  const res = await fetch(API_URL, {
+
+  const res = await fetch(url.toString(), {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(payload),
@@ -1168,12 +1167,17 @@ async function postSubmit(payload) {
   } catch {
     return txt.includes('"ok":true') || txt.includes('"ok": true');
   }
-const queued = await db.getAll("queue");
+}
+
+async function trySync() {
+  if (!navigator.onLine) return;
+
+  const queued = await db.getAll("queue");
   queued.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
 
   for (const item of queued) {
     const ok = await postSubmit(item);
-    if (!ok) return;
+    if (!ok) break; // stop trying further items for now
     await db.del("queue", item.submissionId);
   }
 }
@@ -1347,6 +1351,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
