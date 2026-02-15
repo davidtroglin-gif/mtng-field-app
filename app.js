@@ -20,6 +20,14 @@ const sectionMains = document.getElementById("sectionMains");
 const sectionRetirement = document.getElementById("sectionRetirement");
 const sectionServices = document.getElementById("sectionServices");
 
+const urlParams = new URLSearchParams(window.location.search);
+const editId = urlParams.get("edit");
+
+if (editId) {
+  loadForEdit(editId);
+}
+
+
 // =====================================================
 // Normalization helpers (CLIENT)
 // =====================================================
@@ -755,3 +763,4 @@ document.getElementById("openDrafts")?.addEventListener("click", () => {
 document.getElementById("openQueue")?.addEventListener("click", () => {
   debug("openQueue clicked (handler not implemented in this drop-in).");
 });
+
