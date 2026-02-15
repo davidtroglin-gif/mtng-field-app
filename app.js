@@ -1104,9 +1104,6 @@ async function postSubmit(payload) {
   } catch {
     return txt.includes('"ok":true') || txt.includes('"ok": true');
   }
-}
-
-
 const queued = await db.getAll("queue");
   queued.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
 
@@ -1286,6 +1283,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
