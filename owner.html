@@ -508,13 +508,15 @@ noteModalSave.addEventListener("click", async () => {
   }).join("");
 }
 
-    // Row click
-    tbody.addEventListener("click", (e) => {
+   // Row click (single handler)
+tbody.addEventListener("click", (e) => {
   const tr = e.target.closest("tr");
   if (!tr) return;
 
   const rowId = tr.dataset.id;
+  if (!rowId) return;
 
+  // Notes button
   const noteBtn = e.target.closest("[data-note-id]");
   if (noteBtn) {
     e.stopPropagation();
@@ -522,6 +524,7 @@ noteModalSave.addEventListener("click", async () => {
     return;
   }
 
+  // Print button
   const printBtn = e.target.closest("[data-print-id]");
   if (printBtn) {
     e.stopPropagation();
@@ -534,6 +537,7 @@ noteModalSave.addEventListener("click", async () => {
     return;
   }
 
+  // Edit button
   const editBtn = e.target.closest("[data-edit-id]");
   if (editBtn) {
     e.stopPropagation();
@@ -545,13 +549,6 @@ noteModalSave.addEventListener("click", async () => {
   openDetail(rowId);
 });
 
-  // default: row click opens detail
-  const tr = e.target.closest("tr");
-  if (!tr) return;
-  const id = tr.dataset.id;
-  if (!id) return;
-  openDetail(id);
-});
 
     function tooltipAttr(s) {
   // safe for putting into an HTML attribute
