@@ -632,6 +632,24 @@ function populateRepeatersForPage(pageType, repeaters) {
   const pt = String(pageType || "").trim();
   const reps = normalizeRepeatersObj(repeaters);
 
+  function logContainer(id) {
+  const el = document.getElementById(id);
+  console.log(`[repeater] #${id}:`, {
+    exists: !!el,
+    inDom: !!el && document.body.contains(el),
+    childRows: el ? el.querySelectorAll('[data-row]').length : 0
+  });
+}
+
+console.log("[repeater] pageType:", pageType);
+[
+  "pipeMaterials","otherMaterials","pipeTests",
+  "mainsMaterials","mainsOtherMaterials","mainsPipeTests",
+  "svcMaterials","svcOtherMaterials","svcPipeTests",
+  "retSection","retStructures","retNewMaterials"
+].forEach(logContainer);
+console.log("[repeater] payload keys:", Object.keys(repeaters || {}));
+
   // Which repeaters belong to this page?
   const pageRepeaterKeys =
     pt === "Leak Repair" ? ["pipeMaterials","otherMaterials","pipeTests"] :
@@ -980,6 +998,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
