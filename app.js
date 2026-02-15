@@ -321,7 +321,7 @@ async function loadForEdit(submissionId) {
     const fields = p.fields || {};
     const repeaters = p.repeaters || {};
     const sketch = p.sketch || null;
-    const pt = normalizePageType(p.pageType);
+    //const pt = normalizePageType(p.pageType);
 
     console.log("PAYLOAD pageType:", p.pageType, "→ normalized:", pt);
     console.log("SELECT option values:", [...pageTypeEl.options].map(o => o.value));
@@ -1630,6 +1630,7 @@ updatePageSections();
 updateNet();
 
 */
+
 
 
 
