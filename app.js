@@ -7,10 +7,6 @@ const params = new URLSearchParams(location.search);
 const editId = params.get("edit") || "";
 const ownerKey = params.get("key") || ""; // ✅ pulled from URL
 
-// ---- Edit mode from URL (must be above loadForEdit if loadForEdit uses ownerKey) ----
-const qs = new URLSearchParams(window.location.search);
-const ownerKey = qs.get("key") || "";
-const editId = qs.get("edit") || "";
 
 // ---- UI helpers ----
 const netStatusEl = document.getElementById("netStatus");
@@ -573,30 +569,24 @@ function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields,
   };
 }
 
+
+
 async function loadForEdit(submissionId) {
   try {
     setStatus("Loading for edit…");
-
-    const qs = new URLSearchParams(window.location.search);
-    const ownerKey = qs.get("key") || "";
 
     const url = new URL(API_URL);
     url.searchParams.set("action", "get");
     url.searchParams.set("id", submissionId);
     if (ownerKey) url.searchParams.set("key", ownerKey);
-    url.searchParams.set("_", Date.now().toString()); // cache-bust
 
+    // IMPORTANT: only read the response ONCE
     const res = await fetch(url.toString(), { cache: "no-store" });
     const txt = await res.text();
 
-    // browser-side debug (NOT Logger.log)
-    console.log("GET payload response (first 200):", txt.slice(0, 200));
-
     let json;
     try { json = JSON.parse(txt); }
-    catch {
-      throw new Error("GET response not JSON (auth/key issue or HTML). First 200: " + txt.slice(0, 200));
-    }
+    catch { throw new Error("GET response not JSON. First 160: " + txt.slice(0,160)); }
 
     if (!json.ok) throw new Error(json.error || "Failed to load");
 
@@ -609,62 +599,66 @@ async function loadForEdit(submissionId) {
     currentId = submissionId;
     mode = "edit";
 
-    // IMPORTANT: set page type first so correct sections exist
+    // ✅ RESET FIRST (this was breaking your Services selection)
+    form.reset();
+
+    // ✅ Now set the correct job type and reveal the right sections
     if (p.pageType && pageTypeEl) {
-      pageTypeEl.value = p.pageType;
+      pageTypeEl.value = p.pageType;   // "Services"
       updatePageSections();
     }
 
-    // reset after sections are correct
-    form.reset();
-
-    // submit button label
+    // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.textContent = "Update Submission";
 
-    // Populate normal fields by [name="..."]
+    // ---- Populate fields ----
     Object.entries(fields).forEach(([k, v]) => {
-      let el = null;
-
-      // robust name lookup
       const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : String(k).replace(/"/g, '\\"');
-      el = form.querySelector(`[name="${esc}"]`);
-      if (!el) {
-        el = Array.from(form.querySelectorAll("[name]")).find(x => x.name === k) || null;
-      }
+      const el = form.querySelector(`[name="${esc}"]`) ||
+                 Array.from(form.querySelectorAll("[name]")).find(x => x.name === k);
+
       if (!el) return;
 
-      if (el.type === "checkbox") {
-        el.checked = !!v;
-      } else if (el.type === "radio") {
-        const radios = form.querySelectorAll(`input[type="radio"][name="${el.name}"]`);
-        radios.forEach(r => r.checked = (String(r.value) === String(v)));
+      if (el.type === "checkbox") el.checked = !!v;
+      else if (el.type === "radio") {
+        form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)
+          .forEach(r => r.checked = (String(r.value) === String(v)));
       } else {
         el.value = (v ?? "");
       }
     });
 
-    // Repeaters (you already have a helper)
-    populateRepeaters(repeaters);
+    // ✅ Populate repeaters for the correct pageType
+    populateRepeatersForPage(p.pageType || "", repeaters);
 
-    // Sketch (if you want)
-    // NOTE: drawing remote images to canvas can be blocked by CORS.
-    // If your sketch is Drive uc?export=view it often works for <img>, but canvas draw can taint.
-    if (media.sketchUrl && typeof loadSketchIntoCanvas === "function") {
-      await loadSketchIntoCanvas(media.sketchUrl);
+    // ✅ Sketch
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (media.sketchUrl) {
+      const dataUrl = await urlToDataUrlClient_(media.sketchUrl);
+      if (dataUrl) await drawDataUrlToCanvas_(dataUrl);
     }
 
+    formMeta.textContent = `Editing: ${submissionId}`;
     setStatus("Edit mode ready ✅");
   } catch (err) {
-    console.error(err);
     setStatus("Edit load failed: " + (err?.message || err));
-    alert("Edit load failed: " + (err?.message || err));
   }
 }
+
 
 if (editId) {
   loadForEdit(editId);
 }
+
+// ---- Edit mode from URL (must be above loadForEdit if loadForEdit uses ownerKey) ----
+const qs = new URLSearchParams(window.location.search);
+const ownerKey = qs.get("key") || "";
+const editId = qs.get("edit") || "";
+
+window.addEventListener("DOMContentLoaded", () => {
+  if (editId) loadForEdit(editId);
+});
 
 
 // =====================================================
@@ -942,6 +936,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
