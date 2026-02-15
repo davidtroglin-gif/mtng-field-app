@@ -941,10 +941,6 @@ updateNet();
 
 
 
-console.log("FULL PAYLOAD:", p);
-console.log("pageType value:", p.pageType);
-
-
 
 
 
