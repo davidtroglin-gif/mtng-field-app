@@ -89,9 +89,9 @@
               <th>Foreman</th>
               <th>Status</th>
               <th>SubmissionId</th>
-              <th>Printed</th>
-              <th>Printed By</th>
-              <th>Turned In</th>
+              <th>Edit</th>
+              <th>Print</th>
+              <th>Add Note</th>
               <th>Notes</th>
             </tr>
           </thead>
@@ -299,36 +299,133 @@
     }
 
     function renderTable(){
-      const filtered = items.filter(matchesFilters);
-      metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
+  const filtered = items.filter(matchesFilters);
+  metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
 
-      tbody.innerHTML = filtered.map(it => `
-        <tr data-id="${attrEscape(it.submissionId)}">
-          <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
-          <td>${escapeHtml(it.pageType || "")}</td>
-          <td>${escapeHtml(it.customerName || "")}</td>
-          <td>${escapeHtml(it.date || "")}</td>
-          <td>${escapeHtml(it.mloNumber || "")}</td>
-          <td>${escapeHtml(it.registerNumber || "")}</td>
-          <td>${escapeHtml(it.foreman || "")}</td>
-          <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
-          <td><code class="mono">${escapeHtml(it.submissionId || "")}</code></td>
-          <td style="text-align:center;">${it.printedAt ? "✅" : ""}</td>
-          <td>${escapeHtml(it.printedBy || "")}</td>
-          <td style="text-align:center;">${it.turnedInOn ? "✅" : ""}</td>
-          <td>${escapeHtml((it.notes || "").slice(0, 40))}</td>
-        </tr>
-      `).join("");
-    }
+  tbody.innerHTML = filtered.map(it => `
+    <tr data-id="${attrEscape(it.submissionId)}">
+      <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
+      <td>${escapeHtml(it.pageType || "")}</td>
+      <td>${escapeHtml(it.customerName || "")}</td>
+      <td>${escapeHtml(it.date || "")}</td>
+      <td>${escapeHtml(it.mloNumber || "")}</td>
+      <td>${escapeHtml(it.registerNumber || "")}</td>
+      <td>${escapeHtml(it.foreman || "")}</td>
+      <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
+      <td><code>${escapeHtml(it.submissionId || "")}</code></td>
+
+      <!-- Edit -->
+      <td>
+        <button type="button"
+          class="btnEdit"
+          data-id="${attrEscape(it.submissionId)}"
+          style="width:auto;padding:6px 10px;font-size:13px;">
+          Edit
+        </button>
+      </td>
+
+      <!-- Print -->
+      <td>
+        <button type="button"
+          class="btnPrint"
+          data-id="${attrEscape(it.submissionId)}"
+          style="width:auto;padding:6px 10px;font-size:13px;">
+          Print
+        </button>
+      </td>
+
+      <!-- Add Note -->
+      <td>
+        <button type="button"
+          class="btnNote"
+          data-id="${attrEscape(it.submissionId)}"
+          style="width:auto;padding:6px 10px;font-size:13px;">
+          Add Note
+        </button>
+      </td>
+
+      <!-- Notes preview -->
+        <td title="${tooltipAttr(it.notes || "")}">
+          ${it.notes ? "📝 " : ""}
+          ${escapeHtml((it.notes || "").slice(0, 60))}
+          ${(it.notes || "").length > 60 ? "…" : ""}
+      </td>
+
+    </tr>
+  `).join("");
+}
 
     // Row click
-    tbody.addEventListener("click", (e) => {
-      const tr = e.target.closest("tr");
-      if (!tr) return;
-      const id = tr.dataset.id;
-      if (!id) return;
-      openDetail(id);
-    });
+    tbody.addEventListener("click", async (e) => {
+  const btnEdit  = e.target.closest(".btnEdit");
+  const btnPrint = e.target.closest(".btnPrint");
+  const btnNote  = e.target.closest(".btnNote");
+
+  // If a button was clicked, don't also treat it like a row click
+  if (btnEdit || btnPrint || btnNote) e.stopPropagation();
+
+  // EDIT -> open detail pane
+  if (btnEdit) {
+    const id = btnEdit.dataset.id;
+    openDetail(id);
+    return;
+  }
+
+  // PRINT -> open print view + mark printed
+  if (btnPrint) {
+    const id = btnPrint.dataset.id;
+    try {
+      const by = getOwnerName();
+
+      // open print view
+      const pr = new URL(API_URL);
+      pr.searchParams.set("action","print");
+      pr.searchParams.set("id", id);
+      pr.searchParams.set("key", key);
+      window.open(pr.toString(), "_blank");
+
+      // mark printed
+      setStatus("Marking Printed…");
+      await ownerPost("printed", id, { by });
+      await fetchList();
+      setStatus("Printed ✅");
+    } catch (err) {
+      setStatus("Error: " + err.message);
+    }
+    return;
+  }
+
+  // ADD NOTE -> prompt + save
+  if (btnNote) {
+    const id = btnNote.dataset.id;
+    try {
+      const existing = (items.find(x => x.submissionId === id)?.notes || "").trim();
+      const note = prompt("Notes:", existing) || "";
+      if (!note.trim()) return;
+
+      setStatus("Saving Note…");
+      await ownerPost("note", id, { note });
+      await fetchList();
+      setStatus("Note saved ✅");
+    } catch (err) {
+      setStatus("Error: " + err.message);
+    }
+    return;
+  }
+
+  // default: row click opens detail
+  const tr = e.target.closest("tr");
+  if (!tr) return;
+  const id = tr.dataset.id;
+  if (!id) return;
+  openDetail(id);
+});
+
+    function tooltipAttr(s) {
+  // safe for putting into an HTML attribute
+  return attrEscape(String(s ?? "").replace(/\r\n/g, "\n"));
+}
+
 
     async function ownerPost(op, submissionId, extra = {}) {
       const url = new URL(API_URL);
