@@ -611,7 +611,7 @@ tbody.addEventListener("click", (e) => {
         const f = p.fields || {};
         const r = p.repeaters || {};
 
-        detailTitle.textContent = `${p.pageType || "Submission"} — ${selectedId}`;
+        detailTitle.textContent = `${Type || "Submission"} — ${selectedId}`;
         detailMeta.textContent = `Device: ${p.deviceId || ""} • Created: ${fmtDate(p.createdAt)} • Page: ${p.pageType || ""}`;
         detailCard.style.display = "block";
 
@@ -679,8 +679,6 @@ tbody.addEventListener("click", (e) => {
 qEl.addEventListener("input", renderTable);
 pageTypeEl.addEventListener("change", renderTable);
 
-console.log("FULL PAYLOAD:", p);
-console.log("pageType value:", p.pageType);
 
 
     // boot
