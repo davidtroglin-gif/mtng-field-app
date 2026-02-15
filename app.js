@@ -3,6 +3,10 @@ import { db } from "./db.js";
 // ===== CONFIG =====
 const API_URL =
   "https://script.google.com/macros/s/AKfycby4A2Ci8N6IFLB7oORb7KKThB_jqW580SV0EvG67CZ1FFoudWgLttJ8PyOiqPMKXtDiEQ/exec";
+const params = new URLSearchParams(location.search);
+const editId = params.get("edit") || "";
+const ownerKey = params.get("key") || ""; // ✅ pulled from URL
+
 
 // ---- UI helpers ----
 const netStatusEl = document.getElementById("netStatus");
@@ -555,9 +559,20 @@ async function loadForEdit(submissionId) {
     url.searchParams.set("action", "get");
     url.searchParams.set("id", submissionId);
 
+    if (ownerKey) url.searchParams.set("key", ownerKey);
+    
     const res = await fetch(url.toString(), { cache: "no-store" });
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || "Failed to load");
+
+    const txt = await res.text();
+      debug("GET payload response: " + txt.slice(0, 200));
+      
+      let json;
+      try { json = JSON.parse(txt); }
+      catch { throw new Error("GET response not JSON (likely missing key/auth)"); }
+      
+      if (!json.ok) throw new Error(json.error || "Failed to load");
 
     const p = json.payload || {};
     const fields = p.fields || {};
@@ -733,6 +748,12 @@ async function buildPayload() {
 // =====================================================
 async function postSubmit(payload) {
   debug("Submitting…");
+
+  const url = new URL(API_URL);
+
+  // ✅ if your backend expects key for edits, pass it
+  if (ownerKey) url.searchParams.set("key", ownerKey);
+  
   const res = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -885,5 +906,6 @@ document.getElementById("openDrafts")?.addEventListener("click", () => {
 document.getElementById("openQueue")?.addEventListener("click", () => {
   debug("openQueue clicked (handler not implemented in this drop-in).");
 });
+
 
 
