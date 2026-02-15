@@ -661,9 +661,119 @@ console.log("[repeater] payload keys:", Object.keys(repeaters || {}));
 
 let _editLoading = false;
 
+// =====================================================
+// EDIT: Drop-in replacement loader + field population
+// =====================================================
+
+let _editLoading = false;
+
+// safe CSS escape
+function cssEsc_(s) {
+  if (window.CSS && CSS.escape) return CSS.escape(String(s));
+  return String(s).replace(/"/g, '\\"');
+}
+
+function dispatchFieldEvents_(el) {
+  // Make any dependent logic react (show/hide, calculations, etc.)
+  try { el.dispatchEvent(new Event("input",  { bubbles: true })); } catch {}
+  try { el.dispatchEvent(new Event("change", { bubbles: true })); } catch {}
+}
+
+function toArrayVal_(v) {
+  // payload might store checkbox groups as array or comma string
+  if (Array.isArray(v)) return v.map(x => String(x));
+  if (v === null || v === undefined) return [];
+  const s = String(v).trim();
+  if (!s) return [];
+  // try comma-separated
+  if (s.includes(",")) return s.split(",").map(x => x.trim()).filter(Boolean);
+  return [s];
+}
+
+// Sets every control with a given name (handles groups correctly)
+function setByName_(formEl, name, value) {
+  const n = String(name || "").trim();
+  if (!n) return;
+
+  const sel = `[name="${cssEsc_(n)}"]`;
+  const els = Array.from(formEl.querySelectorAll(sel));
+  if (!els.length) return;
+
+  // Determine group type
+  const types = new Set(els.map(e => (e.type || "").toLowerCase()));
+
+  // ---- RADIO GROUP ----
+  if (types.has("radio")) {
+    const target = (value ?? "");
+    els.forEach(r => {
+      r.checked = String(r.value) === String(target);
+      dispatchFieldEvents_(r);
+    });
+    return;
+  }
+
+  // ---- CHECKBOX GROUP (multiple checkboxes with same name) ----
+  const checkboxEls = els.filter(e => (e.type || "").toLowerCase() === "checkbox");
+  if (checkboxEls.length > 1) {
+    const want = new Set(toArrayVal_(value));
+    checkboxEls.forEach(cb => {
+      cb.checked = want.has(String(cb.value));
+      dispatchFieldEvents_(cb);
+    });
+    return;
+  }
+
+  // ---- SINGLE ELEMENT ----
+  const el = els[0];
+  const t = (el.type || "").toLowerCase();
+
+  if (t === "checkbox") {
+    // single checkbox stored as boolean / yes/no / 1/0
+    el.checked = isCheckedVal(value);
+    dispatchFieldEvents_(el);
+    return;
+  }
+
+  if (el.tagName === "SELECT") {
+    el.value = (value ?? "");
+    dispatchFieldEvents_(el);
+    return;
+  }
+
+  // default (text/number/date/time/textarea/etc.)
+  el.value = (value ?? "");
+  dispatchFieldEvents_(el);
+}
+
+// Populate all fields (not just the visible section)
+// This is important because you may have shared fields outside the section.
+function populateAllFields_(formEl, fieldsObj) {
+  const fields = fieldsObj && typeof fieldsObj === "object" ? fieldsObj : {};
+
+  Object.entries(fields).forEach(([k, v]) => {
+    setByName_(formEl, k, v);
+  });
+}
+
+// Optional: if you also want to support fields keyed by id in payload,
+// uncomment this. (Only if your backend stores ids.)
+// function populateById_(formEl, fieldsObj) {
+//   const fields = fieldsObj && typeof fieldsObj === "object" ? fieldsObj : {};
+//   Object.entries(fields).forEach(([k, v]) => {
+//     const el = document.getElementById(k);
+//     if (!el) return;
+//     if (el.name) return; // name-based already handles it
+//     const t = (el.type || "").toLowerCase();
+//     if (t === "checkbox") el.checked = isCheckedVal(v);
+//     else el.value = (v ?? "");
+//     dispatchFieldEvents_(el);
+//   });
+// }
+
 async function loadForEdit(submissionId) {
-   if (_editLoading) return;          // ✅ prevents double-run
+  if (_editLoading) return;
   _editLoading = true;
+
   try {
     setStatus("Loading for edit…");
     console.log("EDIT submissionId:", submissionId);
@@ -676,94 +786,75 @@ async function loadForEdit(submissionId) {
     console.log("GET URL:", url.toString());
 
     const res = await fetch(url.toString(), { cache: "no-store" });
-    const text = await res.text();
-    console.log("RAW RESPONSE:", text);
+    const raw = await res.text();
+    console.log("RAW RESPONSE:", raw);
 
-    const json = JSON.parse(text);
+    const json = JSON.parse(raw);
     console.log("PARSED JSON:", json);
 
     if (!json.ok) throw new Error(json.error || "Failed to load");
 
     const p = json.payload || {};
-const fields = p.fields || {};
-const repeaters = p.repeaters || {};
+    const fields = p.fields || {};
+    const repeaters = p.repeaters || {};
 
-// ---- SET EDIT MODE ----
-currentId = submissionId;
-mode = "edit";
+    // ---- SET EDIT MODE ----
+    currentId = submissionId;
+    mode = "edit";
 
-// reset first
-form.reset();
+    // Reset first (keeps it clean)
+    form.reset();
 
-// set page type BEFORE populating anything
-const pt = String(p.pageType || "").trim();
-console.log("EDIT pageType:", JSON.stringify(pt));
+    // ---- SET PAGE TYPE FIRST + SHOW SECTION ----
+    const pt = String(p.pageType || "Leak Repair").trim();
+    console.log("EDIT pageType:", JSON.stringify(pt));
 
-if (pageTypeEl) {
-  const exists = [...pageTypeEl.options].some(o => o.value === pt);
-  pageTypeEl.value = exists ? pt : "Leak Repair";
-  updatePageSections();
-}
+    if (pageTypeEl) {
+      const exists = [...pageTypeEl.options].some(o => o.value === pt);
+      pageTypeEl.value = exists ? pt : "Leak Repair";
+      updatePageSections(); // makes correct section visible before we set values
+    }
+
+    // ---- SKETCH ----
     existingSketch = p.sketch || null;
-sketchDirty = false;
+    sketchDirty = false;
 
-if (existingSketch?.dataUrl) {
-  await drawDataUrlToCanvas_(existingSketch.dataUrl);
-}
+    if (existingSketch?.dataUrl) {
+      await drawDataUrlToCanvas_(existingSketch.dataUrl);
+    }
 
-// ✅ NOW populate repeaters (pt is defined + correct section is visible)
-populateRepeatersForPage(pt, repeaters);
+    // ---- REPEATERS (yours already works) ----
+    populateRepeatersForPage(pt, repeaters);
 
-    console.log("Rows now in mainsMaterials:", document.getElementById("mainsMaterials")?.querySelectorAll('[data-row]').length);
+    // ---- FIELDS (FIXED) ----
+    // 1) Populate all fields across the form (handles groups + multiple same-name inputs)
+    populateAllFields_(form, fields);
 
-
-console.log("REPEATERS OBJECT:", repeaters);
-console.log("REPEATER KEYS:", Object.keys(repeaters));
-
-// ---- Populate fields ----
-Object.entries(fields).forEach(([k, v]) => {
-  const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : String(k).replace(/"/g, '\\"');
-  const el = form.querySelector(`[name="${esc}"]`);
-  if (!el) return;
-
-  if (el.type === "checkbox") el.checked = !!v;
-  else if (el.type === "radio") {
-    form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)
-      .forEach(r => r.checked = (String(r.value) === String(v)));
-  } else {
-    el.value = (v ?? "");
-  }
-});
+    // 2) If you have conditional sub-sections inside the page that depend on
+    //    certain values, the dispatch events above should trigger them.
+    //    But if you have logic that only runs on pageType change,
+    //    force it one more time:
+    updatePageSections();
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.textContent = "Update Submission";
 
-    // ---- Populate fields ----
-    Object.entries(fields).forEach(([k, v]) => {
-      const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : String(k).replace(/"/g, '\\"');
-      const el = form.querySelector(`[name="${esc}"]`);
-      if (!el) return;
-
-      if (el.type === "checkbox") el.checked = !!v;
-      else if (el.type === "radio") {
-        form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)
-          .forEach(r => r.checked = (String(r.value) === String(v)));
-      } else {
-        el.value = (v ?? "");
-      }
-    });
-
     setStatus("Edit mode ready ✅");
+    console.log("✅ Edit load complete for", submissionId);
+
   } catch (err) {
     console.error(err);
     setStatus("Edit load failed: " + (err?.message || err));
+  } finally {
+    _editLoading = false;
   }
 }
 
 window.addEventListener("DOMContentLoaded", () => {
   if (editId) loadForEdit(editId);
 });
+
 
 
 // =====================================================
@@ -843,9 +934,9 @@ async function buildPayload() {
   const fields = gatherFieldsNormalized(form);
   const repeaters = gatherRepeaters();
 
-  const sketch = canvas
-    ? { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") }
-    : null;
+  //const sketch = canvas
+    //? { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") }
+    //: null;
 
   const photoInput = form.querySelector('input[type="file"][data-photos]');
   const files = Array.from(photoInput?.files || []).slice(0, 5);
@@ -1073,6 +1164,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
