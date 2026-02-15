@@ -1106,10 +1106,8 @@ async function postSubmit(payload) {
   }
 }
 
-async function trySync() {
-  if (!navigator.onLine) return;
 
-  const queued = await db.getAll("queue");
+const queued = await db.getAll("queue");
   queued.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
 
   for (const item of queued) {
@@ -1215,8 +1213,8 @@ function _setElValue(el, v) {
   else el.value = (v ?? "");
 }
 
-const els = form.querySelectorAll(`[name="${esc}"]`);
-if (!els.length) return;
+//const els = form.querySelectorAll(`[name="${esc}"]`);
+//if (!els.length) return;
 
 els.forEach((el) => {
   if (el.type === "checkbox") el.checked = isCheckedVal(v);
@@ -1288,6 +1286,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
