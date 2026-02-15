@@ -664,7 +664,120 @@ let _editLoading = false;
 // =====================================================
 // EDIT: Drop-in replacement loader + field population
 // =====================================================
+// ---------- field population (bulletproof) ----------
+function attrValEsc_(s) {
+  // Escape for CSS attribute selector values inside double quotes
+  return String(s ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
 
+function fireInputChange_(el) {
+  try { el.dispatchEvent(new Event("input",  { bubbles: true })); } catch {}
+  try { el.dispatchEvent(new Event("change", { bubbles: true })); } catch {}
+}
+
+function setElValue_(el, v) {
+  if (!el) return;
+  const t = (el.type || "").toLowerCase();
+
+  if (t === "checkbox") {
+    el.checked = isCheckedVal(v);
+    fireInputChange_(el);
+    return;
+  }
+
+  if (t === "radio") {
+    el.checked = (String(el.value) === String(v));
+    fireInputChange_(el);
+    return;
+  }
+
+  el.value = (v ?? "");
+  fireInputChange_(el);
+}
+
+function buildNameIndex_(root) {
+  // normalized-name -> list of elements
+  const idx = new Map();
+  const all = Array.from(root.querySelectorAll("input[name],select[name],textarea[name]"));
+  for (const el of all) {
+    const nk = normKey(el.name);
+    if (!nk) continue;
+    if (!idx.has(nk)) idx.set(nk, []);
+    idx.get(nk).push(el);
+  }
+  return idx;
+}
+
+function findElsByKey_(formEl, key, nameIndexDoc, nameIndexForm) {
+  const kRaw = String(key ?? "");
+  const kNorm = normKey(kRaw);
+
+  // 1) exact name inside form
+  let els = Array.from(formEl.querySelectorAll(`[name="${attrValEsc_(kRaw)}"]`));
+  if (els.length) return els;
+
+  // 2) exact name anywhere
+  els = Array.from(document.querySelectorAll(`[name="${attrValEsc_(kRaw)}"]`));
+  if (els.length) return els;
+
+  // 3) normalized name match (form first, then document)
+  if (kNorm) {
+    const inForm = nameIndexForm.get(kNorm);
+    if (inForm?.length) return inForm;
+
+    const inDoc = nameIndexDoc.get(kNorm);
+    if (inDoc?.length) return inDoc;
+  }
+
+  // 4) id match
+  const byId = document.getElementById(kRaw) || (kNorm ? document.getElementById(kNorm) : null);
+  if (byId) return [byId];
+
+  // 5) data-field match (optional)
+  const df = Array.from(document.querySelectorAll(`[data-field="${attrValEsc_(kRaw)}"]`));
+  if (df.length) return df;
+
+  return [];
+}
+
+function populateFieldsSmart_(formEl, fieldsObj) {
+  const fields = (fieldsObj && typeof fieldsObj === "object") ? fieldsObj : {};
+
+  // build name indexes once (fast + fixes NBSP/spacing mismatches)
+  const nameIndexDoc  = buildNameIndex_(document);
+  const nameIndexForm = buildNameIndex_(formEl);
+
+  for (const [k, v] of Object.entries(fields)) {
+    const els = findElsByKey_(formEl, k, nameIndexDoc, nameIndexForm);
+    if (!els.length) {
+      // uncomment for troubleshooting
+      // console.warn("No element found for field key:", JSON.stringify(k));
+      continue;
+    }
+
+    const types = new Set(els.map(e => (e.type || "").toLowerCase()));
+
+    // radio group
+    if (types.has("radio")) {
+      els.forEach(r => setElValue_(r, v));
+      continue;
+    }
+
+    // checkbox group (multiple checkboxes same name)
+    const cbs = els.filter(e => (e.type || "").toLowerCase() === "checkbox");
+    if (cbs.length > 1) {
+      const want = new Set(Array.isArray(v) ? v.map(String) : [String(v)]);
+      cbs.forEach(cb => {
+        cb.checked = want.has(String(cb.value));
+        fireInputChange_(cb);
+      });
+      continue;
+    }
+
+    // single element
+    setElValue_(els[0], v);
+  }
+}
 
 // safe CSS escape
 function cssEsc_(s) {
@@ -825,15 +938,15 @@ async function loadForEdit(submissionId) {
     // ---- REPEATERS (yours already works) ----
     populateRepeatersForPage(pt, repeaters);
 
-    // ---- FIELDS (FIXED) ----
-    // 1) Populate all fields across the form (handles groups + multiple same-name inputs)
-    populateAllFields_(form, fields);
+    // ---- FIELDS (SMART) ----
+// Populate all fields (works even if the element is outside <form>, has NBSP spacing,
+// or uses id/data-field instead of name)
+populateFieldsSmart_(form, fields);
 
-    // 2) If you have conditional sub-sections inside the page that depend on
-    //    certain values, the dispatch events above should trigger them.
-    //    But if you have logic that only runs on pageType change,
-    //    force it one more time:
-    updatePageSections();
+// Optional: only keep this if you truly need it.
+// In most cases, populateFieldsSmart_ already triggers change/input events,
+// so updatePageSections() is only needed if pageType logic is special.
+updatePageSections();
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
@@ -1175,6 +1288,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
