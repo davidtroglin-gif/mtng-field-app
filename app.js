@@ -629,7 +629,7 @@ async function loadForEdit(submissionId) {
     });
 
     // repeaters for that pageType
-    populateRepeatersForPage(pt, repeaters);
+   // populateRepeatersForPage(pt, repeaters);
 
     setStatus("Edit mode ready ✅");
   } catch (err) {
@@ -928,8 +928,8 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 window.addEventListener("DOMContentLoaded", () => {
   const qs = new URLSearchParams(location.search);
-  ownerKey = qs.get("key") || "";
-  const editId = qs.get("edit") || "";
+  //ownerKey = qs.get("key") || "";
+  //const editId = qs.get("edit") || "";
   if (editId) loadForEdit(editId);
 });
 
@@ -939,6 +939,7 @@ if (editId) {
 
 updatePageSections();
 updateNet();
+
 
 
 
