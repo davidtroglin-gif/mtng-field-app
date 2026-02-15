@@ -740,7 +740,7 @@ function findElsByKey_(formEl, key, nameIndexDoc, nameIndexForm) {
   return [];
 }
 
-function populateFieldsSmart_(formEl, fieldsObj) {
+/*function populateFieldsSmart_(formEl, fieldsObj) {
   const fields = (fieldsObj && typeof fieldsObj === "object") ? fieldsObj : {};
 
   // build name indexes once (fast + fixes NBSP/spacing mismatches)
@@ -855,7 +855,7 @@ function setByName_(formEl, name, value) {
   // default (text/number/date/time/textarea/etc.)
   el.value = (value ?? "");
   dispatchFieldEvents_(el);
-}
+}*/
 
 // =====================================================
 // FIELDS: Smart population (drop-in)
@@ -1347,6 +1347,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
