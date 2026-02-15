@@ -25,12 +25,73 @@
     .btnrow button { flex:1; min-width: 160px; }
     code { font-size: 12px; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-
+    /* --- Notes modal --- */
+.modalBack {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.35);
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 14px;
+  z-index: 9999;
+}
+.modalCard {
+  width: min(720px, 100%);
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+.modalHead {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-bottom: 8px;
+}
+.modalTitle { font-weight: 800; }
+.modalBody textarea{
+  width: 100%;
+  min-height: 160px;
+  font-size: 16px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+}
+.modalBtns { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+.modalBtns button { flex:1; min-width:140px; }
+.noteIconBtn{
+  width:auto;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+  cursor: pointer;
+  font-size: 16px;
+}
+.noteIconBtn:active { transform: scale(.98); }
     @media (max-width: 900px) {
       .mediaGrid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
+  <div id="noteModalBack" class="modalBack">
+  <div class="modalCard">
+    <div class="modalHead">
+      <div class="modalTitle" id="noteModalTitle">Notes</div>
+      <button id="noteModalClose" type="button" style="width:auto;">Close</button>
+    </div>
+
+    <div class="modalBody">
+      <textarea id="noteModalText" placeholder="No notes yet…" disabled></textarea>
+    </div>
+
+    <div class="modalBtns">
+      <button id="noteModalEdit" type="button">Edit</button>
+      <button id="noteModalSave" type="button" disabled>Save</button>
+    </div>
+
+    <div class="small" id="noteModalMeta" style="margin-top:8px;"></div>
+  </div>
+</div>
 <body>
   <header>
     <div style="font-weight:800;">MTNG Owner Dashboard</div>
@@ -298,6 +359,82 @@
       return hay.includes(q);
     }
 
+    // ---- Notes Modal ----
+const noteModalBack  = document.getElementById("noteModalBack");
+const noteModalClose = document.getElementById("noteModalClose");
+const noteModalTitle = document.getElementById("noteModalTitle");
+const noteModalText  = document.getElementById("noteModalText");
+const noteModalEdit  = document.getElementById("noteModalEdit");
+const noteModalSave  = document.getElementById("noteModalSave");
+const noteModalMeta  = document.getElementById("noteModalMeta");
+
+let noteModalId = "";
+let noteModalEditing = false;
+
+function openNoteModal(submissionId){
+  noteModalId = submissionId;
+  noteModalEditing = false;
+
+  const it = items.find(x => String(x.submissionId) === String(submissionId));
+  const note = (it?.notes ?? "").toString();
+
+  noteModalTitle.textContent = `Notes — ${submissionId}`;
+  noteModalText.value = note;
+  noteModalText.disabled = true;
+
+  noteModalEdit.disabled = false;
+  noteModalSave.disabled = true;
+
+  noteModalMeta.textContent = it
+    ? `Customer: ${it.customerName || ""} • Page: ${it.pageType || ""} • Synced: ${fmtDate(it.syncedAt)}`
+    : "";
+
+  noteModalBack.style.display = "flex";
+}
+
+function closeNoteModal(){
+  noteModalBack.style.display = "none";
+  noteModalId = "";
+}
+
+noteModalClose.addEventListener("click", closeNoteModal);
+noteModalBack.addEventListener("click", (e) => {
+  if (e.target === noteModalBack) closeNoteModal(); // click backdrop closes
+});
+
+noteModalEdit.addEventListener("click", () => {
+  noteModalEditing = true;
+  noteModalText.disabled = false;
+  noteModalText.focus();
+
+  noteModalEdit.disabled = true;
+  noteModalSave.disabled = false;
+});
+
+noteModalSave.addEventListener("click", async () => {
+  if (!noteModalId) return;
+  try {
+    setStatus("Saving note…");
+    await ownerPost("note", noteModalId, { note: noteModalText.value });
+
+    // refresh list so table + in-memory items update
+    await fetchList();
+
+    setStatus("Note saved ✅");
+    closeNoteModal();
+  } catch (e) {
+    setStatus("Error: " + e.message);
+  }
+});
+
+// delegate note icon clicks inside table
+tbody.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-note-id]");
+  if (!btn) return;
+  e.stopPropagation(); // prevent row openDetail click
+  openNoteModal(btn.getAttribute("data-note-id"));
+});
+
     function renderTable(){
   const filtered = items.filter(matchesFilters);
   metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
@@ -313,6 +450,12 @@
       <td>${escapeHtml(it.foreman || "")}</td>
       <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
       <td><code>${escapeHtml(it.submissionId || "")}</code></td>
+      <td style="text-align:center;">
+          ${it.notes && String(it.notes).trim()
+            ? `<button type="button" class="noteIconBtn" data-note-id="${attrEscape(it.submissionId)}" title="View / Edit Note">📝</button>`
+            : `<button type="button" class="noteIconBtn" data-note-id="${attrEscape(it.submissionId)}" title="Add Note">➕</button>`
+          }
+      </td>
 
       <!-- Edit -->
       <td>
