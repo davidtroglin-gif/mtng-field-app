@@ -1172,15 +1172,22 @@ async function postSubmit(payload) {
 async function trySync() {
   if (!navigator.onLine) return;
 
-  const queued = await db.getAll("queue");
-  queued.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
+  try {
+    const queued = await db.getAll("queue");
+    if (!queued?.length) return;
 
-  for (const item of queued) {
-    const ok = await postSubmit(item);
-    if (!ok) break; // stop trying further items for now
-    await db.del("queue", item.submissionId);
+    queued.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
+
+    for (const item of queued) {
+      const ok = await postSubmit(item);
+      if (!ok) break;
+      await db.del("queue", item.submissionId);
+    }
+  } catch (e) {
+    debug("Sync error: " + (e?.message || e));
   }
 }
+
 
 async function submitNow() {
   const payload = await buildPayload();
@@ -1278,18 +1285,6 @@ function _setElValue(el, v) {
   else el.value = (v ?? "");
 }
 
-const els = form.querySelectorAll(`[name="${esc}"]`);
-if (!els.length) return;
-
-els.forEach((el) => {
-  if (el.type === "checkbox") el.checked = isCheckedVal(v);
-  else if (el.type === "radio") {
-    // handled below as a group
-  } else {
-    el.value = (v ?? "");
-  }
-});
-
 // fill inputs inside ONE repeater row by matching data-k
 function applyRepeaterRowValues(rowEl, rowObj) {
   if (!rowEl || !rowObj) return;
@@ -1351,6 +1346,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
