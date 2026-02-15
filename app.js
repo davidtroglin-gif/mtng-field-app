@@ -1342,11 +1342,12 @@ function populateRepeater(bindingKey, rows) {
     applyRepeaterRowValues(newRow, rowObj || {});
   });
 
-  console.log(`✅ populated ${bindingKey}:`, arr.length);
+  //console.log(`✅ populated ${bindingKey}:`, arr.length);
 }
 
 updatePageSections();
 updateNet();
+
 
 
 
