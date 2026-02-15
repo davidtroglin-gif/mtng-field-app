@@ -445,7 +445,26 @@ document.getElementById("addRetStructures")?.addEventListener("click", () => add
 document.getElementById("addRetNewMaterials")?.addEventListener("click", () => addRetNewMaterialsRow());
 
 // initial starter rows (only if containers exist)
-if (pipeMaterialsEl) addPipeMaterialRow();
+if (!editId) {
+  if (pipeMaterialsEl) addPipeMaterialRow();
+  if (otherMaterialsEl) addOtherMaterialRow();
+  if (pipeTestsEl) addPipeTestRow();
+
+  if (mainsMaterialsEl) addMainsMaterialRow();
+  if (mainsOtherMaterialsEl) addMainsOtherMaterialRow();
+  if (mainsPipeTestsEl) addMainsPipeTestRow();
+
+  if (svcMaterialsEl) addSvcMaterialRow();
+  if (svcOtherMaterialsEl) addSvcOtherMaterialRow();
+  if (svcPipeTestsEl) addSvcPipeTestRow();
+
+  if (retSectionEl) addRetSectionRow();
+  if (retStructuresEl) addRetStructuresRow();
+  if (retNewMaterialsEl) addRetNewMaterialsRow();
+}
+
+
+/*if (pipeMaterialsEl) addPipeMaterialRow();
 if (otherMaterialsEl) addOtherMaterialRow();
 if (pipeTestsEl) addPipeTestRow();
 
@@ -459,7 +478,7 @@ if (svcPipeTestsEl) addSvcPipeTestRow();
 
 if (retSectionEl) addRetSectionRow();
 if (retStructuresEl) addRetStructuresRow();
-if (retNewMaterialsEl) addRetNewMaterialsRow();
+if (retNewMaterialsEl) addRetNewMaterialsRow();*/
 
 // =====================================================
 // Gather fields + repeaters
@@ -551,10 +570,10 @@ function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields,
   };
 }
 
-function clearRepeaterContainer(el) {
+/*function clearRepeaterContainer(el) {
   if (!el) return;
   el.innerHTML = "";
-}
+}*/
 
 function fillRepeater(el, addRowFn, rows) {
   if (!el || typeof addRowFn !== "function") return;
@@ -575,10 +594,10 @@ function fillRepeater(el, addRowFn, rows) {
 // =====================================================
 
 // Removes only repeater rows created by makeRow() ([data-row] wrapper)
-function clearRepeaterContainer(containerEl) {
+/*function clearRepeaterContainer(containerEl) {
   if (!containerEl) return;
   containerEl.querySelectorAll('[data-row]').forEach(row => row.remove());
-}
+}*/
 
 // Safe normalizer
 function normalizeRepeatersObj(repeaters) {
@@ -668,7 +687,7 @@ async function loadForEdit(submissionId) {
     const p = json.payload || {};
     const fields = p.fields || {};         // ✅ ADD THIS
     const repeaters = p.repeaters || {};   // ✅ ADD THIS
-    populateRepeatersForPage(pt, repeaters);
+  
 
     console.log("PAGE TYPE:", p.pageType);
     console.log("REPEATERS OBJECT:", repeaters);
@@ -690,6 +709,8 @@ async function loadForEdit(submissionId) {
       pageTypeEl.value = exists ? pt : "Leak Repair";
       updatePageSections();
     }
+
+      populateRepeatersForPage(pt, repeaters);
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
@@ -959,6 +980,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
