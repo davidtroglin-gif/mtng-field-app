@@ -114,18 +114,6 @@
             <option value="Services">Services</option>
           </select>
         </div>
-
-        <!--div>
-          <label>Filter</label>
-          <select id="paperworkFilter">
-            <option value="">All</option>
-            <option value="not-turned">Not Turned In</option>
-            <option value="turned">Turned In</option>
-            <option value="not-printed">Not Printed</option>
-            <option value="printed">Printed</option>
-          </select>
-      </div-->
-
         <div>
           <label>Actions</label>
           <button id="refresh" type="button">Refresh</button>
@@ -216,7 +204,7 @@
 
     const qEl = document.getElementById("q");
     const pageTypeEl = document.getElementById("pageType");
-    const paperworkFilterEl = document.getElementById("paperworkFilter");
+    
 
     const detailCard = document.getElementById("detailCard");
     const detailTitle = document.getElementById("detailTitle");
@@ -338,7 +326,8 @@
     function matchesFilters(it){
       const q = (qEl.value || "").trim().toLowerCase();
       const pt = pageTypeEl.value || "";
-      const pw = paperworkFilterEl.value || "";
+     //const pw = paperworkFilterEl ? (paperworkFilterEl.value || "") : "";
+
 
       if (pt && !samePageType(it.pageType, pt)) return false;
 
@@ -518,13 +507,14 @@ tbody.addEventListener("click", (e) => {
   }
 
   // Edit button
- const editBtn = e.target.closest("[data-edit-id]");
+const editBtn = e.target.closest("[data-edit-id]");
 if (editBtn) {
+  e.preventDefault();
   e.stopPropagation();
   const sid = editBtn.getAttribute("data-edit-id");
   const u = new URL("https://davidtroglin-gif.github.io/mtng-field-app/index.html");
   u.searchParams.set("edit", sid);
-  u.searchParams.set("key", key); // pass owner key through
+  u.searchParams.set("key", key);
   window.open(u.toString(), "_blank");
   return;
 }
@@ -690,11 +680,21 @@ if (editBtn) {
       }
     }
 
+    document.getElementById("refresh").addEventListener("click", () =>
+  fetchList().catch(e => setStatus("Error: " + e.message))
+);
+
+qEl.addEventListener("input", renderTable);
+pageTypeEl.addEventListener("change", renderTable);
+
+if (paperworkFilterEl) paperworkFilterEl.addEventListener("change", renderTable);
+
     // UI hooks
     document.getElementById("refresh").addEventListener("click", () => fetchList().catch(e => setStatus("Error: " + e.message)));
     qEl.addEventListener("input", renderTable);
     pageTypeEl.addEventListener("change", renderTable);
-    paperworkFilterEl.addEventListener("change", renderTable);
+    //if (paperworkFilterEl) paperworkFilterEl.addEventListener("change", renderTable);
+
 
     // boot
     fetchList().catch(e => setStatus("Error: " + e.message));
