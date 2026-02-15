@@ -67,25 +67,6 @@
   cursor: pointer;
   font-size: 16px;
 }
-.noteIconBtn:active { transform: scale(.98); }
-    noteModalSave.addEventListener("click", async () => {
-  if (!noteModalId) return;
-  try {
-    setStatus("Saving note…");
-    await ownerPost("note", noteModalId, { note: noteModalText.value });
-
-    // Optimistic local update (snappy on tablet)
-    const it = items.find(x => String(x.submissionId) === String(noteModalId));
-    if (it) it.notes = noteModalText.value;
-
-    await fetchList(); // refresh table + keep authoritative
-
-    setStatus("Note saved ✅");
-    closeNoteModal(true);
-  } catch (e) {
-    setStatus("Error: " + e.message);
-  }
-});
     @media (max-width: 900px) {
       .mediaGrid { grid-template-columns: 1fr; }
     }
@@ -414,6 +395,26 @@ function openNoteModal(submissionId){
   // helpful on tablet: scroll textarea into view
   setTimeout(() => noteModalText.scrollIntoView({ block: "nearest" }), 0);
 }
+
+    .noteIconBtn:active { transform: scale(.98); }
+    noteModalSave.addEventListener("click", async () => {
+  if (!noteModalId) return;
+  try {
+    setStatus("Saving note…");
+    await ownerPost("note", noteModalId, { note: noteModalText.value });
+
+    // Optimistic local update (snappy on tablet)
+    const it = items.find(x => String(x.submissionId) === String(noteModalId));
+    if (it) it.notes = noteModalText.value;
+
+    await fetchList(); // refresh table + keep authoritative
+
+    setStatus("Note saved ✅");
+    closeNoteModal(true);
+  } catch (e) {
+    setStatus("Error: " + e.message);
+  }
+});
 
 function closeNoteModal(force = false){
   // if editing, avoid accidental close unless force
