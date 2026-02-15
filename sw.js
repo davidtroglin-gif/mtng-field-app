@@ -1,4 +1,4 @@
-const CACHE = "mtng-forms-v13";
+const CACHE = "mtng-forms-v14";
 
 // Include owner.html too so dashboard works offline for the shell
 const ASSETS = [
@@ -72,3 +72,4 @@ self.addEventListener("fetch", (event) => {
     }
   })());
 });
+
