@@ -28,7 +28,7 @@ const sectionRetirement = document.getElementById("sectionRetirement");
 const sectionServices = document.getElementById("sectionServices");
 
 const urlParams = new URLSearchParams(window.location.search);
-const editId = urlParams.get("edit");
+//const editId = urlParams.get("edit");
 
 if (editId) {
   (editId);
@@ -942,6 +942,7 @@ if (editId) {
 
 updatePageSections();
 updateNet();
+
 
 
 
