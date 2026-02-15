@@ -1079,7 +1079,7 @@ function populateRepeater(bindingKey, rows) {
 }
 
 // --- page-aware populate ------------------------------------
-function populateRepeatersForPage(pageType, repeaters) {
+/*function populateRepeatersForPage(pageType, repeaters) {
   const pt = String(pageType || "").trim();
   const reps = (repeaters && typeof repeaters === "object") ? repeaters : {};
 
@@ -1106,12 +1106,13 @@ document.getElementById("openDrafts")?.addEventListener("click", () => {
 });
 document.getElementById("openQueue")?.addEventListener("click", () => {
   debug("openQueue clicked (handler not implemented in this drop-in).");
-});
+});*/
 
 
 
 updatePageSections();
 updateNet();
+
 
 
 
