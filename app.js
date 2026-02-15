@@ -13,6 +13,11 @@ const formMeta = document.getElementById("formMeta");
 const form = document.getElementById("form");
 const pageTypeEl = document.getElementById("pageType");
 const listCard = document.getElementById("listCard");
+const params = new URLSearchParams(location.search);
+const editId = params.get("edit");
+if (editId) {
+  loadForEdit(editId);
+}
 
 // ---- Section show/hide (4 pages) ----
 const sectionLeakRepair = document.getElementById("sectionLeakRepair");
@@ -542,6 +547,85 @@ function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields,
   };
 }
 
+async function loadForEdit(submissionId) {
+  try {
+    setStatus("Loading for edit…");
+
+    const url = new URL(API_URL);
+    url.searchParams.set("action", "get");
+    url.searchParams.set("id", submissionId);
+
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || "Failed to load");
+
+    const p = json.payload || {};
+    const fields = p.fields || {};
+    const repeaters = p.repeaters || {};
+    const media = p.media || {};
+
+    // set edit mode
+    currentId = submissionId;
+    mode = "edit";
+
+    // ensure pageType selection matches the payload
+    if (p.pageType && pageTypeEl) {
+      pageTypeEl.value = p.pageType;       // e.g. "Leak Repair"
+      updatePageSections();                // show/hide sections
+    }
+
+    // update submit button label
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = "Update Submission";
+
+    // reset the form first (so stale values don’t stick around)
+    form.reset();
+
+    // ---- Populate fields (by name attr) ----
+    Object.entries(fields).forEach(([k, v]) => {
+      let el;
+      try {
+        // CSS.escape may not exist in some older browsers
+        const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : k.replace(/"/g, '\\"');
+        el = form.querySelector(`[name="${esc}"]`);
+      } catch {
+        // fallback: brute-force lookup
+        el = Array.from(form.querySelectorAll("[name]")).find(x => x.name === k);
+      }
+
+      if (!el) return;
+
+      if (el.type === "checkbox") {
+        el.checked = !!v;
+      } else if (el.type === "radio") {
+        // match radio value
+        const radios = form.querySelectorAll(`input[type="radio"][name="${el.name}"]`);
+        radios.forEach(r => r.checked = (String(r.value) === String(v)));
+      } else {
+        el.value = (v ?? "");
+      }
+    });
+
+    // ---- Populate repeaters (only the active page) ----
+    populateRepeatersForPage(p.pageType || "", repeaters);
+
+    // ---- Load sketch into canvas (safe method; avoids CORS canvas taint) ----
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (media.sketchUrl) {
+      const dataUrl = await urlToDataUrlClient_(media.sketchUrl);
+      if (dataUrl) {
+        await drawDataUrlToCanvas_(dataUrl);
+      }
+    }
+
+    formMeta.textContent = `Editing: ${submissionId}`;
+    setStatus("Edit mode ready ✅");
+  } catch (err) {
+    setStatus("Edit load failed: " + (err?.message || err));
+  }
+}
+
+
 // =====================================================
 // Photos compression
 // =====================================================
@@ -571,6 +655,44 @@ async function fileToCompressedDataUrl(file, maxW = 1024, quality = 0.6) {
   c.getContext("2d").drawImage(img, 0, 0, w, h);
   return c.toDataURL("image/jpeg", quality);
 }
+
+async function urlToDataUrlClient_(url) {
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.warn("Sketch fetch->dataUrl failed", e);
+    return "";
+  }
+}
+
+async function drawDataUrlToCanvas_(dataUrl) {
+  return await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      // Fit the image into the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      const x = (canvas.width - w) / 2;
+      const y = (canvas.height - h) / 2;
+
+      ctx.drawImage(img, x, y, w, h);
+      resolve(true);
+    };
+    img.onerror = () => resolve(false);
+    img.src = dataUrl;
+  });
+}
+
 
 // =====================================================
 // Build payload
@@ -763,4 +885,5 @@ document.getElementById("openDrafts")?.addEventListener("click", () => {
 document.getElementById("openQueue")?.addEventListener("click", () => {
   debug("openQueue clicked (handler not implemented in this drop-in).");
 });
+
 
