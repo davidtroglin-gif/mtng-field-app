@@ -67,11 +67,17 @@
   cursor: pointer;
   font-size: 16px;
 }
+  .noteIconBtn:active { transform: scale(.98); }
     @media (max-width: 900px) {
       .mediaGrid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
+  <body>
+  <header>
+    <div style="font-weight:800;">MTNG Owner Dashboard</div>
+    <div class="small" id="status">Status: …</div>
+  </header>
   <div id="noteModalBack" class="modalBack">
   <div class="modalCard">
     <div class="modalHead">
@@ -91,12 +97,6 @@
     <div class="small" id="noteModalMeta" style="margin-top:8px;"></div>
   </div>
 </div>
-<body>
-  <header>
-    <div style="font-weight:800;">MTNG Owner Dashboard</div>
-    <div class="small" id="status">Status: …</div>
-  </header>
-
   <main>
     <div class="card">
       <div class="row">
@@ -396,18 +396,16 @@ function openNoteModal(submissionId){
   setTimeout(() => noteModalText.scrollIntoView({ block: "nearest" }), 0);
 }
 
-    .noteIconBtn:active { transform: scale(.98); }
-    noteModalSave.addEventListener("click", async () => {
+ noteModalSave.addEventListener("click", async () => {
   if (!noteModalId) return;
   try {
     setStatus("Saving note…");
     await ownerPost("note", noteModalId, { note: noteModalText.value });
 
-    // Optimistic local update (snappy on tablet)
     const it = items.find(x => String(x.submissionId) === String(noteModalId));
     if (it) it.notes = noteModalText.value;
 
-    await fetchList(); // refresh table + keep authoritative
+    await fetchList();
 
     setStatus("Note saved ✅");
     closeNoteModal(true);
@@ -415,6 +413,7 @@ function openNoteModal(submissionId){
     setStatus("Error: " + e.message);
   }
 });
+
 
 function closeNoteModal(force = false){
   // if editing, avoid accidental close unless force
@@ -445,27 +444,7 @@ noteModalEdit.addEventListener("click", () => {
   noteModalSave.disabled = false;
 });
 
-noteModalSave.addEventListener("click", async () => {
-  if (!noteModalId) return;
-  try {
-    setStatus("Saving note…");
-    await ownerPost("note", noteModalId, { note: noteModalText.value });
-
-    // Optimistic local update (snappy on tablet)
-    const it = items.find(x => String(x.submissionId) === String(noteModalId));
-    if (it) it.notes = noteModalText.value;
-
-    await fetchList(); // refresh table + keep authoritative
-
-    setStatus("Note saved ✅");
-    closeNoteModal(true);
-  } catch (e) {
-    setStatus("Error: " + e.message);
-  }
-});
-
-
-    function renderTable() {
+   function renderTable() {
   const filtered = items.filter(matchesFilters);
   metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
 
@@ -481,7 +460,6 @@ noteModalSave.addEventListener("click", async () => {
       <button type="button" class="noteIconBtn" data-print-id="${attrEscape(id)}" title="Open print">🖨️</button>
     `;
 
-    // Notes column: icon only (no note text in the cell)
     const notesBtn = `
       <button type="button" class="noteIconBtn" data-note-id="${attrEscape(id)}"
         title="${hasNote ? "View / Edit note" : "Add note"}">
@@ -491,10 +469,6 @@ noteModalSave.addEventListener("click", async () => {
 
     return `
       <tr data-id="${attrEscape(id)}">
-        <td style="text-align:center;">${editBtn}</td>
-        <td style="text-align:center;">${printBtn}</td>
-        <td style="text-align:center;">${notesBtn}</td>
-
         <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
         <td>${escapeHtml(it.pageType || "")}</td>
         <td>${escapeHtml(it.customerName || "")}</td>
@@ -504,10 +478,15 @@ noteModalSave.addEventListener("click", async () => {
         <td>${escapeHtml(it.foreman || "")}</td>
         <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
         <td><code>${escapeHtml(id)}</code></td>
+
+        <td style="text-align:center;">${editBtn}</td>
+        <td style="text-align:center;">${printBtn}</td>
+        <td style="text-align:center;">${notesBtn}</td>
       </tr>
     `;
   }).join("");
 }
+
 
    // Row click (single handler)
 tbody.addEventListener("click", (e) => {
