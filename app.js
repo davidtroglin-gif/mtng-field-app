@@ -1046,10 +1046,6 @@ async function buildPayload() {
   const fields = gatherFieldsNormalized(form);
   const repeaters = gatherRepeaters();
 
-  //const sketch = canvas
-    //? { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") }
-    //: null;
-
   const photoInput = form.querySelector('input[type="file"][data-photos]');
   const files = Array.from(photoInput?.files || []).slice(0, 5);
 
@@ -1060,11 +1056,11 @@ async function buildPayload() {
   }
 
   const sketch =
-  canvas
-    ? (sketchDirty
-        ? { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") }
-        : (existingSketch || null))
-    : (existingSketch || null);
+    canvas
+      ? (sketchDirty
+          ? { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") }
+          : (existingSketch || null))
+      : (existingSketch || null);
 
   return normalizePayload({
     submissionId: currentId,
@@ -1077,6 +1073,7 @@ async function buildPayload() {
     photos,
   });
 }
+
 
 // =====================================================
 // Submit / Sync
@@ -1283,6 +1280,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
