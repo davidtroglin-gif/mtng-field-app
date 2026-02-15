@@ -776,7 +776,7 @@ function populateFieldsSmart_(formEl, fieldsObj) {
   addToIdx(idxDoc, document);
 
   for (const [k, v] of Object.entries(fields)) {
-    const kRaw = String(k ?? "");
+    const kRaw  = String(k ?? "");
     const kNorm = normKey(kRaw);
 
     // 1) exact name inside form
@@ -795,22 +795,37 @@ function populateFieldsSmart_(formEl, fieldsObj) {
       if (byId) els = [byId];
     }
 
-    if (!els.length) {
-      // Uncomment this to see exactly which keys aren't matching anything
-      // console.warn("No element found for field:", JSON.stringify(kRaw));
-      continue;
-    }
+    if (!els.length) continue;
 
-    // Group handling
-    const hasRadio = els.some(e => (e.type || "").toLowerCase() === "radio");
-    if (hasRadio) {
+    // ✅ Prefer visible matches if any exist (fixes Mains vs Services duplicates)
+    const vis = els.filter(isVisible);
+    if (vis.length) els = vis;
+
+    const types = new Set(els.map(e => (e.type || "").toLowerCase()));
+
+    // ---- RADIO GROUP ----
+    if (types.has("radio")) {
       els.forEach(r => _set_(r, v));
       continue;
     }
 
+    // ---- CHECKBOXES ----
     const cbs = els.filter(e => (e.type || "").toLowerCase() === "checkbox");
     if (cbs.length > 1) {
-      // checkbox group: match by value
+      // If payload is boolean-ish, treat as "same checkbox duplicated on page"
+      // (Mains + Services) and set them all the same.
+      const isBoolish =
+        typeof v === "boolean" ||
+        (typeof v === "string" && ["true","false","yes","no","y","n","1","0","checked","on","off"].includes(v.trim().toLowerCase())) ||
+        typeof v === "number";
+
+      if (isBoolish) {
+        const checked = isCheckedVal(v);
+        cbs.forEach(cb => { cb.checked = checked; _fire_(cb); });
+        continue;
+      }
+
+      // Otherwise treat as a real checkbox group with distinct values
       const want = new Set(Array.isArray(v) ? v.map(String) : [String(v)]);
       cbs.forEach(cb => {
         cb.checked = want.has(String(cb.value));
@@ -819,7 +834,7 @@ function populateFieldsSmart_(formEl, fieldsObj) {
       continue;
     }
 
-    // single element
+    // ---- SINGLE ELEMENT ----
     _set_(els[0], v);
   }
 }
@@ -1222,6 +1237,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
