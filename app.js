@@ -286,7 +286,7 @@ async function drawDataUrlToCanvas_(dataUrl) {
   });
 }
 
-function getActiveSectionByPageType(pageType) {
+/*function getActiveSectionByPageType(pageType) {
   const pt = String(pageType || "").trim();
 
   if (pt === "Leak Repair") return document.getElementById("sectionLeakRepair");
@@ -296,7 +296,7 @@ function getActiveSectionByPageType(pageType) {
 
   // fallback
   return document.getElementById("sectionCustomer") || document.querySelector("form");
-}
+}*/
 
 
 
@@ -1612,6 +1612,7 @@ updatePageSections();
 updateNet();
 
 */
+
 
 
 
