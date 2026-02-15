@@ -607,10 +607,12 @@ async function loadForEdit(submissionId) {
     const pt = String(p.pageType || "").trim();
     console.log("EDIT pageType:", JSON.stringify(pt));
 
-    if (pt && pageTypeEl) {
-      pageTypeEl.value = pt;
-      updatePageSections();
-    }
+    if (pageTypeEl) {
+  const normalized = pt.trim();
+  const exists = [...pageTypeEl.options].some(o => o.value === normalized);
+  pageTypeEl.value = exists ? normalized : "Leak Repair";
+  updatePageSections();
+}
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
@@ -939,6 +941,8 @@ updateNet();
 
 
 
+console.log("FULL PAYLOAD:", p);
+console.log("pageType value:", p.pageType);
 
 
 
