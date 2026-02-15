@@ -287,6 +287,21 @@ async function drawDataUrlToCanvas_(dataUrl) {
   });
 }
 
+function getActiveSectionByPageType(pageType) {
+  const pt = String(pageType || "").trim();
+
+  if (pt === "Leak Repair") return document.getElementById("sectionLeakRepair");
+  if (pt === "Mains") return document.getElementById("sectionMains");
+  if (pt === "Retirement") return document.getElementById("sectionRetirement");
+  if (pt === "Services") return document.getElementById("sectionServices");
+
+  // fallback
+  return document.getElementById("sectionCustomer") || document.querySelector("form");
+}
+
+
+
+
 /* ---------- EDIT LOAD ---------- */
 let _editLoading = false;
 let currentId = window.currentId || "";
@@ -351,6 +366,30 @@ async function loadForEdit(submissionId) {
         el.value = (v ?? "");
       }
     });
+
+     // ---- Populate fields (SCOPED to active page section) ----
+const scope = getActiveSectionByPageType(pt) || form;
+
+Object.entries(fields).forEach(([k, v]) => {
+  const name = String(k);
+  const esc = (window.CSS && CSS.escape) ? CSS.escape(name) : name.replace(/"/g, '\\"');
+
+  // ✅ scope prevents filling the "wrong page's" Foreman, etc.
+  const el = scope.querySelector(`[name="${esc}"]`);
+  if (!el) return;
+
+  if (el.type === "checkbox") {
+    el.checked = !!v;
+  } else if (el.type === "radio") {
+    scope.querySelectorAll(`input[type="radio"][name="${esc}"]`)
+      .forEach(r => r.checked = (String(r.value) === String(v)));
+  } else {
+    el.value = (v ?? "");
+  }
+});
+
+
+    
 
     // restore sketch + prevent blank overwrite
     existingSketch = sketch;
@@ -1588,6 +1627,7 @@ updatePageSections();
 updateNet();
 
 */
+
 
 
 
