@@ -96,16 +96,15 @@ function getActivePageType() {
   return String(pageTypeEl?.value || "Leak Repair").trim();
 }
 
-function getActiveSectionByPageType(pt) {
-  const p = String(pt || "").trim();
-  return (
-    p === "Leak Repair" ? sectionLeakRepair :
-    p === "Mains"       ? sectionMains :
-    p === "Services"    ? sectionServices :
-    p === "Retirement"  ? sectionRetirement :
-    form
-  );
+function getActiveSectionByPageType(pageType) {
+  const pt = String(pageType || "").trim();
+  if (pt === "Leak Repair") return document.getElementById("sectionLeakRepair");
+  if (pt === "Mains") return document.getElementById("sectionMains");
+  if (pt === "Retirement") return document.getElementById("sectionRetirement");
+  if (pt === "Services") return document.getElementById("sectionServices");
+  return document.getElementById("sectionCustomer") || document.querySelector("form");
 }
+
 
 /* ---------- FIELD GATHER (NO isVisible gating) ---------- */
 function gatherFieldsNormalized() {
@@ -315,6 +314,7 @@ async function loadForEdit(submissionId) {
     logStatus("Loading for edit…");
     console.log("EDIT submissionId:", submissionId);
 
+    // --- Fetch payload ---
     const url = new URL(API_URL);
     url.searchParams.set("action", "get");
     url.searchParams.set("id", submissionId);
@@ -334,74 +334,58 @@ async function loadForEdit(submissionId) {
     const repeaters = p.repeaters || {};
     const sketch = p.sketch || null;
 
-    // set global mode
+    // --- Set edit mode globals ---
     currentId = submissionId;
     mode = "edit";
 
-    // reset form first
+    // --- Reset first ---
     form?.reset?.();
 
-    // set page type BEFORE populate
+    // --- Set page type + show correct section BEFORE populating ---
     if (pageTypeEl) {
-      const exists = [...pageTypeEl.options].some((o) => o.value === pt);
+      const exists = [...pageTypeEl.options].some(o => o.value === pt);
       pageTypeEl.value = exists ? pt : "Leak Repair";
     }
     if (typeof updatePageSections === "function") updatePageSections();
 
-    // populate repeaters
-    populateRepeatersForPage(pt, repeaters);
+    // --- Populate repeaters AFTER sections are visible ---
+    if (typeof populateRepeatersForPage === "function") {
+      populateRepeatersForPage(pt, repeaters);
+    }
 
-    // populate fields (by name)
+    // --- Populate fields (SCOPED to active page section) ---
+    const scope = (typeof getActiveSectionByPageType === "function")
+      ? (getActiveSectionByPageType(pt) || form)
+      : form;
+
     Object.entries(fields).forEach(([k, v]) => {
       const name = String(k);
       const esc = (window.CSS && CSS.escape) ? CSS.escape(name) : name.replace(/"/g, '\\"');
-      const el = form.querySelector(`[name="${esc}"]`);
+
+      const el = scope.querySelector(`[name="${esc}"]`);
       if (!el) return;
 
-      if (el.type === "checkbox") el.checked = !!v;
-      else if (el.type === "radio") {
-        form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)
-          .forEach((r) => (r.checked = (String(r.value) === String(v))));
+      if (el.type === "checkbox") {
+        el.checked = !!v;
+      } else if (el.type === "radio") {
+        scope.querySelectorAll(`input[type="radio"][name="${esc}"]`)
+          .forEach(r => (r.checked = (String(r.value) === String(v))));
       } else {
         el.value = (v ?? "");
       }
     });
 
-     // ---- Populate fields (SCOPED to active page section) ----
-const scope = getActiveSectionByPageType(pt) || form;
-
-Object.entries(fields).forEach(([k, v]) => {
-  const name = String(k);
-  const esc = (window.CSS && CSS.escape) ? CSS.escape(name) : name.replace(/"/g, '\\"');
-
-  // ✅ scope prevents filling the "wrong page's" Foreman, etc.
-  const el = scope.querySelector(`[name="${esc}"]`);
-  if (!el) return;
-
-  if (el.type === "checkbox") {
-    el.checked = !!v;
-  } else if (el.type === "radio") {
-    scope.querySelectorAll(`input[type="radio"][name="${esc}"]`)
-      .forEach(r => r.checked = (String(r.value) === String(v)));
-  } else {
-    el.value = (v ?? "");
-  }
-});
-
-
-    
-
-    // restore sketch + prevent blank overwrite
+    // --- Restore sketch ---
     existingSketch = sketch;
     sketchDirty = false;
 
-    if (existingSketch?.dataUrl && window.canvas && window.ctx) {
+    if (existingSketch?.dataUrl && window.canvas && window.ctx && typeof drawDataUrlToCanvas_ === "function") {
       await drawDataUrlToCanvas_(existingSketch.dataUrl);
     } else if (window.canvas && window.ctx) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    // update submit button label
+    // --- Update submit button label ---
     const submitBtn = document.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.textContent = "Update Submission";
 
@@ -413,6 +397,7 @@ Object.entries(fields).forEach(([k, v]) => {
     _editLoading = false;
   }
 }
+
 
 /* ---------- BUILD PAYLOAD ---------- */
 // You already have getDeviceId() / newSubmissionId() etc.
@@ -1627,6 +1612,7 @@ updatePageSections();
 updateNet();
 
 */
+
 
 
 
