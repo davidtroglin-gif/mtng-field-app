@@ -687,7 +687,7 @@ if (editBtn) {
 qEl.addEventListener("input", renderTable);
 pageTypeEl.addEventListener("change", renderTable);
 
-if (paperworkFilterEl) paperworkFilterEl.addEventListener("change", renderTable);
+//if (paperworkFilterEl) paperworkFilterEl.addEventListener("change", renderTable);
 
     // UI hooks
     document.getElementById("refresh").addEventListener("click", () => fetchList().catch(e => setStatus("Error: " + e.message)));
