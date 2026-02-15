@@ -648,9 +648,9 @@ async function loadForEdit(submissionId) {
 }*/
 
 // ---- Edit mode from URL (must be above loadForEdit if loadForEdit uses ownerKey) ----
-const qs = new URLSearchParams(window.location.search);
-const ownerKey = qs.get("key") || "";
-const editId = qs.get("edit") || "";
+//const qs = new URLSearchParams(window.location.search);
+//const ownerKey = qs.get("key") || "";
+//const editId = qs.get("edit") || "";
 
 window.addEventListener("DOMContentLoaded", () => {
   if (editId) loadForEdit(editId);
@@ -942,6 +942,7 @@ if (editId) {
 
 updatePageSections();
 updateNet();
+
 
 
 
