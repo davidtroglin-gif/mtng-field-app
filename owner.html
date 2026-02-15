@@ -485,17 +485,17 @@ tbody.addEventListener("click", (e) => {
   const rowId = tr.dataset.id;
   if (!rowId) return;
 
-  // Notes button
   const noteBtn = e.target.closest("[data-note-id]");
   if (noteBtn) {
+    e.preventDefault();
     e.stopPropagation();
     openNoteModal(noteBtn.getAttribute("data-note-id"));
     return;
   }
 
-  // Print button
   const printBtn = e.target.closest("[data-print-id]");
   if (printBtn) {
+    e.preventDefault();
     e.stopPropagation();
     const sid = printBtn.getAttribute("data-print-id");
     const pr = new URL(API_URL);
@@ -506,24 +506,21 @@ tbody.addEventListener("click", (e) => {
     return;
   }
 
-  // Edit button
-const editBtn = e.target.closest("[data-edit-id]");
-if (editBtn) {
-  e.preventDefault();
-  e.stopPropagation();
-  const sid = editBtn.getAttribute("data-edit-id");
-  const u = new URL("https://davidtroglin-gif.github.io/mtng-field-app/index.html");
-  u.searchParams.set("edit", sid);
-  u.searchParams.set("key", key);
-  window.open(u.toString(), "_blank");
-  return;
-}
+  const editBtn = e.target.closest("[data-edit-id]");
+  if (editBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    const sid = editBtn.getAttribute("data-edit-id");
+    const u = new URL("https://davidtroglin-gif.github.io/mtng-field-app/index.html");
+    u.searchParams.set("edit", sid);
+    u.searchParams.set("key", key);
+    window.open(u.toString(), "_blank");
+    return;
+  }
 
-
-
-  // Default: row click opens details
   openDetail(rowId);
 });
+
 
 
     function tooltipAttr(s) {
