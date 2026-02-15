@@ -18,7 +18,6 @@ const form = document.getElementById("form");
 const pageTypeEl = document.getElementById("pageType");
 console.log("pageTypeEl now:", pageTypeEl.value);
 const listCard = document.getElementById("listCard");
-const params = new URLSearchParams(location.search);
 const editId = params.get("edit");
 if (editId) {
   loadForEdit(editId);
@@ -942,6 +941,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
