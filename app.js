@@ -80,8 +80,8 @@ debug("app.js running ✅");
 
 // ---- Edit boot (DEBUG) ----
 const qs = new URLSearchParams(window.location.search);
-const ownerKey = qs.get("key") || "";
-const editId = qs.get("edit") || "";
+//const ownerKey = qs.get("key") || "";
+//const editId = qs.get("edit") || "";
 
 // show what the app thinks the URL params are
 debug(`Edit boot → editId=${editId || "(none)"} | key=${ownerKey ? "YES" : "NO"}`);
@@ -942,6 +942,7 @@ if (editId) {
 
 updatePageSections();
 updateNet();
+
 
 
 
