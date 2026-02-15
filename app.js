@@ -997,26 +997,14 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
   debug("openQueue clicked (handler not implemented in this drop-in).");
 });
 
-(function bootEditMode() {
-  const qs = new URLSearchParams(window.location.search);
-  const editId = qs.get("edit") || "";
-  if (editId) loadForEdit(editId);
-})();
-
-window.addEventListener("DOMContentLoaded", () => {
-  const qs = new URLSearchParams(location.search);
-  //ownerKey = qs.get("key") || "";
-  //const editId = qs.get("edit") || "";
-  if (editId) loadForEdit(editId);
-});
-
-if (editId) {
-  loadForEdit(editId);
-}
+//if (editId) {
+ // loadForEdit(editId);
+//}
 
 
 updatePageSections();
 updateNet();
+
 
 
 
