@@ -37,7 +37,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const editId = urlParams.get("edit");
 
 if (editId) {
-  loadForEdit(editId);
+  (editId);
 }
 
 
@@ -92,12 +92,12 @@ const editId = qs.get("edit") || "";
 // show what the app thinks the URL params are
 debug(`Edit boot → editId=${editId || "(none)"} | key=${ownerKey ? "YES" : "NO"}`);
 
-// run loadForEdit AFTER DOM is ready + after repeaters are set up
+// run  AFTER DOM is ready + after repeaters are set up
 window.addEventListener("load", () => {
   if (!editId) return;
-  debug("Calling loadForEdit(...) now…");
-  loadForEdit(editId).catch(err => {
-    debug("loadForEdit threw: " + (err?.message || err));
+  debug("Calling (...) now…");
+  (editId).catch(err => {
+    debug(" threw: " + (err?.message || err));
   });
 });
 
@@ -577,21 +577,26 @@ async function loadForEdit(submissionId) {
   try {
     setStatus("Loading for edit…");
 
+    const qs = new URLSearchParams(window.location.search);
+    const ownerKey = qs.get("key") || "";
+
     const url = new URL(API_URL);
     url.searchParams.set("action", "get");
     url.searchParams.set("id", submissionId);
     if (ownerKey) url.searchParams.set("key", ownerKey);
-    url.searchParams.set("_", Date.now().toString()); // cache bust
+    url.searchParams.set("_", Date.now().toString()); // cache-bust
 
     const res = await fetch(url.toString(), { cache: "no-store" });
-
-    // Read ONCE
     const txt = await res.text();
-    debug("GET payload response: " + txt.slice(0, 200));
+
+    // browser-side debug (NOT Logger.log)
+    console.log("GET payload response (first 200):", txt.slice(0, 200));
 
     let json;
     try { json = JSON.parse(txt); }
-    catch { throw new Error("GET response not JSON (likely missing key/auth)"); }
+    catch {
+      throw new Error("GET response not JSON (auth/key issue or HTML). First 200: " + txt.slice(0, 200));
+    }
 
     if (!json.ok) throw new Error(json.error || "Failed to load");
 
@@ -604,27 +609,28 @@ async function loadForEdit(submissionId) {
     currentId = submissionId;
     mode = "edit";
 
-    // reset the form first (so stale values don’t stick around)
-    form.reset();
-
-    // ensure pageType selection matches the payload
+    // IMPORTANT: set page type first so correct sections exist
     if (p.pageType && pageTypeEl) {
-      pageTypeEl.value = p.pageType;  // e.g. "Leak Repair"
-      updatePageSections();           // show/hide sections
+      pageTypeEl.value = p.pageType;
+      updatePageSections();
     }
 
-    // update submit button label
+    // reset after sections are correct
+    form.reset();
+
+    // submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.textContent = "Update Submission";
 
-    // ---- Populate fields (by name attr) ----
+    // Populate normal fields by [name="..."]
     Object.entries(fields).forEach(([k, v]) => {
-      let el;
-      try {
-        const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : k.replace(/"/g, '\\"');
-        el = form.querySelector(`[name="${esc}"]`);
-      } catch {
-        el = Array.from(form.querySelectorAll("[name]")).find(x => x.name === k);
+      let el = null;
+
+      // robust name lookup
+      const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : String(k).replace(/"/g, '\\"');
+      el = form.querySelector(`[name="${esc}"]`);
+      if (!el) {
+        el = Array.from(form.querySelectorAll("[name]")).find(x => x.name === k) || null;
       }
       if (!el) return;
 
@@ -638,26 +644,21 @@ async function loadForEdit(submissionId) {
       }
     });
 
-    // ---- Populate repeaters (only the active page) ----
-    if (typeof populateRepeatersForPage === "function") {
-      populateRepeatersForPage(p.pageType || "", repeaters);
-    } else {
-      debug("populateRepeatersForPage() not found — repeaters not loaded.");
+    // Repeaters (you already have a helper)
+    populateRepeaters(repeaters);
+
+    // Sketch (if you want)
+    // NOTE: drawing remote images to canvas can be blocked by CORS.
+    // If your sketch is Drive uc?export=view it often works for <img>, but canvas draw can taint.
+    if (media.sketchUrl && typeof loadSketchIntoCanvas === "function") {
+      await loadSketchIntoCanvas(media.sketchUrl);
     }
 
-    // ---- Load sketch into canvas (if your helper exists) ----
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (media.sketchUrl && typeof urlToDataUrlClient_ === "function" && typeof drawDataUrlToCanvas_ === "function") {
-      const dataUrl = await urlToDataUrlClient_(media.sketchUrl);
-      if (dataUrl) await drawDataUrlToCanvas_(dataUrl);
-    } else if (media.sketchUrl) {
-      debug("Sketch helpers missing (urlToDataUrlClient_ / drawDataUrlToCanvas_) — sketch not drawn.");
-    }
-
-    formMeta.textContent = `Editing: ${submissionId}`;
     setStatus("Edit mode ready ✅");
   } catch (err) {
+    console.error(err);
     setStatus("Edit load failed: " + (err?.message || err));
+    alert("Edit load failed: " + (err?.message || err));
   }
 }
 
@@ -932,8 +933,16 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
   debug("openQueue clicked (handler not implemented in this drop-in).");
 });
 
+(function bootEditMode() {
+  const qs = new URLSearchParams(window.location.search);
+  const editId = qs.get("edit") || "";
+  if (editId) loadForEdit(editId);
+})();
+
+
 updatePageSections();
 updateNet();
+
 
 
 
