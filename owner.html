@@ -521,18 +521,14 @@ tbody.addEventListener("click", (e) => {
  const editBtn = e.target.closest("[data-edit-id]");
 if (editBtn) {
   e.stopPropagation();
-
   const sid = editBtn.getAttribute("data-edit-id");
-
-  const editUrl = new URL("https://davidtroglin-gif.github.io/mtng-field-app/index.html"); // ← your field app URL
-  editUrl.searchParams.set("edit", sid);
-
-  // ✅ carry the owner dashboard key through
-    editUrl.searchParams.set("key", key);
-
-  window.open(editUrl.toString(), "_blank"); // opens in new tab
+  const u = new URL("https://davidtroglin-gif.github.io/mtng-field-app/index.html");
+  u.searchParams.set("edit", sid);
+  u.searchParams.set("key", key); // pass owner key through
+  window.open(u.toString(), "_blank");
   return;
 }
+
 
 
   // Default: row click opens details
