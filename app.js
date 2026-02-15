@@ -485,20 +485,25 @@ if (retNewMaterialsEl) addRetNewMaterialsRow();*/
 // =====================================================
 function gatherFieldsNormalized(formEl) {
   const fields = {};
-  const els = Array.from(formEl.querySelectorAll("input[name], textarea[name], select[name]"));
+  const pt = (pageTypeEl?.value || "Leak Repair").trim();
+
+  const scope =
+    pt === "Leak Repair" ? sectionLeakRepair :
+    pt === "Mains"       ? sectionMains :
+    pt === "Retirement"  ? sectionRetirement :
+    pt === "Services"    ? sectionServices :
+    formEl;
+
+  const els = Array.from(scope.querySelectorAll("input[name], textarea[name], select[name]"));
 
   els.forEach((el) => {
-    if (!isVisible(el)) return;
-
     const name = normKey(el.name);
     if (!name) return;
 
     let value = "";
     if (el.type === "checkbox") value = !!el.checked;
-    else if (el.type === "radio") {
-      if (!el.checked) return;
-      value = normVal(el.value);
-    } else value = normVal(el.value);
+    else if (el.type === "radio") { if (!el.checked) return; value = normVal(el.value); }
+    else value = normVal(el.value);
 
     fields[name] = value;
   });
@@ -550,6 +555,11 @@ function gatherRepeaters() {
   return out;
 }
 
+let existingSketch = null;
+let sketchDirty = false;
+
+function markSketchDirty() { sketchDirty = true; }
+
 function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields, repeaters, sketch, photos }) {
   return {
     submissionId: String(submissionId || "").trim(),
@@ -569,11 +579,6 @@ function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields,
     photos: Array.isArray(photos) ? photos : [],
   };
 }
-
-/*function clearRepeaterContainer(el) {
-  if (!el) return;
-  el.innerHTML = "";
-}*/
 
 function fillRepeater(el, addRowFn, rows) {
   if (!el || typeof addRowFn !== "function") return;
@@ -724,6 +729,12 @@ if (pageTypeEl) {
   pageTypeEl.value = exists ? pt : "Leak Repair";
   updatePageSections();
 }
+    existingSketch = p.sketch || null;
+sketchDirty = false;
+
+if (existingSketch?.dataUrl) {
+  await drawDataUrlToCanvas_(existingSketch.dataUrl);
+}
 
 // ✅ NOW populate repeaters (pt is defined + correct section is visible)
 populateRepeatersForPage(pt, repeaters);
@@ -869,6 +880,13 @@ async function buildPayload() {
     const dataUrl = await fileToCompressedDataUrl(f);
     photos.push({ filename: f.name || `photo_${currentId}.jpg`, dataUrl });
   }
+
+  const sketch =
+  canvas
+    ? (sketchDirty
+        ? { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") }
+        : (existingSketch || null))
+    : (existingSketch || null);
 
   return normalizePayload({
     submissionId: currentId,
@@ -1112,6 +1130,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
