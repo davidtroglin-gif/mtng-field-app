@@ -348,10 +348,11 @@ async function loadForEdit(submissionId) {
     pageTypeEl.value = pt;
   }
 }
-//updatePageSections();
-
-    
-    if (typeof updatePageSections === "function") updatePageSections();
+if (typeof window.updatePageSections === "function") {
+  window.updatePageSections();
+} else {
+  console.warn("updatePageSections not available yet");
+}
 
     // --- Populate repeaters AFTER sections are visible ---
     if (typeof populateRepeatersForPage === "function") {
@@ -493,7 +494,7 @@ function startNewForm() {
 
   // Set default page type (optional)
   if (pageTypeEl && !pageTypeEl.value) pageTypeEl.value = "Leak Repair";
-  if (typeof updatePageSections === "function") updatePageSections();
+  
 
   // Add starter rows ONLY for active page
   const pt = getActivePageType();
@@ -514,7 +515,7 @@ form?.addEventListener("submit", async (e) => {
 document.getElementById("newForm")?.addEventListener("click", () => startNewForm());
 
 pageTypeEl?.addEventListener("change", () => {
-  if (typeof updatePageSections === "function") updatePageSections();
+  
 
   // When switching page type in NEW mode, rebuild starter repeaters for that page
   if (!editId && mode !== "edit") {
@@ -526,7 +527,7 @@ pageTypeEl?.addEventListener("change", () => {
 /* ---------- BOOT ---------- */
 window.addEventListener("DOMContentLoaded", () => {
   console.log("app.js running ✅");
-  if (typeof updatePageSections === "function") updatePageSections();
+  
 
   if (editId) {
     // edit boot
@@ -1630,6 +1631,7 @@ updatePageSections();
 updateNet();
 
 */
+
 
 
 
