@@ -572,7 +572,7 @@ function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields,
 
 
 
-async function loadForEdit(submissionId) {
+/*async function loadForEdit(submissionId) {
   try {
     setStatus("Loading for edit…");
 
@@ -594,7 +594,35 @@ async function loadForEdit(submissionId) {
     const p = json.payload || {};
     const fields = p.fields || {};
     const repeaters = p.repeaters || {};
-    const media = p.media || {};
+    const media = p.media || {};*/
+
+async function loadForEdit(submissionId) {
+  try {
+    setStatus("Loading for edit…");
+
+    console.log("EDIT submissionId:", submissionId);
+
+    const url = new URL(API_URL);
+    url.searchParams.set("action", "get");
+    url.searchParams.set("id", submissionId);
+    if (ownerKey) url.searchParams.set("key", ownerKey);
+
+    console.log("GET URL:", url.toString());
+
+    const res = await fetch(url.toString(), { cache: "no-store" });
+
+    const text = await res.text();
+    console.log("RAW RESPONSE:", text);
+
+    const json = JSON.parse(text);
+    console.log("PARSED JSON:", json);
+
+    if (!json.ok) throw new Error(json.error || "Failed to load");
+
+    const p = json.payload || {};
+
+    console.log("FULL PAYLOAD:", p);
+    console.log("pageType from payload:", p.pageType);
 
     // ---- SET EDIT MODE ----
     currentId = submissionId;
@@ -938,6 +966,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
