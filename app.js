@@ -84,6 +84,24 @@ window.addEventListener("error", (e) => debug("JS error: " + e.message));
 setStatus("Status: app.js loaded ✅");
 debug("app.js running ✅");
 
+// ---- Edit boot (DEBUG) ----
+const qs = new URLSearchParams(window.location.search);
+const ownerKey = qs.get("key") || "";
+const editId = qs.get("edit") || "";
+
+// show what the app thinks the URL params are
+debug(`Edit boot → editId=${editId || "(none)"} | key=${ownerKey ? "YES" : "NO"}`);
+
+// run loadForEdit AFTER DOM is ready + after repeaters are set up
+window.addEventListener("load", () => {
+  if (!editId) return;
+  debug("Calling loadForEdit(...) now…");
+  loadForEdit(editId).catch(err => {
+    debug("loadForEdit threw: " + (err?.message || err));
+  });
+});
+
+
 // ---- SW registration ----
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -916,6 +934,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
