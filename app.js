@@ -348,7 +348,7 @@ async function loadForEdit(submissionId) {
     pageTypeEl.value = pt;
   }
 }
-updatePageSections();
+//updatePageSections();
 
     
     if (typeof updatePageSections === "function") updatePageSections();
@@ -1630,6 +1630,7 @@ updatePageSections();
 updateNet();
 
 */
+
 
 
 
