@@ -324,28 +324,21 @@
     }
 
     function matchesFilters(it){
-      const q = (qEl.value || "").trim().toLowerCase();
-      const pt = pageTypeEl.value || "";
-    
+  const q = (qEl.value || "").trim().toLowerCase();
+  const pt = pageTypeEl.value || "";
 
+  if (pt && !samePageType(it.pageType, pt)) return false;
 
-      if (pt && !samePageType(it.pageType, pt)) return false;
+  if (!q) return true;
 
-      if (pw === "not-turned" && it.turnedInOn) return false;
-      if (pw === "turned" && !it.turnedInOn) return false;
-      if (pw === "not-printed" && it.printedAt) return false;
-      if (pw === "printed" && !it.printedAt) return false;
+  const hay = [
+    it.customerName, it.date, it.mloNumber, it.registerNumber,
+    it.foreman, it.acceptedBy, it.mtngOnSitePersonnel, it.dateCompleted,
+    it.submissionId, it.pageType, it.status, it.printedBy, it.notes
+  ].join(" ").toLowerCase();
 
-      if (!q) return true;
-
-      const hay = [
-        it.customerName, it.date, it.mloNumber, it.registerNumber,
-        it.foreman, it.acceptedBy, it.mtngOnSitePersonnel, it.dateCompleted,
-        it.submissionId, it.pageType, it.status, it.printedBy, it.notes
-      ].join(" ").toLowerCase();
-
-      return hay.includes(q);
-    }
+  return hay.includes(q);
+}
 
     // ---- Notes Modal ----
 const noteModalBack  = document.getElementById("noteModalBack");
