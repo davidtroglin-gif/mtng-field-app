@@ -79,7 +79,7 @@ debug("app.js running ✅");
 const qs = new URLSearchParams(window.location.search);
 debug(`Edit boot → editId=${editId || "(none)"} | key=${ownerKey ? "YES" : "NO"}`);
 
-window.addEventListener("load", async () => {
+/*window.addEventListener("load", async () => {
   if (!editId) return;
 
   debug("Calling loadForEdit(...) now…");
@@ -90,7 +90,7 @@ window.addEventListener("load", async () => {
   } catch (err) {
     debug("loadForEdit threw: " + (err?.message || err));
   }
-});
+});*/
 
 
 // ---- SW registration ----
@@ -997,13 +997,11 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
   debug("openQueue clicked (handler not implemented in this drop-in).");
 });
 
-//if (editId) {
- // loadForEdit(editId);
-//}
 
 
 updatePageSections();
 updateNet();
+
 
 
 
