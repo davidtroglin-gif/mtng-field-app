@@ -345,12 +345,9 @@
       </td>
 
       <!-- Notes preview -->
-        <td title="${tooltipAttr(it.notes || "")}">
-          ${it.notes ? "📝 " : ""}
-          ${escapeHtml((it.notes || "").slice(0, 60))}
-          ${(it.notes || "").length > 60 ? "…" : ""}
+        <td title="${tooltipAttr(it.notes || "")}" style="text-align:center;">
+          ${it.notes && String(it.notes).trim() ? "📝" : ""}
       </td>
-
     </tr>
   `).join("");
 }
