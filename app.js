@@ -580,14 +580,14 @@ async function loadForEdit(submissionId) {
     url.searchParams.set("id", submissionId);
     if (ownerKey) url.searchParams.set("key", ownerKey);
 
-    // IMPORTANT: only read the response ONCE
     const res = await fetch(url.toString(), { cache: "no-store" });
     const txt = await res.text();
 
-    let json;
-    try { json = JSON.parse(txt); }
-    catch { throw new Error("GET response not JSON. First 160: " + txt.slice(0,160)); }
+    // DEBUG (so you can actually see what came back)
+    console.log("GET status:", res.status);
+    console.log("GET first 200:", txt.slice(0, 200));
 
+    let json = JSON.parse(txt);
     if (!json.ok) throw new Error(json.error || "Failed to load");
 
     const p = json.payload || {};
@@ -595,16 +595,19 @@ async function loadForEdit(submissionId) {
     const repeaters = p.repeaters || {};
     const media = p.media || {};
 
-    // set edit mode
+    // ---- SET EDIT MODE ----
     currentId = submissionId;
     mode = "edit";
 
-    // ✅ RESET FIRST (this was breaking your Services selection)
+    // ✅ RESET FIRST (prevents reset from forcing Leak Repair)
     form.reset();
 
-    // ✅ Now set the correct job type and reveal the right sections
-    if (p.pageType && pageTypeEl) {
-      pageTypeEl.value = p.pageType;   // "Services"
+    // ✅ Set page type + show correct section BEFORE populating fields
+    const pt = String(p.pageType || "").trim();
+    console.log("EDIT pageType:", JSON.stringify(pt));
+
+    if (pt && pageTypeEl) {
+      pageTypeEl.value = pt;
       updatePageSections();
     }
 
@@ -614,34 +617,25 @@ async function loadForEdit(submissionId) {
 
     // ---- Populate fields ----
     Object.entries(fields).forEach(([k, v]) => {
-      const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : String(k).replace(/"/g, '\\"');
-      const el = form.querySelector(`[name="${esc}"]`) ||
-                 Array.from(form.querySelectorAll("[name]")).find(x => x.name === k);
-
+      const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : k.replace(/"/g, '\\"');
+      const el = form.querySelector(`[name="${esc}"]`);
       if (!el) return;
 
       if (el.type === "checkbox") el.checked = !!v;
       else if (el.type === "radio") {
-        form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)
+        document.querySelectorAll(`input[type="radio"][name="${el.name}"]`)
           .forEach(r => r.checked = (String(r.value) === String(v)));
       } else {
         el.value = (v ?? "");
       }
     });
 
-    // ✅ Populate repeaters for the correct pageType
-    populateRepeatersForPage(p.pageType || "", repeaters);
+    // ✅ repeaters for that pageType
+    populateRepeatersForPage(pt, repeaters);
 
-    // ✅ Sketch
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (media.sketchUrl) {
-      const dataUrl = await urlToDataUrlClient_(media.sketchUrl);
-      if (dataUrl) await drawDataUrlToCanvas_(dataUrl);
-    }
-
-    formMeta.textContent = `Editing: ${submissionId}`;
     setStatus("Edit mode ready ✅");
   } catch (err) {
+    console.error(err);
     setStatus("Edit load failed: " + (err?.message || err));
   }
 }
@@ -933,9 +927,15 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
   if (editId) loadForEdit(editId);
 })();
 
+window.addEventListener("DOMContentLoaded", () => {
+  updatePageSections();
+  if (editId) loadForEdit(editId);
+});
+
 
 updatePageSections();
 updateNet();
+
 
 
 
