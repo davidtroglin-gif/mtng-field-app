@@ -607,25 +607,26 @@ function normalizeRepeatersObj(repeaters) {
 // Map payload repeater keys -> container + addRow function
 const REPEATER_BINDINGS = {
   // Leak Repair
-  pipeMaterials:   { container: () => pipeMaterialsEl,   addRow: addPipeMaterialRow },
-  otherMaterials:  { container: () => otherMaterialsEl,  addRow: addOtherMaterialRow },
-  pipeTests:       { container: () => pipeTestsEl,       addRow: addPipeTestRow },
+  pipeMaterials:   { container: () => document.getElementById("pipeMaterials"),   addRow: addPipeMaterialRow },
+  otherMaterials:  { container: () => document.getElementById("otherMaterials"),  addRow: addOtherMaterialRow },
+  pipeTests:       { container: () => document.getElementById("pipeTests"),       addRow: addPipeTestRow },
 
   // Mains
-  mainsMaterials:      { container: () => mainsMaterialsEl,      addRow: addMainsMaterialRow },
-  mainsOtherMaterials: { container: () => mainsOtherMaterialsEl, addRow: addMainsOtherMaterialRow },
-  mainsPipeTests:      { container: () => mainsPipeTestsEl,      addRow: addMainsPipeTestRow },
+  mainsMaterials:      { container: () => document.getElementById("mainsMaterials"),      addRow: addMainsMaterialRow },
+  mainsOtherMaterials: { container: () => document.getElementById("mainsOtherMaterials"), addRow: addMainsOtherMaterialRow },
+  mainsPipeTests:      { container: () => document.getElementById("mainsPipeTests"),      addRow: addMainsPipeTestRow },
 
   // Services
-  svcMaterials:      { container: () => svcMaterialsEl,      addRow: addSvcMaterialRow },
-  svcOtherMaterials: { container: () => svcOtherMaterialsEl, addRow: addSvcOtherMaterialRow },
-  svcPipeTests:      { container: () => svcPipeTestsEl,      addRow: addSvcPipeTestRow },
+  svcMaterials:      { container: () => document.getElementById("svcMaterials"),      addRow: addSvcMaterialRow },
+  svcOtherMaterials: { container: () => document.getElementById("svcOtherMaterials"), addRow: addSvcOtherMaterialRow },
+  svcPipeTests:      { container: () => document.getElementById("svcPipeTests"),      addRow: addSvcPipeTestRow },
 
   // Retirement
-  retSection:      { container: () => retSectionEl,      addRow: addRetSectionRow },
-  retStructures:   { container: () => retStructuresEl,   addRow: addRetStructuresRow },
-  retNewMaterials: { container: () => retNewMaterialsEl, addRow: addRetNewMaterialsRow },
+  retSection:      { container: () => document.getElementById("retSection"),      addRow: addRetSectionRow },
+  retStructures:   { container: () => document.getElementById("retStructures"),   addRow: addRetStructuresRow },
+  retNewMaterials: { container: () => document.getElementById("retNewMaterials"), addRow: addRetNewMaterialsRow },
 };
+
 
 // Populates ONLY repeaters present in payload; ensures at least 1 row per repeater on the current page
 function populateRepeatersForPage(pageType, repeaters) {
@@ -727,6 +728,12 @@ async function loadForEdit(submissionId) {
       pageTypeEl.value = exists ? pt : "Leak Repair";
       updatePageSections();
     }
+
+    requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    populateRepeatersForPage(pt, p.repeaters || {});
+  });
+});
 
       populateRepeatersForPage(pt, repeaters);
 
@@ -998,6 +1005,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
