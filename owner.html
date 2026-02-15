@@ -435,65 +435,57 @@ tbody.addEventListener("click", (e) => {
   openNoteModal(btn.getAttribute("data-note-id"));
 });
 
-    function renderTable(){
+    function renderTable() {
   const filtered = items.filter(matchesFilters);
   metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
 
   tbody.innerHTML = filtered.map(it => {
-  const id = it.submissionId || "";
+    const id = it.submissionId || "";
+    const hasNote = (it.notes || "").toString().trim().length > 0;
 
-  const hasNote = (it.notes || "").toString().trim().length > 0;
+    const editBtn = `
+      <button type="button" class="noteIconBtn" data-edit-id="${attrEscape(id)}" title="Open details">✏️</button>
+    `;
 
-  const editBtn = `
-    <button type="button" class="noteIconBtn" data-edit-id="${attrEscape(id)}" title="Open details">
-      ✏️
-    </button>`;
+    const printBtn = `
+      <button type="button" class="noteIconBtn" data-print-id="${attrEscape(id)}" title="Open print">🖨️</button>
+    `;
 
-  const printBtn = `
-    <button type="button" class="noteIconBtn" data-print-id="${attrEscape(id)}" title="Open print">
-      🖨️
-    </button>`;
+    // Notes column: icon only (no note text in the cell)
+    const notesBtn = `
+      <button type="button" class="noteIconBtn" data-note-id="${attrEscape(id)}"
+        title="${hasNote ? "View / Edit note" : "Add note"}">
+        ${hasNote ? "📝" : "➕"}
+      </button>
+    `;
 
-  const addNoteBtn = `
-    <button type="button" class="noteIconBtn" data-note-id="${attrEscape(id)}" title="${hasNote ? "View / Edit Note" : "Add Note"}">
-      ${hasNote ? "📝" : "➕"}
-    </button>`;
+    return `
+      <tr data-id="${attrEscape(id)}">
+        <td style="text-align:center;">${editBtn}</td>
+        <td style="text-align:center;">${printBtn}</td>
+        <td style="text-align:center;">${notesBtn}</td>
 
-  // Notes column: icon only (no text)
-  const notesCell = `
-    <button type="button" class="noteIconBtn" data-note-id="${attrEscape(id)}" title="${hasNote ? "View / Edit Note" : "Add Note"}">
-      ${hasNote ? "📝" : "➕"}
-    </button>`;
-
-  return `
-    <tr data-id="${attrEscape(id)}">
-      <td style="text-align:center;">${editBtn}</td>
-      <td style="text-align:center;">${printBtn}</td>
-      <td style="text-align:center;">${addNoteBtn}</td>
-      <td style="text-align:center;">${notesCell}</td>
-
-      <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
-      <td>${escapeHtml(it.pageType || "")}</td>
-      <td>${escapeHtml(it.customerName || "")}</td>
-      <td>${escapeHtml(it.date || "")}</td>
-      <td>${escapeHtml(it.mloNumber || "")}</td>
-      <td>${escapeHtml(it.registerNumber || "")}</td>
-      <td>${escapeHtml(it.foreman || "")}</td>
-      <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
-      <td><code>${escapeHtml(id)}</code></td>
-    </tr>
-  `;
-}).join("");
-
+        <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
+        <td>${escapeHtml(it.pageType || "")}</td>
+        <td>${escapeHtml(it.customerName || "")}</td>
+        <td>${escapeHtml(it.date || "")}</td>
+        <td>${escapeHtml(it.mloNumber || "")}</td>
+        <td>${escapeHtml(it.registerNumber || "")}</td>
+        <td>${escapeHtml(it.foreman || "")}</td>
+        <td><span class="pill">${escapeHtml(it.status || "")}</span></td>
+        <td><code>${escapeHtml(id)}</code></td>
+      </tr>
+    `;
+  }).join("");
+}
 
     // Row click
     tbody.addEventListener("click", (e) => {
   const tr = e.target.closest("tr");
   if (!tr) return;
 
-  const id = tr.dataset.id;
+  const rowId = tr.dataset.id;
 
-  // Button actions first
   const noteBtn = e.target.closest("[data-note-id]");
   if (noteBtn) {
     e.stopPropagation();
@@ -506,7 +498,7 @@ tbody.addEventListener("click", (e) => {
     e.stopPropagation();
     const sid = printBtn.getAttribute("data-print-id");
     const pr = new URL(API_URL);
-    pr.searchParams.set("action","print");
+    pr.searchParams.set("action", "print");
     pr.searchParams.set("id", sid);
     pr.searchParams.set("key", key);
     window.open(pr.toString(), "_blank");
@@ -520,28 +512,9 @@ tbody.addEventListener("click", (e) => {
     return;
   }
 
-  // Otherwise, row click opens detail
-  openDetail(id);
+  // Default: row click opens details
+  openDetail(rowId);
 });
-
-
-  // ADD NOTE -> prompt + save
-  if (btnNote) {
-    const id = btnNote.dataset.id;
-    try {
-      const existing = (items.find(x => x.submissionId === id)?.notes || "").trim();
-      const note = prompt("Notes:", existing) || "";
-      if (!note.trim()) return;
-
-      setStatus("Saving Note…");
-      await ownerPost("note", id, { note });
-      await fetchList();
-      setStatus("Note saved ✅");
-    } catch (err) {
-      setStatus("Error: " + err.message);
-    }
-    return;
-  }
 
   // default: row click opens detail
   const tr = e.target.closest("tr");
