@@ -578,47 +578,81 @@ function fillRepeater(el, addRowFn, rows) {
   safeRows.forEach(r => addRowFn(r || {}));
 }
 
-function populateRepeatersForPage(pageType, repeaters = {}) {
-  const pt = String(pageType || "").trim();
+// =====================================================
+// Repeaters: populate from saved payload
+// =====================================================
 
-  // normalize repeaters keys just in case (defensive)
-  const rep = repeaters || {};
+function clearRepeaterContainer(containerEl) {
+  if (!containerEl) return;
+  // remove only repeater rows (your makeRow sets [data-row])
+  containerEl.querySelectorAll('[data-row]').forEach(el => el.remove());
+}
 
+function normalizeRepeatersObj(repeaters) {
+  // handles undefined/null
+  return (repeaters && typeof repeaters === "object") ? repeaters : {};
+}
+
+const REPEATER_BINDINGS = {
   // Leak Repair
-  if (pt === "Leak Repair") {
-    fillRepeater(pipeMaterialsEl, addPipeMaterialRow, rep.pipeMaterials);
-    fillRepeater(otherMaterialsEl, addOtherMaterialRow, rep.otherMaterials);
-    fillRepeater(pipeTestsEl, addPipeTestRow, rep.pipeTests);
-    return;
-  }
+  pipeMaterials: { container: () => pipeMaterialsEl, addRow: addPipeMaterialRow },
+  otherMaterials: { container: () => otherMaterialsEl, addRow: addOtherMaterialRow },
+  pipeTests: { container: () => pipeTestsEl, addRow: addPipeTestRow },
 
   // Mains
-  if (pt === "Mains") {
-    fillRepeater(mainsMaterialsEl, addMainsMaterialRow, rep.mainsMaterials);
-    fillRepeater(mainsOtherMaterialsEl, addMainsOtherMaterialRow, rep.mainsOtherMaterials);
-    fillRepeater(mainsPipeTestsEl, addMainsPipeTestRow, rep.mainsPipeTests);
-    return;
-  }
+  mainsMaterials: { container: () => mainsMaterialsEl, addRow: addMainsMaterialRow },
+  mainsOtherMaterials: { container: () => mainsOtherMaterialsEl, addRow: addMainsOtherMaterialRow },
+  mainsPipeTests: { container: () => mainsPipeTestsEl, addRow: addMainsPipeTestRow },
 
   // Services
-  if (pt === "Services") {
-    fillRepeater(svcMaterialsEl, addSvcMaterialRow, rep.svcMaterials);
-    fillRepeater(svcOtherMaterialsEl, addSvcOtherMaterialRow, rep.svcOtherMaterials);
-    fillRepeater(svcPipeTestsEl, addSvcPipeTestRow, rep.svcPipeTests);
-    return;
-  }
+  svcMaterials: { container: () => svcMaterialsEl, addRow: addSvcMaterialRow },
+  svcOtherMaterials: { container: () => svcOtherMaterialsEl, addRow: addSvcOtherMaterialRow },
+  svcPipeTests: { container: () => svcPipeTestsEl, addRow: addSvcPipeTestRow },
 
   // Retirement
-  if (pt === "Retirement") {
-    fillRepeater(retSectionEl, addRetSectionRow, rep.retSection);
-    fillRepeater(retStructuresEl, addRetStructuresRow, rep.retStructures);
-    fillRepeater(retNewMaterialsEl, addRetNewMaterialsRow, rep.retNewMaterials);
-    return;
-  }
+  retSection: { container: () => retSectionEl, addRow: addRetSectionRow },
+  retStructures: { container: () => retStructuresEl, addRow: addRetStructuresRow },
+  retNewMaterials: { container: () => retNewMaterialsEl, addRow: addRetNewMaterialsRow },
+};
 
-  // Fallback: do nothing
-  console.warn("populateRepeatersForPage: unknown pageType:", pt);
+function populateRepeatersForPage(pageType, repeaters) {
+  const reps = normalizeRepeatersObj(repeaters);
+
+  console.log("POPULATE repeaters keys:", Object.keys(reps));
+
+  // 1) Clear ALL repeater containers first (removes your starter rows)
+  Object.values(REPEATER_BINDINGS).forEach(b => clearRepeaterContainer(b.container()));
+
+  // 2) Add rows from payload for any repeater key present
+  Object.entries(reps).forEach(([repName, rows]) => {
+    const binding = REPEATER_BINDINGS[repName];
+    if (!binding) {
+      console.warn("No binding for repeater:", repName, rows);
+      return;
+    }
+
+    const arr = Array.isArray(rows) ? rows : [];
+    console.log(`POPULATE ${repName}:`, arr.length);
+
+    if (arr.length === 0) {
+      // optional: add one blank row if empty
+      binding.addRow({});
+      return;
+    }
+
+    arr.forEach(rowObj => binding.addRow(rowObj || {}));
+  });
+
+  // 3) If the page has repeaters but payload didn’t include them, ensure at least one blank row exists
+  // (optional quality-of-life)
+  // Example: if editing a Leak Repair with no repeaters saved, show one row each.
+  if (String(pageType).trim() === "Leak Repair") {
+    if (pipeMaterialsEl && pipeMaterialsEl.querySelectorAll('[data-row]').length === 0) addPipeMaterialRow();
+    if (otherMaterialsEl && otherMaterialsEl.querySelectorAll('[data-row]').length === 0) addOtherMaterialRow();
+    if (pipeTestsEl && pipeTestsEl.querySelectorAll('[data-row]').length === 0) addPipeTestRow();
+  }
 }
+
 
 async function loadForEdit(submissionId) {
   try {
@@ -983,6 +1017,7 @@ if (editId) {
 
 updatePageSections();
 updateNet();
+
 
 
 
