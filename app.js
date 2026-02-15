@@ -7,6 +7,10 @@ const params = new URLSearchParams(location.search);
 const editId = params.get("edit") || "";
 const ownerKey = params.get("key") || ""; // ✅ pulled from URL
 
+// ---- Edit mode from URL (must be above loadForEdit if loadForEdit uses ownerKey) ----
+const qs = new URLSearchParams(window.location.search);
+const ownerKey = qs.get("key") || "";
+const editId = qs.get("edit") || "";
 
 // ---- UI helpers ----
 const netStatusEl = document.getElementById("netStatus");
@@ -558,21 +562,20 @@ async function loadForEdit(submissionId) {
     const url = new URL(API_URL);
     url.searchParams.set("action", "get");
     url.searchParams.set("id", submissionId);
-
     if (ownerKey) url.searchParams.set("key", ownerKey);
-    
-    const res = await fetch(url.toString(), { cache: "no-store" });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error || "Failed to load");
+    url.searchParams.set("_", Date.now().toString()); // cache bust
 
+    const res = await fetch(url.toString(), { cache: "no-store" });
+
+    // Read ONCE
     const txt = await res.text();
-      debug("GET payload response: " + txt.slice(0, 200));
-      
-      let json;
-      try { json = JSON.parse(txt); }
-      catch { throw new Error("GET response not JSON (likely missing key/auth)"); }
-      
-      if (!json.ok) throw new Error(json.error || "Failed to load");
+    debug("GET payload response: " + txt.slice(0, 200));
+
+    let json;
+    try { json = JSON.parse(txt); }
+    catch { throw new Error("GET response not JSON (likely missing key/auth)"); }
+
+    if (!json.ok) throw new Error(json.error || "Failed to load");
 
     const p = json.payload || {};
     const fields = p.fields || {};
@@ -583,37 +586,33 @@ async function loadForEdit(submissionId) {
     currentId = submissionId;
     mode = "edit";
 
+    // reset the form first (so stale values don’t stick around)
+    form.reset();
+
     // ensure pageType selection matches the payload
     if (p.pageType && pageTypeEl) {
-      pageTypeEl.value = p.pageType;       // e.g. "Leak Repair"
-      updatePageSections();                // show/hide sections
+      pageTypeEl.value = p.pageType;  // e.g. "Leak Repair"
+      updatePageSections();           // show/hide sections
     }
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.textContent = "Update Submission";
 
-    // reset the form first (so stale values don’t stick around)
-    form.reset();
-
     // ---- Populate fields (by name attr) ----
     Object.entries(fields).forEach(([k, v]) => {
       let el;
       try {
-        // CSS.escape may not exist in some older browsers
         const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : k.replace(/"/g, '\\"');
         el = form.querySelector(`[name="${esc}"]`);
       } catch {
-        // fallback: brute-force lookup
         el = Array.from(form.querySelectorAll("[name]")).find(x => x.name === k);
       }
-
       if (!el) return;
 
       if (el.type === "checkbox") {
         el.checked = !!v;
       } else if (el.type === "radio") {
-        // match radio value
         const radios = form.querySelectorAll(`input[type="radio"][name="${el.name}"]`);
         radios.forEach(r => r.checked = (String(r.value) === String(v)));
       } else {
@@ -622,15 +621,19 @@ async function loadForEdit(submissionId) {
     });
 
     // ---- Populate repeaters (only the active page) ----
-    populateRepeatersForPage(p.pageType || "", repeaters);
+    if (typeof populateRepeatersForPage === "function") {
+      populateRepeatersForPage(p.pageType || "", repeaters);
+    } else {
+      debug("populateRepeatersForPage() not found — repeaters not loaded.");
+    }
 
-    // ---- Load sketch into canvas (safe method; avoids CORS canvas taint) ----
+    // ---- Load sketch into canvas (if your helper exists) ----
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (media.sketchUrl) {
+    if (media.sketchUrl && typeof urlToDataUrlClient_ === "function" && typeof drawDataUrlToCanvas_ === "function") {
       const dataUrl = await urlToDataUrlClient_(media.sketchUrl);
-      if (dataUrl) {
-        await drawDataUrlToCanvas_(dataUrl);
-      }
+      if (dataUrl) await drawDataUrlToCanvas_(dataUrl);
+    } else if (media.sketchUrl) {
+      debug("Sketch helpers missing (urlToDataUrlClient_ / drawDataUrlToCanvas_) — sketch not drawn.");
     }
 
     formMeta.textContent = `Editing: ${submissionId}`;
@@ -639,11 +642,6 @@ async function loadForEdit(submissionId) {
     setStatus("Edit load failed: " + (err?.message || err));
   }
 }
-
-// ---- Edit mode from URL ----
-const qs = new URLSearchParams(window.location.search);
-const ownerKey = qs.get("key") || "";
-const editId = qs.get("edit") || "";
 
 if (editId) {
   loadForEdit(editId);
@@ -918,6 +916,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
