@@ -326,7 +326,7 @@
     function matchesFilters(it){
       const q = (qEl.value || "").trim().toLowerCase();
       const pt = pageTypeEl.value || "";
-     const pw = paperworkFilterEl ? (paperworkFilterEl.value || "") : "";
+    
 
 
       if (pt && !samePageType(it.pageType, pt)) return false;
@@ -688,7 +688,7 @@ if (editBtn) {
 qEl.addEventListener("input", renderTable);
 pageTypeEl.addEventListener("change", renderTable);
 
-//if (paperworkFilterEl) paperworkFilterEl.addEventListener("change", renderTable);
+
 
     // UI hooks
    document.getElementById("refresh").addEventListener("click", () =>
@@ -698,7 +698,7 @@ pageTypeEl.addEventListener("change", renderTable);
 qEl.addEventListener("input", renderTable);
 pageTypeEl.addEventListener("change", renderTable);
 
-if (paperworkFilterEl) paperworkFilterEl.addEventListener("change", renderTable);
+
 
 
     // boot
