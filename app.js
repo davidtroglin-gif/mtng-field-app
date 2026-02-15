@@ -570,36 +570,9 @@ function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields,
   };
 }
 
-
-
-/*async function loadForEdit(submissionId) {
-  try {
-    setStatus("Loading for edit…");
-
-    const url = new URL(API_URL);
-    url.searchParams.set("action", "get");
-    url.searchParams.set("id", submissionId);
-    if (ownerKey) url.searchParams.set("key", ownerKey);
-
-    const res = await fetch(url.toString(), { cache: "no-store" });
-    const txt = await res.text();
-
-    // DEBUG (so you can actually see what came back)
-    console.log("GET status:", res.status);
-    console.log("GET first 200:", txt.slice(0, 200));
-
-    let json = JSON.parse(txt);
-    if (!json.ok) throw new Error(json.error || "Failed to load");
-
-    const p = json.payload || {};
-    const fields = p.fields || {};
-    const repeaters = p.repeaters || {};
-    const media = p.media || {};*/
-
 async function loadForEdit(submissionId) {
   try {
     setStatus("Loading for edit…");
-
     console.log("EDIT submissionId:", submissionId);
 
     const url = new URL(API_URL);
@@ -610,7 +583,6 @@ async function loadForEdit(submissionId) {
     console.log("GET URL:", url.toString());
 
     const res = await fetch(url.toString(), { cache: "no-store" });
-
     const text = await res.text();
     console.log("RAW RESPONSE:", text);
 
@@ -620,6 +592,8 @@ async function loadForEdit(submissionId) {
     if (!json.ok) throw new Error(json.error || "Failed to load");
 
     const p = json.payload || {};
+    const fields = p.fields || {};         // ✅ ADD THIS
+    const repeaters = p.repeaters || {};   // ✅ ADD THIS
 
     console.log("FULL PAYLOAD:", p);
     console.log("pageType from payload:", p.pageType);
@@ -628,19 +602,18 @@ async function loadForEdit(submissionId) {
     currentId = submissionId;
     mode = "edit";
 
-    // ✅ RESET FIRST (prevents reset from forcing Leak Repair)
+    // reset first
     form.reset();
 
-    // ✅ Set page type + show correct section BEFORE populating fields
+    // set page type BEFORE populating fields
     const pt = String(p.pageType || "").trim();
     console.log("EDIT pageType:", JSON.stringify(pt));
 
     if (pageTypeEl) {
-  const normalized = pt.trim();
-  const exists = [...pageTypeEl.options].some(o => o.value === normalized);
-  pageTypeEl.value = exists ? normalized : "Leak Repair";
-  updatePageSections();
-}
+      const exists = [...pageTypeEl.options].some(o => o.value === pt);
+      pageTypeEl.value = exists ? pt : "Leak Repair";
+      updatePageSections();
+    }
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
@@ -648,20 +621,20 @@ async function loadForEdit(submissionId) {
 
     // ---- Populate fields ----
     Object.entries(fields).forEach(([k, v]) => {
-      const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : k.replace(/"/g, '\\"');
+      const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : String(k).replace(/"/g, '\\"');
       const el = form.querySelector(`[name="${esc}"]`);
       if (!el) return;
 
       if (el.type === "checkbox") el.checked = !!v;
       else if (el.type === "radio") {
-        document.querySelectorAll(`input[type="radio"][name="${el.name}"]`)
+        form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)
           .forEach(r => r.checked = (String(r.value) === String(v)));
       } else {
         el.value = (v ?? "");
       }
     });
 
-    // ✅ repeaters for that pageType
+    // repeaters for that pageType
     populateRepeatersForPage(pt, repeaters);
 
     setStatus("Edit mode ready ✅");
@@ -670,6 +643,7 @@ async function loadForEdit(submissionId) {
     setStatus("Edit load failed: " + (err?.message || err));
   }
 }
+
 
 
 if (editId) {
@@ -959,13 +933,16 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 })();
 
 window.addEventListener("DOMContentLoaded", () => {
-  updatePageSections();
+  const qs = new URLSearchParams(location.search);
+  ownerKey = qs.get("key") || "";
+  const editId = qs.get("edit") || "";
   if (editId) loadForEdit(editId);
 });
 
 
 updatePageSections();
 updateNet();
+
 
 
 
