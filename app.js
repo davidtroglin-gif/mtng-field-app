@@ -979,14 +979,10 @@ if (editId) {
   loadForEdit(editId);
 }
 
-console.log("Repeaters keys:", Object.keys(repeaters || {}));
-console.log("Repeaters svcMaterials:", repeaters?.svcMaterials);
-
-console.log("EDIT pageType:", pt)
-console.log("Repeaters keys:", Object.keys(repeaters||{}))
 
 updatePageSections();
 updateNet();
+
 
 
 
