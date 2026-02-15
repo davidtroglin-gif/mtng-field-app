@@ -740,130 +740,6 @@ function findElsByKey_(formEl, key, nameIndexDoc, nameIndexForm) {
   return [];
 }
 
-/*function populateFieldsSmart_(formEl, fieldsObj) {
-  const fields = (fieldsObj && typeof fieldsObj === "object") ? fieldsObj : {};
-
-  // build name indexes once (fast + fixes NBSP/spacing mismatches)
-  const nameIndexDoc  = buildNameIndex_(document);
-  const nameIndexForm = buildNameIndex_(formEl);
-
-  for (const [k, v] of Object.entries(fields)) {
-    const els = findElsByKey_(formEl, k, nameIndexDoc, nameIndexForm);
-    if (!els.length) {
-      // uncomment for troubleshooting
-      // console.warn("No element found for field key:", JSON.stringify(k));
-      continue;
-    }
-
-    const types = new Set(els.map(e => (e.type || "").toLowerCase()));
-
-    // radio group
-    if (types.has("radio")) {
-      els.forEach(r => setElValue_(r, v));
-      continue;
-    }
-
-    // checkbox group (multiple checkboxes same name)
-    const cbs = els.filter(e => (e.type || "").toLowerCase() === "checkbox");
-    if (cbs.length > 1) {
-      const want = new Set(Array.isArray(v) ? v.map(String) : [String(v)]);
-      cbs.forEach(cb => {
-        cb.checked = want.has(String(cb.value));
-        fireInputChange_(cb);
-      });
-      continue;
-    }
-
-    // single element
-    setElValue_(els[0], v);
-  }
-}
-
-// safe CSS escape
-function cssEsc_(s) {
-  if (window.CSS && CSS.escape) return CSS.escape(String(s));
-  return String(s).replace(/"/g, '\\"');
-}
-
-function dispatchFieldEvents_(el) {
-  // Make any dependent logic react (show/hide, calculations, etc.)
-  try { el.dispatchEvent(new Event("input",  { bubbles: true })); } catch {}
-  try { el.dispatchEvent(new Event("change", { bubbles: true })); } catch {}
-}
-
-function toArrayVal_(v) {
-  // payload might store checkbox groups as array or comma string
-  if (Array.isArray(v)) return v.map(x => String(x));
-  if (v === null || v === undefined) return [];
-  const s = String(v).trim();
-  if (!s) return [];
-  // try comma-separated
-  if (s.includes(",")) return s.split(",").map(x => x.trim()).filter(Boolean);
-  return [s];
-}
-
-// Sets every control with a given name (handles groups correctly)
-function setByName_(formEl, name, value) {
-  const n = String(name || "").trim();
-  if (!n) return;
-
-  const sel = `[name="${cssEsc_(n)}"]`;
-  const els = Array.from(formEl.querySelectorAll(sel));
-  if (!els.length) return;
-
-  // Determine group type
-  const types = new Set(els.map(e => (e.type || "").toLowerCase()));
-
-  // ---- RADIO GROUP ----
-  if (types.has("radio")) {
-    const target = (value ?? "");
-    els.forEach(r => {
-      r.checked = String(r.value) === String(target);
-      dispatchFieldEvents_(r);
-    });
-    return;
-  }
-
-  // ---- CHECKBOX GROUP (multiple checkboxes with same name) ----
-  const checkboxEls = els.filter(e => (e.type || "").toLowerCase() === "checkbox");
-  if (checkboxEls.length > 1) {
-    const want = new Set(toArrayVal_(value));
-    checkboxEls.forEach(cb => {
-      cb.checked = want.has(String(cb.value));
-      dispatchFieldEvents_(cb);
-    });
-    return;
-  }
-
-  // ---- SINGLE ELEMENT ----
-  const el = els[0];
-  const t = (el.type || "").toLowerCase();
-
-  if (t === "checkbox") {
-    // single checkbox stored as boolean / yes/no / 1/0
-    el.checked = isCheckedVal(value);
-    dispatchFieldEvents_(el);
-    return;
-  }
-
-  if (el.tagName === "SELECT") {
-    el.value = (value ?? "");
-    dispatchFieldEvents_(el);
-    return;
-  }
-
-  // default (text/number/date/time/textarea/etc.)
-  el.value = (value ?? "");
-  dispatchFieldEvents_(el);
-}*/
-
-// =====================================================
-// FIELDS: Smart population (drop-in)
-// - handles checkbox/radio groups
-// - searches inside form first, then document (in case elements aren't inside <form>)
-// - tolerates NBSP / weird whitespace differences via normKey()
-// =====================================================
-
 function _attrEsc_(s) {
   return String(s ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
@@ -1346,6 +1222,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
