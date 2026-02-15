@@ -344,15 +344,16 @@ async function loadForEdit(submissionId) {
     const opt = document.createElement("option");
     opt.value = pt;
     opt.textContent = pt;
-    pageTypeEl.appendChild(opt);
+   pageTypeEl.appendChild(opt);
     pageTypeEl.value = pt;
-  }
-}
-if (typeof window.updatePageSections === "function") {
-  window.updatePageSections();
-} else {
-  console.warn("updatePageSections not available yet");
-}
+      }
+    }
+    
+    if (typeof window.updatePageSections === "function") {
+      window.updatePageSections();
+    } else {
+      console.warn("updatePageSections not defined yet");
+    }
 
     // --- Populate repeaters AFTER sections are visible ---
     if (typeof populateRepeatersForPage === "function") {
@@ -1631,6 +1632,7 @@ updatePageSections();
 updateNet();
 
 */
+
 
 
 
