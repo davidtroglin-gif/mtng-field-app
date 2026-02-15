@@ -79,19 +79,6 @@ debug("app.js running ✅");
 const qs = new URLSearchParams(window.location.search);
 debug(`Edit boot → editId=${editId || "(none)"} | key=${ownerKey ? "YES" : "NO"}`);
 
-/*window.addEventListener("load", async () => {
-  if (!editId) return;
-
-  debug("Calling loadForEdit(...) now…");
-
-  try {
-    await loadForEdit(editId);
-    debug("loadForEdit finished ✅");
-  } catch (err) {
-    debug("loadForEdit threw: " + (err?.message || err));
-  }
-});*/
-
 
 // ---- SW registration ----
 if ("serviceWorker" in navigator) {
@@ -582,75 +569,75 @@ function fillRepeater(el, addRowFn, rows) {
 // Repeaters: populate from saved payload
 // =====================================================
 
+// =====================================================
+// Repeaters: clear + populate from saved payload
+// Drop-in (single version)
+// =====================================================
+
+// Removes only repeater rows created by makeRow() ([data-row] wrapper)
 function clearRepeaterContainer(containerEl) {
   if (!containerEl) return;
-  // remove only repeater rows (your makeRow sets [data-row])
-  containerEl.querySelectorAll('[data-row]').forEach(el => el.remove());
+  containerEl.querySelectorAll('[data-row]').forEach(row => row.remove());
 }
 
+// Safe normalizer
 function normalizeRepeatersObj(repeaters) {
-  // handles undefined/null
   return (repeaters && typeof repeaters === "object") ? repeaters : {};
 }
 
+// Map payload repeater keys -> container + addRow function
 const REPEATER_BINDINGS = {
   // Leak Repair
-  pipeMaterials: { container: () => pipeMaterialsEl, addRow: addPipeMaterialRow },
-  otherMaterials: { container: () => otherMaterialsEl, addRow: addOtherMaterialRow },
-  pipeTests: { container: () => pipeTestsEl, addRow: addPipeTestRow },
+  pipeMaterials:   { container: () => pipeMaterialsEl,   addRow: addPipeMaterialRow },
+  otherMaterials:  { container: () => otherMaterialsEl,  addRow: addOtherMaterialRow },
+  pipeTests:       { container: () => pipeTestsEl,       addRow: addPipeTestRow },
 
   // Mains
-  mainsMaterials: { container: () => mainsMaterialsEl, addRow: addMainsMaterialRow },
+  mainsMaterials:      { container: () => mainsMaterialsEl,      addRow: addMainsMaterialRow },
   mainsOtherMaterials: { container: () => mainsOtherMaterialsEl, addRow: addMainsOtherMaterialRow },
-  mainsPipeTests: { container: () => mainsPipeTestsEl, addRow: addMainsPipeTestRow },
+  mainsPipeTests:      { container: () => mainsPipeTestsEl,      addRow: addMainsPipeTestRow },
 
   // Services
-  svcMaterials: { container: () => svcMaterialsEl, addRow: addSvcMaterialRow },
+  svcMaterials:      { container: () => svcMaterialsEl,      addRow: addSvcMaterialRow },
   svcOtherMaterials: { container: () => svcOtherMaterialsEl, addRow: addSvcOtherMaterialRow },
-  svcPipeTests: { container: () => svcPipeTestsEl, addRow: addSvcPipeTestRow },
+  svcPipeTests:      { container: () => svcPipeTestsEl,      addRow: addSvcPipeTestRow },
 
   // Retirement
-  retSection: { container: () => retSectionEl, addRow: addRetSectionRow },
-  retStructures: { container: () => retStructuresEl, addRow: addRetStructuresRow },
+  retSection:      { container: () => retSectionEl,      addRow: addRetSectionRow },
+  retStructures:   { container: () => retStructuresEl,   addRow: addRetStructuresRow },
   retNewMaterials: { container: () => retNewMaterialsEl, addRow: addRetNewMaterialsRow },
 };
 
+// Populates ONLY repeaters present in payload; ensures at least 1 row per repeater on the current page
 function populateRepeatersForPage(pageType, repeaters) {
+  const pt = String(pageType || "").trim();
   const reps = normalizeRepeatersObj(repeaters);
 
-  console.log("POPULATE repeaters keys:", Object.keys(reps));
+  // Which repeaters belong to this page?
+  const pageRepeaterKeys =
+    pt === "Leak Repair" ? ["pipeMaterials","otherMaterials","pipeTests"] :
+    pt === "Mains"       ? ["mainsMaterials","mainsOtherMaterials","mainsPipeTests"] :
+    pt === "Services"    ? ["svcMaterials","svcOtherMaterials","svcPipeTests"] :
+    pt === "Retirement"  ? ["retSection","retStructures","retNewMaterials"] :
+    [];
 
-  // 1) Clear ALL repeater containers first (removes your starter rows)
-  Object.values(REPEATER_BINDINGS).forEach(b => clearRepeaterContainer(b.container()));
-
-  // 2) Add rows from payload for any repeater key present
-  Object.entries(reps).forEach(([repName, rows]) => {
-    const binding = REPEATER_BINDINGS[repName];
-    if (!binding) {
-      console.warn("No binding for repeater:", repName, rows);
-      return;
-    }
-
-    const arr = Array.isArray(rows) ? rows : [];
-    console.log(`POPULATE ${repName}:`, arr.length);
-
-    if (arr.length === 0) {
-      // optional: add one blank row if empty
-      binding.addRow({});
-      return;
-    }
-
-    arr.forEach(rowObj => binding.addRow(rowObj || {}));
+  // 1) Clear containers for this page (removes starter rows)
+  pageRepeaterKeys.forEach(key => {
+    const b = REPEATER_BINDINGS[key];
+    if (b) clearRepeaterContainer(b.container());
   });
 
-  // 3) If the page has repeaters but payload didn’t include them, ensure at least one blank row exists
-  // (optional quality-of-life)
-  // Example: if editing a Leak Repair with no repeaters saved, show one row each.
-  if (String(pageType).trim() === "Leak Repair") {
-    if (pipeMaterialsEl && pipeMaterialsEl.querySelectorAll('[data-row]').length === 0) addPipeMaterialRow();
-    if (otherMaterialsEl && otherMaterialsEl.querySelectorAll('[data-row]').length === 0) addOtherMaterialRow();
-    if (pipeTestsEl && pipeTestsEl.querySelectorAll('[data-row]').length === 0) addPipeTestRow();
-  }
+  // 2) Add payload rows for those repeaters (or 1 blank if none)
+  pageRepeaterKeys.forEach(key => {
+    const b = REPEATER_BINDINGS[key];
+    if (!b) return;
+
+    const rows = Array.isArray(reps[key]) ? reps[key] : [];
+    if (rows.length) rows.forEach(r => b.addRow(r || {}));
+    else b.addRow({}); // always show one row
+  });
+
+  console.log("✅ Repeaters populated for", pt, "→", pageRepeaterKeys);
 }
 
 
@@ -678,6 +665,7 @@ async function loadForEdit(submissionId) {
     const p = json.payload || {};
     const fields = p.fields || {};         // ✅ ADD THIS
     const repeaters = p.repeaters || {};   // ✅ ADD THIS
+    populateRepeatersForPage(pt, repeaters);
 
     console.log("PAGE TYPE:", p.pageType);
     console.log("REPEATERS OBJECT:", repeaters);
@@ -1001,6 +989,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
