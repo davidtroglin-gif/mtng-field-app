@@ -18,7 +18,7 @@ const form = document.getElementById("form");
 const pageTypeEl = document.getElementById("pageType");
 console.log("pageTypeEl now:", pageTypeEl.value);
 const listCard = document.getElementById("listCard");
-const editId = params.get("edit");
+
 
 
 // ---- Section show/hide (4 pages) ----
@@ -942,6 +942,7 @@ if (editId) {
 
 updatePageSections();
 updateNet();
+
 
 
 
