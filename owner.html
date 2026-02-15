@@ -525,7 +525,10 @@ if (editBtn) {
   const sid = editBtn.getAttribute("data-edit-id");
 
   const editUrl = new URL("https://davidtroglin-gif.github.io/mtng-field-app/index.html"); // ← your field app URL
-  editUrl.searchParams.set("edit", sid);
+  //editUrl.searchParams.set("edit", sid);
+
+  // ✅ carry the owner dashboard key through
+    editUrl.searchParams.set("key", key);
 
   window.open(editUrl.toString(), "_blank"); // opens in new tab
   return;
