@@ -286,18 +286,6 @@ async function drawDataUrlToCanvas_(dataUrl) {
   });
 }
 
-/*function getActiveSectionByPageType(pageType) {
-  const pt = String(pageType || "").trim();
-
-  if (pt === "Leak Repair") return document.getElementById("sectionLeakRepair");
-  if (pt === "Mains") return document.getElementById("sectionMains");
-  if (pt === "Retirement") return document.getElementById("sectionRetirement");
-  if (pt === "Services") return document.getElementById("sectionServices");
-
-  // fallback
-  return document.getElementById("sectionCustomer") || document.querySelector("form");
-}*/
-
 
 
 
@@ -333,7 +321,12 @@ async function loadForEdit(submissionId) {
     const fields = p.fields || {};
     const repeaters = p.repeaters || {};
     const sketch = p.sketch || null;
+    const pt = normalizePageType(p.pageType);
 
+    console.log("PAYLOAD pageType:", p.pageType, "→ normalized:", pt);
+    console.log("SELECT option values:", [...pageTypeEl.options].map(o => o.value));
+
+    
     // --- Set edit mode globals ---
     currentId = submissionId;
     mode = "edit";
@@ -343,9 +336,21 @@ async function loadForEdit(submissionId) {
 
     // --- Set page type + show correct section BEFORE populating ---
     if (pageTypeEl) {
-      const exists = [...pageTypeEl.options].some(o => o.value === pt);
-      pageTypeEl.value = exists ? pt : "Leak Repair";
-    }
+  const values = new Set([...pageTypeEl.options].map(o => o.value));
+  if (values.has(pt)) {
+    pageTypeEl.value = pt;
+  } else {
+    // ✅ don't silently force Leak Repair — add option so the UI matches the data
+    const opt = document.createElement("option");
+    opt.value = pt;
+    opt.textContent = pt;
+    pageTypeEl.appendChild(opt);
+    pageTypeEl.value = pt;
+  }
+}
+updatePageSections();
+
+    
     if (typeof updatePageSections === "function") updatePageSections();
 
     // --- Populate repeaters AFTER sections are visible ---
@@ -430,6 +435,19 @@ async function buildPayload() {
     photos,
   });
 }
+
+function normalizePageType(raw) {
+  const s = String(raw || "").trim().toLowerCase();
+
+  if (s === "leak repair" || s === "leakrepair" || s === "leak") return "Leak Repair";
+  if (s === "mains" || s === "main") return "Mains";
+  if (s === "services" || s === "service" || s === "svc") return "Services";
+  if (s === "retirement" || s === "retirements" || s === "retire") return "Retirement";
+
+  // fallback: title-case-ish
+  return String(raw || "Leak Repair").trim();
+}
+
 
 /* ---------- SUBMIT ---------- */
 async function postSubmit(payload) {
@@ -1612,6 +1630,7 @@ updatePageSections();
 updateNet();
 
 */
+
 
 
 
