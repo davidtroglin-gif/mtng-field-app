@@ -1005,6 +1005,101 @@ if (!editId) {
   updatePageSections();
 });
 
+// --- helpers -------------------------------------------------
+function _nk(s) {
+  // use your normKey if present, otherwise fallback
+  const f = (typeof normKey === "function") ? normKey : (x) => String(x || "").trim();
+  return f(s);
+}
+
+function _setElValue(el, v) {
+  if (!el) return;
+  if (el.type === "checkbox") el.checked = !!v;
+  else if (el.type === "radio") el.checked = (String(el.value) === String(v));
+  else el.value = (v ?? "");
+}
+
+// fill inputs inside ONE repeater row by matching data-k
+function applyRepeaterRowValues(rowEl, rowObj) {
+  if (!rowEl || !rowObj) return;
+
+  // build map of normalizedKey -> value from payload row
+  const map = {};
+  Object.entries(rowObj).forEach(([k, v]) => { map[_nk(k)] = v; });
+
+  // find any inputs/selects/textareas in this row that have data-k (and optionally data-r)
+  const inputs = rowEl.querySelectorAll("[data-k]");
+  inputs.forEach((el) => {
+    const k = _nk(el.dataset.k);
+    if (!(k in map)) return;
+
+    // radio groups: set the matching radio only
+    if (el.type === "radio") {
+      _setElValue(el, map[k]);
+    } else {
+      _setElValue(el, map[k]);
+    }
+  });
+}
+
+// remove only repeater rows
+function clearRepeaterContainer(containerEl) {
+  if (!containerEl) return;
+  containerEl.querySelectorAll("[data-row]").forEach(r => r.remove());
+}
+
+// add rows and then force-fill the new row
+function populateRepeater(bindingKey, rows) {
+  const binding = REPEATER_BINDINGS[bindingKey];
+  if (!binding) return;
+
+  const container = binding.container();
+  if (!container) return;
+
+  clearRepeaterContainer(container);
+
+  const arr = Array.isArray(rows) && rows.length ? rows : [{}];
+
+  arr.forEach((rowObj) => {
+    // count rows before
+    const before = container.querySelectorAll("[data-row]").length;
+
+    // create row (even if it ignores rowObj)
+    binding.addRow(rowObj || {});
+
+    // find the newly created row
+    const all = container.querySelectorAll("[data-row]");
+    const newRow = (all.length > before) ? all[all.length - 1] : null;
+
+    // force-apply values into that row
+    applyRepeaterRowValues(newRow, rowObj || {});
+  });
+
+  console.log(`✅ populated ${bindingKey}:`, arr.length);
+}
+
+// --- page-aware populate ------------------------------------
+function populateRepeatersForPage(pageType, repeaters) {
+  const pt = String(pageType || "").trim();
+  const reps = (repeaters && typeof repeaters === "object") ? repeaters : {};
+
+  const pageKeys =
+    pt === "Leak Repair" ? ["pipeMaterials","otherMaterials","pipeTests"] :
+    pt === "Mains"       ? ["mainsMaterials","mainsOtherMaterials","mainsPipeTests"] :
+    pt === "Services"    ? ["svcMaterials","svcOtherMaterials","svcPipeTests"] :
+    pt === "Retirement"  ? ["retSection","retStructures","retNewMaterials"] :
+    [];
+
+  pageKeys.forEach((k) => populateRepeater(k, reps[k]));
+
+  // quick sanity log
+  pageKeys.forEach((k) => {
+    const c = REPEATER_BINDINGS[k]?.container?.();
+    console.log("Rows now in", k, "=", c?.querySelectorAll("[data-row]")?.length);
+  });
+}
+
+
 // optional: if you have these buttons wired elsewhere, keep them harmless
 document.getElementById("openDrafts")?.addEventListener("click", () => {
   debug("openDrafts clicked (handler not implemented in this drop-in).");
@@ -1017,6 +1112,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
