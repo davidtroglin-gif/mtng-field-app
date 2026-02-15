@@ -340,12 +340,9 @@ async function loadForEdit(submissionId) {
     const fields = p.fields || {};
     const repeaters = p.repeaters || {};
     const sketch = p.sketch || null;
-    //const pt = normalizePageType(p.pageType);
 
     console.log("PAYLOAD pageType:", p.pageType, "→ normalized:", pt);
-    console.log("SELECT option values:", [...pageTypeEl.options].map(o => o.value));
 
-    
     // --- Set edit mode globals ---
     currentId = submissionId;
     mode = "edit";
@@ -353,87 +350,88 @@ async function loadForEdit(submissionId) {
     // --- Reset first ---
     form?.reset?.();
 
-    // --- Set page type + show correct section BEFORE populating ---
+    // --- Ensure pageType select has pt, then set it ---
     if (pageTypeEl) {
-    const values = new Set([...pageTypeEl.options].map(o => o.value));
-    if (values.has(pt)) {
-      pageTypeEl.value = pt;
-    } else {
-      // ✅ don't silently force Leak Repair — add option so the UI matches the data
-      const opt = document.createElement("option");
-      opt.value = pt;
-      opt.textContent = pt;
-     pageTypeEl.appendChild(opt);
-      pageTypeEl.value = pt;
-
-      const activeSection = showSectionForPageType_(pt);
-
-      // If your real function exists later, call it too (optional)
-      if (typeof window.updatePageSections === "function") window.updatePageSections();
-      
-      // Let the browser apply display changes before querying inputs
-      await new Promise(requestAnimationFrame);
+      const values = new Set([...pageTypeEl.options].map(o => o.value));
+      if (!values.has(pt)) {
+        const opt = document.createElement("option");
+        opt.value = pt;
+        opt.textContent = pt;
+        pageTypeEl.appendChild(opt);
       }
+      pageTypeEl.value = pt;
     }
 
-    populateRepeatersForPage(pt, repeaters);
+    // --- Show correct section BEFORE populating (works even if updatePageSections isn't loaded yet) ---
+    let activeSection = null;
 
-    const scope = activeSection || form || document;
+    if (typeof showSectionForPageType_ === "function") {
+      activeSection = showSectionForPageType_(pt);
+    }
 
-    Object.entries(fields).forEach(([k, v]) => {
-      const name = String(k);
-      const esc = (window.CSS && CSS.escape) ? CSS.escape(name) : name.replace(/"/g, '\\"');
-    
-      // Try active section first
-      let el = scope.querySelector(`[name="${esc}"]`);
-    
-      // Fallback: anywhere in the form
-      if (!el && form) el = form.querySelector(`[name="${esc}"]`);
-      if (!el) return;
-    
-      if (el.type === "checkbox") el.checked = !!v;
-      else if (el.type === "radio") {
-        const radios = (scope.querySelectorAll(`input[type="radio"][name="${esc}"]`).length
-          ? scope.querySelectorAll(`input[type="radio"][name="${esc}"]`)
-          : form.querySelectorAll(`input[type="radio"][name="${esc}"]`));
-        radios.forEach(r => r.checked = (String(r.value) === String(v)));
-      } else {
-        el.value = (v ?? "");
-      }
-    });
-    
+    // If your normal section toggler exists, call it too
     if (typeof window.updatePageSections === "function") {
       window.updatePageSections();
     } else {
       console.warn("updatePageSections not defined yet");
     }
 
-    // --- Populate repeaters AFTER sections are visible ---
+    // Let display changes apply before querying inputs
+    await new Promise(requestAnimationFrame);
+
+    // --- Populate repeaters (ONCE) ---
     if (typeof populateRepeatersForPage === "function") {
       populateRepeatersForPage(pt, repeaters);
     }
 
-    // --- Populate fields (SCOPED to active page section) ---
-    const scope = (typeof getActiveSectionByPageType === "function")
-      ? (getActiveSectionByPageType(pt) || form)
-      : form;
+    // --- Populate fields (prefer active section; fallback to form) ---
+    const scope = activeSection || form || document;
 
     Object.entries(fields).forEach(([k, v]) => {
       const name = String(k);
       const esc = (window.CSS && CSS.escape) ? CSS.escape(name) : name.replace(/"/g, '\\"');
 
-      const el = scope.querySelector(`[name="${esc}"]`);
+      // Try active section first
+      let el = scope.querySelector(`[name="${esc}"]`);
+
+      // Fallback: anywhere in the form
+      if (!el && form) el = form.querySelector(`[name="${esc}"]`);
       if (!el) return;
 
       if (el.type === "checkbox") {
         el.checked = !!v;
       } else if (el.type === "radio") {
-        scope.querySelectorAll(`input[type="radio"][name="${esc}"]`)
-          .forEach(r => (r.checked = (String(r.value) === String(v))));
+        const radiosInScope = scope.querySelectorAll(`input[type="radio"][name="${esc}"]`);
+        const radios = radiosInScope.length ? radiosInScope : (form ? form.querySelectorAll(`input[type="radio"][name="${esc}"]`) : []);
+        radios.forEach(r => (r.checked = (String(r.value) === String(v))));
       } else {
         el.value = (v ?? "");
       }
     });
+
+    // --- Restore sketch safely ---
+    existingSketch = sketch;
+    sketchDirty = false;
+
+    if (existingSketch?.dataUrl && window.canvas && window.ctx && typeof drawDataUrlToCanvas_ === "function") {
+      await drawDataUrlToCanvas_(existingSketch.dataUrl);
+    } else if (window.canvas && window.ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // --- Update submit button label ---
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = "Update Submission";
+
+    logStatus("Edit mode ready ✅");
+  } catch (err) {
+    console.error(err);
+    logStatus("Edit load failed: " + (err?.message || err));
+  } finally {
+    _editLoading = false;
+  }
+}
+
 
     // --- Restore sketch ---
     existingSketch = sketch;
@@ -1685,6 +1683,7 @@ updatePageSections();
 updateNet();
 
 */
+
 
 
 
