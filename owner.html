@@ -68,6 +68,24 @@
   font-size: 16px;
 }
 .noteIconBtn:active { transform: scale(.98); }
+    noteModalSave.addEventListener("click", async () => {
+  if (!noteModalId) return;
+  try {
+    setStatus("Saving note…");
+    await ownerPost("note", noteModalId, { note: noteModalText.value });
+
+    // Optimistic local update (snappy on tablet)
+    const it = items.find(x => String(x.submissionId) === String(noteModalId));
+    if (it) it.notes = noteModalText.value;
+
+    await fetchList(); // refresh table + keep authoritative
+
+    setStatus("Note saved ✅");
+    closeNoteModal(true);
+  } catch (e) {
+    setStatus("Error: " + e.message);
+  }
+});
     @media (max-width: 900px) {
       .mediaGrid { grid-template-columns: 1fr; }
     }
@@ -380,8 +398,9 @@ function openNoteModal(submissionId){
 
   noteModalTitle.textContent = `Notes — ${submissionId}`;
   noteModalText.value = note;
-  noteModalText.disabled = true;
 
+  // view mode defaults
+  noteModalText.disabled = true;
   noteModalEdit.disabled = false;
   noteModalSave.disabled = true;
 
@@ -389,18 +408,32 @@ function openNoteModal(submissionId){
     ? `Customer: ${it.customerName || ""} • Page: ${it.pageType || ""} • Synced: ${fmtDate(it.syncedAt)}`
     : "";
 
+  // show modal
   noteModalBack.style.display = "flex";
+
+  // helpful on tablet: scroll textarea into view
+  setTimeout(() => noteModalText.scrollIntoView({ block: "nearest" }), 0);
 }
 
-function closeNoteModal(){
+function closeNoteModal(force = false){
+  // if editing, avoid accidental close unless force
+  if (!force && noteModalEditing) {
+    const ok = confirm("You’re editing this note. Close without saving?");
+    if (!ok) return;
+  }
   noteModalBack.style.display = "none";
   noteModalId = "";
+  noteModalEditing = false;
 }
 
-noteModalClose.addEventListener("click", closeNoteModal);
+noteModalClose.addEventListener("click", () => closeNoteModal());
 noteModalBack.addEventListener("click", (e) => {
-  if (e.target === noteModalBack) closeNoteModal(); // click backdrop closes
+  if (e.target === noteModalBack) closeNoteModal(); // click backdrop closes (with confirm if editing)
 });
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && noteModalBack.style.display === "flex") closeNoteModal();
+});
+
 
 noteModalEdit.addEventListener("click", () => {
   noteModalEditing = true;
@@ -417,23 +450,19 @@ noteModalSave.addEventListener("click", async () => {
     setStatus("Saving note…");
     await ownerPost("note", noteModalId, { note: noteModalText.value });
 
-    // refresh list so table + in-memory items update
-    await fetchList();
+    // Optimistic local update (snappy on tablet)
+    const it = items.find(x => String(x.submissionId) === String(noteModalId));
+    if (it) it.notes = noteModalText.value;
+
+    await fetchList(); // refresh table + keep authoritative
 
     setStatus("Note saved ✅");
-    closeNoteModal();
+    closeNoteModal(true);
   } catch (e) {
     setStatus("Error: " + e.message);
   }
 });
 
-// delegate note icon clicks inside table
-tbody.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-note-id]");
-  if (!btn) return;
-  e.stopPropagation(); // prevent row openDetail click
-  openNoteModal(btn.getAttribute("data-note-id"));
-});
 
     function renderTable() {
   const filtered = items.filter(matchesFilters);
