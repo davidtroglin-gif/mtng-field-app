@@ -632,6 +632,7 @@ const REPEATER_BINDINGS = {
 function populateRepeatersForPage(pageType, repeaters) {
   const pt = String(pageType || "").trim();
   const reps = normalizeRepeatersObj(repeaters);
+  
 
   function logContainer(id) {
   const el = document.getElementById(id);
@@ -727,6 +728,9 @@ if (pageTypeEl) {
 // ✅ NOW populate repeaters (pt is defined + correct section is visible)
 populateRepeatersForPage(pt, repeaters);
 
+    console.log("Rows now in mainsMaterials:", document.getElementById("mainsMaterials")?.querySelectorAll('[data-row]').length);
+
+
 console.log("REPEATERS OBJECT:", repeaters);
 console.log("REPEATER KEYS:", Object.keys(repeaters));
 
@@ -744,8 +748,6 @@ Object.entries(fields).forEach(([k, v]) => {
     el.value = (v ?? "");
   }
 });
-
-      //populateRepeatersForPage(pt, repeaters);
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
@@ -1015,6 +1017,7 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
