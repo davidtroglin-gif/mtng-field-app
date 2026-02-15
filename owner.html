@@ -508,7 +508,6 @@ tbody.addEventListener("click", (e) => {
 
   // Edit button
 const editBtn = e.target.closest("[data-edit-id]");
-const editBtn = e.target.closest("[data-edit-id]");
 if (editBtn) {
   e.preventDefault();
   e.stopPropagation();
@@ -680,14 +679,6 @@ if (editBtn) {
         openingDetail = false;
       }
     }
-
-    document.getElementById("refresh").addEventListener("click", () =>
-  fetchList().catch(e => setStatus("Error: " + e.message))
-);
-
-qEl.addEventListener("input", renderTable);
-pageTypeEl.addEventListener("change", renderTable);
-
 
 
     // UI hooks
