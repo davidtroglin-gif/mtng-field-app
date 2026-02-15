@@ -286,8 +286,27 @@ async function drawDataUrlToCanvas_(dataUrl) {
   });
 }
 
+function showSectionForPageType_(pt) {
+  const type = String(pt || "Leak Repair").trim();
 
+  const sectionLeakRepair = document.getElementById("sectionLeakRepair");
+  const sectionMains      = document.getElementById("sectionMains");
+  const sectionRetirement = document.getElementById("sectionRetirement");
+  const sectionServices   = document.getElementById("sectionServices");
 
+  if (sectionLeakRepair) sectionLeakRepair.style.display = (type === "Leak Repair") ? "block" : "none";
+  if (sectionMains)      sectionMains.style.display      = (type === "Mains")       ? "block" : "none";
+  if (sectionRetirement) sectionRetirement.style.display = (type === "Retirement")  ? "block" : "none";
+  if (sectionServices)   sectionServices.style.display   = (type === "Services")    ? "block" : "none";
+
+  return (
+    (type === "Leak Repair" && sectionLeakRepair) ||
+    (type === "Mains"       && sectionMains) ||
+    (type === "Retirement"  && sectionRetirement) ||
+    (type === "Services"    && sectionServices) ||
+    null
+  );
+}
 
 /* ---------- EDIT LOAD ---------- */
 let _editLoading = false;
@@ -336,18 +355,52 @@ async function loadForEdit(submissionId) {
 
     // --- Set page type + show correct section BEFORE populating ---
     if (pageTypeEl) {
-  const values = new Set([...pageTypeEl.options].map(o => o.value));
-  if (values.has(pt)) {
-    pageTypeEl.value = pt;
-  } else {
-    // ✅ don't silently force Leak Repair — add option so the UI matches the data
-    const opt = document.createElement("option");
-    opt.value = pt;
-    opt.textContent = pt;
-   pageTypeEl.appendChild(opt);
-    pageTypeEl.value = pt;
+    const values = new Set([...pageTypeEl.options].map(o => o.value));
+    if (values.has(pt)) {
+      pageTypeEl.value = pt;
+    } else {
+      // ✅ don't silently force Leak Repair — add option so the UI matches the data
+      const opt = document.createElement("option");
+      opt.value = pt;
+      opt.textContent = pt;
+     pageTypeEl.appendChild(opt);
+      pageTypeEl.value = pt;
+
+      const activeSection = showSectionForPageType_(pt);
+
+      // If your real function exists later, call it too (optional)
+      if (typeof window.updatePageSections === "function") window.updatePageSections();
+      
+      // Let the browser apply display changes before querying inputs
+      await new Promise(requestAnimationFrame);
       }
     }
+
+    populateRepeatersForPage(pt, repeaters);
+
+    const scope = activeSection || form || document;
+
+    Object.entries(fields).forEach(([k, v]) => {
+      const name = String(k);
+      const esc = (window.CSS && CSS.escape) ? CSS.escape(name) : name.replace(/"/g, '\\"');
+    
+      // Try active section first
+      let el = scope.querySelector(`[name="${esc}"]`);
+    
+      // Fallback: anywhere in the form
+      if (!el && form) el = form.querySelector(`[name="${esc}"]`);
+      if (!el) return;
+    
+      if (el.type === "checkbox") el.checked = !!v;
+      else if (el.type === "radio") {
+        const radios = (scope.querySelectorAll(`input[type="radio"][name="${esc}"]`).length
+          ? scope.querySelectorAll(`input[type="radio"][name="${esc}"]`)
+          : form.querySelectorAll(`input[type="radio"][name="${esc}"]`));
+        radios.forEach(r => r.checked = (String(r.value) === String(v)));
+      } else {
+        el.value = (v ?? "");
+      }
+    });
     
     if (typeof window.updatePageSections === "function") {
       window.updatePageSections();
@@ -1632,6 +1685,7 @@ updatePageSections();
 updateNet();
 
 */
+
 
 
 
