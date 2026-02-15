@@ -857,30 +857,97 @@ function setByName_(formEl, name, value) {
   dispatchFieldEvents_(el);
 }
 
-// Populate all fields (not just the visible section)
-// This is important because you may have shared fields outside the section.
-function populateAllFields_(formEl, fieldsObj) {
-  const fields = fieldsObj && typeof fieldsObj === "object" ? fieldsObj : {};
+// =====================================================
+// FIELDS: Smart population (drop-in)
+// - handles checkbox/radio groups
+// - searches inside form first, then document (in case elements aren't inside <form>)
+// - tolerates NBSP / weird whitespace differences via normKey()
+// =====================================================
 
-  Object.entries(fields).forEach(([k, v]) => {
-    setByName_(formEl, k, v);
-  });
+function _attrEsc_(s) {
+  return String(s ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+function _fire_(el) {
+  try { el.dispatchEvent(new Event("input",  { bubbles: true })); } catch {}
+  try { el.dispatchEvent(new Event("change", { bubbles: true })); } catch {}
+}
+function _set_(el, v) {
+  if (!el) return;
+  const t = (el.type || "").toLowerCase();
+  if (t === "checkbox") el.checked = isCheckedVal(v);
+  else if (t === "radio") el.checked = (String(el.value) === String(v));
+  else el.value = (v ?? "");
+  _fire_(el);
 }
 
-// Optional: if you also want to support fields keyed by id in payload,
-// uncomment this. (Only if your backend stores ids.)
-// function populateById_(formEl, fieldsObj) {
-//   const fields = fieldsObj && typeof fieldsObj === "object" ? fieldsObj : {};
-//   Object.entries(fields).forEach(([k, v]) => {
-//     const el = document.getElementById(k);
-//     if (!el) return;
-//     if (el.name) return; // name-based already handles it
-//     const t = (el.type || "").toLowerCase();
-//     if (t === "checkbox") el.checked = isCheckedVal(v);
-//     else el.value = (v ?? "");
-//     dispatchFieldEvents_(el);
-//   });
-// }
+function populateFieldsSmart_(formEl, fieldsObj) {
+  const fields = (fieldsObj && typeof fieldsObj === "object") ? fieldsObj : {};
+
+  // Build normalized name index (form + document) to handle NBSP/spacing mismatches
+  const idxForm = new Map();
+  const idxDoc  = new Map();
+
+  const addToIdx = (idx, root) => {
+    Array.from(root.querySelectorAll("input[name],select[name],textarea[name]")).forEach(el => {
+      const nk = normKey(el.name);
+      if (!nk) return;
+      if (!idx.has(nk)) idx.set(nk, []);
+      idx.get(nk).push(el);
+    });
+  };
+
+  addToIdx(idxForm, formEl);
+  addToIdx(idxDoc, document);
+
+  for (const [k, v] of Object.entries(fields)) {
+    const kRaw = String(k ?? "");
+    const kNorm = normKey(kRaw);
+
+    // 1) exact name inside form
+    let els = Array.from(formEl.querySelectorAll(`[name="${_attrEsc_(kRaw)}"]`));
+
+    // 2) exact name anywhere
+    if (!els.length) els = Array.from(document.querySelectorAll(`[name="${_attrEsc_(kRaw)}"]`));
+
+    // 3) normalized name match (form first, then doc)
+    if (!els.length && kNorm) els = idxForm.get(kNorm) || [];
+    if (!els.length && kNorm) els = idxDoc.get(kNorm) || [];
+
+    // 4) id match fallback (if some controls use id not name)
+    if (!els.length) {
+      const byId = document.getElementById(kRaw) || (kNorm ? document.getElementById(kNorm) : null);
+      if (byId) els = [byId];
+    }
+
+    if (!els.length) {
+      // Uncomment this to see exactly which keys aren't matching anything
+      // console.warn("No element found for field:", JSON.stringify(kRaw));
+      continue;
+    }
+
+    // Group handling
+    const hasRadio = els.some(e => (e.type || "").toLowerCase() === "radio");
+    if (hasRadio) {
+      els.forEach(r => _set_(r, v));
+      continue;
+    }
+
+    const cbs = els.filter(e => (e.type || "").toLowerCase() === "checkbox");
+    if (cbs.length > 1) {
+      // checkbox group: match by value
+      const want = new Set(Array.isArray(v) ? v.map(String) : [String(v)]);
+      cbs.forEach(cb => {
+        cb.checked = want.has(String(cb.value));
+        _fire_(cb);
+      });
+      continue;
+    }
+
+    // single element
+    _set_(els[0], v);
+  }
+}
+
 
 async function loadForEdit(submissionId) {
   if (_editLoading) return;
@@ -1280,6 +1347,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
