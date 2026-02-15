@@ -564,6 +564,62 @@ function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields,
   };
 }
 
+function clearRepeaterContainer(el) {
+  if (!el) return;
+  el.innerHTML = "";
+}
+
+function fillRepeater(el, addRowFn, rows) {
+  if (!el || typeof addRowFn !== "function") return;
+
+  clearRepeaterContainer(el);
+
+  const safeRows = Array.isArray(rows) && rows.length ? rows : [{}];
+  safeRows.forEach(r => addRowFn(r || {}));
+}
+
+function populateRepeatersForPage(pageType, repeaters = {}) {
+  const pt = String(pageType || "").trim();
+
+  // normalize repeaters keys just in case (defensive)
+  const rep = repeaters || {};
+
+  // Leak Repair
+  if (pt === "Leak Repair") {
+    fillRepeater(pipeMaterialsEl, addPipeMaterialRow, rep.pipeMaterials);
+    fillRepeater(otherMaterialsEl, addOtherMaterialRow, rep.otherMaterials);
+    fillRepeater(pipeTestsEl, addPipeTestRow, rep.pipeTests);
+    return;
+  }
+
+  // Mains
+  if (pt === "Mains") {
+    fillRepeater(mainsMaterialsEl, addMainsMaterialRow, rep.mainsMaterials);
+    fillRepeater(mainsOtherMaterialsEl, addMainsOtherMaterialRow, rep.mainsOtherMaterials);
+    fillRepeater(mainsPipeTestsEl, addMainsPipeTestRow, rep.mainsPipeTests);
+    return;
+  }
+
+  // Services
+  if (pt === "Services") {
+    fillRepeater(svcMaterialsEl, addSvcMaterialRow, rep.svcMaterials);
+    fillRepeater(svcOtherMaterialsEl, addSvcOtherMaterialRow, rep.svcOtherMaterials);
+    fillRepeater(svcPipeTestsEl, addSvcPipeTestRow, rep.svcPipeTests);
+    return;
+  }
+
+  // Retirement
+  if (pt === "Retirement") {
+    fillRepeater(retSectionEl, addRetSectionRow, rep.retSection);
+    fillRepeater(retStructuresEl, addRetStructuresRow, rep.retStructures);
+    fillRepeater(retNewMaterialsEl, addRetNewMaterialsRow, rep.retNewMaterials);
+    return;
+  }
+
+  // Fallback: do nothing
+  console.warn("populateRepeatersForPage: unknown pageType:", pt);
+}
+
 async function loadForEdit(submissionId) {
   try {
     setStatus("Loading for edit…");
@@ -628,26 +684,12 @@ async function loadForEdit(submissionId) {
       }
     });
 
-    // repeaters for that pageType
-   // populateRepeatersForPage(pt, repeaters);
-
     setStatus("Edit mode ready ✅");
   } catch (err) {
     console.error(err);
     setStatus("Edit load failed: " + (err?.message || err));
   }
 }
-
-
-
-/*if (editId) {
-  loadForEdit(editId);
-}*/
-
-// ---- Edit mode from URL (must be above loadForEdit if loadForEdit uses ownerKey) ----
-//const qs = new URLSearchParams(window.location.search);
-//const ownerKey = qs.get("key") || "";
-//const editId = qs.get("edit") || "";
 
 window.addEventListener("DOMContentLoaded", () => {
   if (editId) loadForEdit(editId);
@@ -939,6 +981,7 @@ if (editId) {
 
 updatePageSections();
 updateNet();
+
 
 
 
