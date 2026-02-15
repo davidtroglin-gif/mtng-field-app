@@ -16,7 +16,6 @@ const formMeta = document.getElementById("formMeta");
 // ---- core DOM ----
 const form = document.getElementById("form");
 const pageTypeEl = document.getElementById("pageType");
-console.log("pageTypeEl now:", pageTypeEl.value);
 const listCard = document.getElementById("listCard");
 
 
@@ -30,9 +29,7 @@ const sectionServices = document.getElementById("sectionServices");
 const urlParams = new URLSearchParams(window.location.search);
 //const editId = urlParams.get("edit");
 
-if (editId) {
-  (editId);
-}
+
 
 
 // =====================================================
@@ -80,19 +77,19 @@ debug("app.js running ✅");
 
 // ---- Edit boot (DEBUG) ----
 const qs = new URLSearchParams(window.location.search);
-//const ownerKey = qs.get("key") || "";
-//const editId = qs.get("edit") || "";
-
-// show what the app thinks the URL params are
 debug(`Edit boot → editId=${editId || "(none)"} | key=${ownerKey ? "YES" : "NO"}`);
 
-// run  AFTER DOM is ready + after repeaters are set up
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
   if (!editId) return;
-  debug("Calling (...) now…");
-  (editId).catch(err => {
-    debug(" threw: " + (err?.message || err));
-  });
+
+  debug("Calling loadForEdit(...) now…");
+
+  try {
+    await loadForEdit(editId);
+    debug("loadForEdit finished ✅");
+  } catch (err) {
+    debug("loadForEdit threw: " + (err?.message || err));
+  }
 });
 
 
@@ -942,6 +939,7 @@ if (editId) {
 
 updatePageSections();
 updateNet();
+
 
 
 
