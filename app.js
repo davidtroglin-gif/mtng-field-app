@@ -640,6 +640,15 @@ async function loadForEdit(submissionId) {
   }
 }
 
+// ---- Edit mode from URL ----
+const qs = new URLSearchParams(window.location.search);
+const ownerKey = qs.get("key") || "";
+const editId = qs.get("edit") || "";
+
+if (editId) {
+  loadForEdit(editId);
+}
+
 
 // =====================================================
 // Photos compression
@@ -906,6 +915,9 @@ document.getElementById("openDrafts")?.addEventListener("click", () => {
 document.getElementById("openQueue")?.addEventListener("click", () => {
   debug("openQueue clicked (handler not implemented in this drop-in).");
 });
+
+updatePageSections();
+updateNet();
 
 
 
