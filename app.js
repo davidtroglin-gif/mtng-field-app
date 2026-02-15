@@ -645,8 +645,9 @@ async function loadForEdit(submissionId) {
     const fields = p.fields || {};         // ✅ ADD THIS
     const repeaters = p.repeaters || {};   // ✅ ADD THIS
 
-    console.log("FULL PAYLOAD:", p);
-    console.log("pageType from payload:", p.pageType);
+    console.log("PAGE TYPE:", p.pageType);
+    console.log("REPEATERS OBJECT:", repeaters);
+    console.log("REPEATER KEYS:", Object.keys(repeaters));
 
     // ---- SET EDIT MODE ----
     currentId = submissionId;
@@ -982,6 +983,7 @@ if (editId) {
 
 updatePageSections();
 updateNet();
+
 
 
 
