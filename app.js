@@ -27,7 +27,17 @@ const sectionRetirement = document.getElementById("sectionRetirement");
 const sectionServices = document.getElementById("sectionServices");
 
 const urlParams = new URLSearchParams(window.location.search);
-//const editId = urlParams.get("edit");
+
+const params = new URLSearchParams(location.search);
+
+// MUST be let so "New Form" can clear it
+let editId = params.get("edit") || "";
+
+// initialize currentId based on whether we're editing
+let currentId = editId ? editId : newSubmissionId();
+let mode = editId ? "edit" : "new";
+
+
 
 //OLD CODE OLD CODE OLD CODE
 // =====================================================
@@ -867,10 +877,15 @@ async function loadForEdit(submissionId) {
     const p = json.payload || {};
     const fields = p.fields || {};
     const repeaters = p.repeaters || {};
+    
+    // ---- PRESERVE ORIGINAL CREATED TIME ----
+    createdAtLocked = p.createdAt || null;
 
-    // ---- SET EDIT MODE ----
-    currentId = submissionId;
-    mode = "edit";
+     // ---- SET EDIT MODE ----
+      editId = submissionId;
+      currentId = submissionId;
+      mode = "edit";
+      createdAtLocked = p.createdAt || null;
 
     // Reset first (keeps it clean)
     form.reset();
@@ -998,6 +1013,27 @@ async function drawDataUrlToCanvas_(dataUrl) {
 // =====================================================
 // Build payload
 // =====================================================
+// =====================================================
+// EDIT / MODE / ID LOCK (DROP-IN)
+// =====================================================
+const params = new URLSearchParams(location.search);
+
+// MUST be let so New Form can clear it
+let editId = params.get("edit") || "";
+
+// lock mode and currentId based on URL at load
+let mode = editId ? "edit" : "new";
+let currentId = editId ? editId : newSubmissionId();
+
+// Keep createdAt stable per record (important so edits don't look like "new" submissions)
+let createdAtLocked = null;
+
+// If you load an existing payload elsewhere, set createdAtLocked from it.
+// But even if you don't, this will still behave well.
+
+// =====================================================
+// buildPayload (DROP-IN REPLACEMENT)
+// =====================================================
 async function buildPayload() {
   const deviceId = getDeviceId();
 
@@ -1020,26 +1056,43 @@ async function buildPayload() {
           : (existingSketch || null))
       : (existingSketch || null);
 
-  return normalizePayload({
+  // Preserve createdAt on edit if possible
+  const createdAt =
+    (mode === "edit" && (createdAtLocked || existingCreatedAt))
+      ? (createdAtLocked || existingCreatedAt)
+      : (createdAtLocked || new Date().toISOString());
+
+  // IMPORTANT: Always use the locked currentId so edits never create a new submission
+  const out = normalizePayload({
     submissionId: currentId,
     pageType: pageTypeEl?.value || "Leak Repair",
     deviceId,
-    createdAt: new Date().toISOString(),
+    createdAt,
+    updatedAt: new Date().toISOString(),
     fields,
     repeaters,
     sketch,
     photos,
+    mode,          // optional but helpful for backend/debugging
+    editId,        // optional but helpful for backend/debugging
   });
+
+  // Safety: if editing, submissionId MUST equal editId
+  if (mode === "edit" && editId && out.submissionId !== editId) {
+    debug(`❌ buildPayload blocked: editId=${editId} submissionId=${out.submissionId}`);
+    throw new Error("Edit safety check failed: submissionId changed.");
+  }
+
+  return out;
 }
 
 
 // =====================================================
-// Submit / Sync
+// Submit / Sync (small safety addition)
 // =====================================================
 async function postSubmit(payload) {
   debug("Submitting…");
 
-  // ✅ include key if needed
   const url = new URL(API_URL);
   if (ownerKey) url.searchParams.set("key", ownerKey);
 
@@ -1070,6 +1123,12 @@ async function trySync() {
     queued.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
 
     for (const item of queued) {
+      // Guard: don't allow queued items to mutate edit IDs
+      if (item.mode === "edit" && item.editId && item.submissionId !== item.editId) {
+        debug(`❌ queued item blocked: editId=${item.editId} submissionId=${item.submissionId}`);
+        continue;
+      }
+
       const ok = await postSubmit(item);
       if (!ok) break;
       await db.del("queue", item.submissionId);
@@ -1079,9 +1138,14 @@ async function trySync() {
   }
 }
 
-
 async function submitNow() {
-  const payload = await buildPayload();
+  let payload;
+  try {
+    payload = await buildPayload();
+  } catch (err) {
+    alert(err.message || String(err));
+    return;
+  }
 
   if (!navigator.onLine) {
     await db.put("queue", payload);
@@ -1103,8 +1167,9 @@ async function submitNow() {
   }
 }
 
+
 // =====================================================
-// Buttons / Events
+// Buttons / Events (DROP-IN FIX for New Form)
 // =====================================================
 document.getElementById("saveDraft")?.addEventListener("click", async () => {
   const payload = await buildPayload();
@@ -1132,15 +1197,17 @@ form?.addEventListener("submit", async (e) => {
 });
 
 document.getElementById("newForm")?.addEventListener("click", () => {
-  currentId = newSubmissionId();
+  // EXIT edit mode completely
+  editId = "";
   mode = "new";
+  currentId = newSubmissionId();
+  createdAtLocked = null;
+
   form.reset();
 
   if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Clear repeater containers and add a starter row again
- // initial starter rows (only if NOT editing)
-if (!editId) {
+  // initial starter rows (only if NOT editing)
   if (pipeMaterialsEl) addPipeMaterialRow();
   if (otherMaterialsEl) addOtherMaterialRow();
   if (pipeTestsEl) addPipeTestRow();
@@ -1156,11 +1223,11 @@ if (!editId) {
   if (retSectionEl) addRetSectionRow();
   if (retStructuresEl) addRetStructuresRow();
   if (retNewMaterialsEl) addRetNewMaterialsRow();
-}
 
   formMeta.textContent = `New: ${currentId}`;
   updatePageSections();
 });
+
 
 // --- helpers -------------------------------------------------
 function _nk(s) {
@@ -1237,6 +1304,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
