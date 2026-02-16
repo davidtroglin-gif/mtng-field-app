@@ -6,12 +6,11 @@ const CACHE_NAME = "mtng-v2026-02-14-1";
 // Make sure index.html uses the same versioned URL:
 // <script type="module" src="./app.js?v=2026-02-14-1"></script>
 const ASSETS = [
-  "./",
   "./index.html",
   "./owner.html",
   "./app.js?v=2026-02-14-1",
-  "./db.js",
-  "./manifest.json",
+  "./db.js?v=2026-02-14-1",
+  "./manifest.json?v=2026-02-14-1",
   "./sw.js"
 ];
 
@@ -71,5 +70,6 @@ self.addEventListener("fetch", (event) => {
     }
   })());
 });
+
 
 
