@@ -1152,8 +1152,18 @@ function populateRepeater(bindingKey, rows) {
   //console.log(`✅ populated ${bindingKey}:`, arr.length);
 }
 
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "SW_UPDATED") {
+      location.reload();
+    }
+  });
+}
+
+
 updatePageSections();
 updateNet();
+
 
 
 
