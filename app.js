@@ -1046,13 +1046,15 @@ async function buildPayload() {
   const fields = gatherFieldsNormalized(root);
   const repeaters = gatherRepeaters();
 
+  // Preserve createdAt on edit; always set updatedAt
   const createdAt =
-  (mode === "edit" && createdAtLocked)
-    ? createdAtLocked
-    : (createdAtLocked || new Date().toISOString());
+    (mode === "edit" && createdAtLocked)
+      ? createdAtLocked
+      : (createdAtLocked || new Date().toISOString());
 
-  updatedAt: new Date().toISOString(),
+  const updatedAt = new Date().toISOString();
 
+  // Photos
   const photoInput = form.querySelector('input[type="file"][data-photos]');
   const files = Array.from(photoInput?.files || []).slice(0, 5);
 
@@ -1062,6 +1064,7 @@ async function buildPayload() {
     photos.push({ filename: f.name || `photo_${currentId}.jpg`, dataUrl });
   }
 
+  // Sketch
   const sketch =
     canvas
       ? (sketchDirty
@@ -1069,17 +1072,12 @@ async function buildPayload() {
           : (existingSketch || null))
       : (existingSketch || null);
 
-  const createdAt =
-    (mode === "edit" && createdAtLocked)
-      ? createdAtLocked
-      : (createdAtLocked || new Date().toISOString());
-
   const payload = normalizePayload({
     submissionId: currentId,
     pageType: pageTypeEl?.value || "Leak Repair",
     deviceId,
     createdAt,
-    updatedAt: new Date().toISOString(),
+    updatedAt,
     fields,
     repeaters,
     sketch,
@@ -1088,156 +1086,13 @@ async function buildPayload() {
     editId
   });
 
-  // Safety guard to prevent accidental "edit becomes new"
+  // Safety guard: prevent accidental "edit becomes new"
   if (mode === "edit" && editId && payload.submissionId !== editId) {
     throw new Error(`Edit safety check failed: editId=${editId} payloadId=${payload.submissionId}`);
   }
 
   return payload;
 }
-
-
-
-// =====================================================
-// Submit / Sync (small safety addition)
-// =====================================================
-async function postSubmit(payload) {
-  debug("Submitting…");
-
-  const url = new URL(API_URL);
-  if (ownerKey) url.searchParams.set("key", ownerKey);
-
-  const res = await fetch(url.toString(), {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload),
-  });
-
-  const txt = await res.text();
-  debug(`Response HTTP ${res.status}: ${txt.slice(0, 160)}`);
-
-  try {
-    const j = JSON.parse(txt);
-    return !!j.ok;
-  } catch {
-    return txt.includes('"ok":true') || txt.includes('"ok": true');
-  }
-}
-
-async function trySync() {
-  if (!navigator.onLine) return;
-
-  try {
-    const queued = await db.getAll("queue");
-    if (!queued?.length) return;
-
-    queued.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
-
-    for (const item of queued) {
-      // Guard: don't allow queued items to mutate edit IDs
-      if (item.mode === "edit" && item.editId && item.submissionId !== item.editId) {
-        debug(`❌ queued item blocked: editId=${item.editId} submissionId=${item.submissionId}`);
-        continue;
-      }
-
-      const ok = await postSubmit(item);
-      if (!ok) break;
-      await db.del("queue", item.submissionId);
-    }
-  } catch (e) {
-    debug("Sync error: " + (e?.message || e));
-  }
-}
-
-async function submitNow() {
-  let payload;
-  try {
-    payload = await buildPayload();
-  } catch (err) {
-    alert(err.message || String(err));
-    return;
-  }
-
-  if (!navigator.onLine) {
-    await db.put("queue", payload);
-    formMeta.textContent = `Offline — queued: ${payload.submissionId}`;
-    alert("Offline: saved and queued.");
-    return;
-  }
-
-  const ok = await postSubmit(payload);
-  if (!ok) {
-    await db.put("queue", payload);
-    formMeta.textContent = `Submit failed — queued: ${payload.submissionId}`;
-    alert("Submit failed — queued.");
-  } else {
-    await db.del("drafts", payload.submissionId);
-    await db.del("queue", payload.submissionId);
-    formMeta.textContent = `Submitted: ${payload.submissionId}`;
-    alert("Submitted ✅");
-  }
-}
-
-
-// =====================================================
-// Buttons / Events (DROP-IN FIX for New Form)
-// =====================================================
-document.getElementById("saveDraft")?.addEventListener("click", async () => {
-  const payload = await buildPayload();
-  await db.put("drafts", payload);
-  formMeta.textContent = `Saved Draft: ${payload.submissionId}`;
-  alert("Draft saved.");
-});
-
-document.getElementById("queueForSync")?.addEventListener("click", async () => {
-  const payload = await buildPayload();
-  await db.put("queue", payload);
-  await db.del("drafts", payload.submissionId);
-  formMeta.textContent = `Queued: ${payload.submissionId}`;
-  alert("Queued for sync.");
-  await trySync();
-});
-
-document.getElementById("syncNow")?.addEventListener("click", () => {
-  trySync().catch((e) => debug("Sync error: " + e.message));
-});
-
-form?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  await submitNow();
-});
-
-document.getElementById("newForm")?.addEventListener("click", () => {
-  // EXIT edit mode completely
-  editId = "";
-  mode = "new";
-  currentId = newSubmissionId();
-  createdAtLocked = null;
-
-  form.reset();
-
-  if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // initial starter rows (only if NOT editing)
-  if (pipeMaterialsEl) addPipeMaterialRow();
-  if (otherMaterialsEl) addOtherMaterialRow();
-  if (pipeTestsEl) addPipeTestRow();
-
-  if (mainsMaterialsEl) addMainsMaterialRow();
-  if (mainsOtherMaterialsEl) addMainsOtherMaterialRow();
-  if (mainsPipeTestsEl) addMainsPipeTestRow();
-
-  if (svcMaterialsEl) addSvcMaterialRow();
-  if (svcOtherMaterialsEl) addSvcOtherMaterialRow();
-  if (svcPipeTestsEl) addSvcPipeTestRow();
-
-  if (retSectionEl) addRetSectionRow();
-  if (retStructuresEl) addRetStructuresRow();
-  if (retNewMaterialsEl) addRetNewMaterialsRow();
-
-  formMeta.textContent = `New: ${currentId}`;
-  updatePageSections();
-});
 
 
 // --- helpers -------------------------------------------------
@@ -1315,6 +1170,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
