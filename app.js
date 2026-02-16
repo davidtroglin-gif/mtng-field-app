@@ -880,7 +880,11 @@ async function loadForEdit(submissionId) {
     
     // ---- PRESERVE ORIGINAL CREATED TIME ----
     createdAtLocked = p.createdAt || null;
+      editId = submissionId;
+      currentId = submissionId;
+      mode = "edit";
 
+    
      // ---- SET EDIT MODE ----
       editId = submissionId;
       currentId = submissionId;
@@ -1304,6 +1308,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
