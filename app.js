@@ -1037,7 +1037,9 @@ let createdAtLocked = null;
 async function buildPayload() {
   const deviceId = getDeviceId();
 
-  const fields = gatherFieldsNormalized(form);
+  // IMPORTANT: gather from a root that includes all inputs
+  const root = document.getElementById("app") || document;
+  const fields = gatherFieldsNormalized(root);
   const repeaters = gatherRepeaters();
 
   const photoInput = form.querySelector('input[type="file"][data-photos]');
@@ -1056,14 +1058,12 @@ async function buildPayload() {
           : (existingSketch || null))
       : (existingSketch || null);
 
-  // Preserve createdAt on edit if possible
   const createdAt =
-    (mode === "edit" && (createdAtLocked || existingCreatedAt))
-      ? (createdAtLocked || existingCreatedAt)
+    (mode === "edit" && createdAtLocked)
+      ? createdAtLocked
       : (createdAtLocked || new Date().toISOString());
 
-  // IMPORTANT: Always use the locked currentId so edits never create a new submission
-  const out = normalizePayload({
+  const payload = normalizePayload({
     submissionId: currentId,
     pageType: pageTypeEl?.value || "Leak Repair",
     deviceId,
@@ -1073,18 +1073,18 @@ async function buildPayload() {
     repeaters,
     sketch,
     photos,
-    mode,          // optional but helpful for backend/debugging
-    editId,        // optional but helpful for backend/debugging
+    mode,
+    editId
   });
 
-  // Safety: if editing, submissionId MUST equal editId
-  if (mode === "edit" && editId && out.submissionId !== editId) {
-    debug(`❌ buildPayload blocked: editId=${editId} submissionId=${out.submissionId}`);
-    throw new Error("Edit safety check failed: submissionId changed.");
+  // Safety guard to prevent accidental "edit becomes new"
+  if (mode === "edit" && editId && payload.submissionId !== editId) {
+    throw new Error(`Edit safety check failed: editId=${editId} payloadId=${payload.submissionId}`);
   }
 
-  return out;
+  return payload;
 }
+
 
 
 // =====================================================
@@ -1304,6 +1304,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
