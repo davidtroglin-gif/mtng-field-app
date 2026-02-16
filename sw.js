@@ -26,6 +26,10 @@ self.addEventListener("activate", (event) => {
     const keys = await caches.keys();
     await Promise.all(keys.map(k => (k !== CACHE_NAME ? caches.delete(k) : null)));
     await self.clients.claim();
+   
+    const clients = await self.clients.matchAll({ type: "window" });
+    clients.forEach(c => c.postMessage({ type: "SW_UPDATED", cache: CACHE_NAME }));
+
   })());
 });
 
@@ -38,6 +42,22 @@ self.addEventListener("fetch", (event) => {
 
   // Navigation: network-first, fallback to cached shell
   if (req.mode === "navigate") {
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    try {
+      const res = await fetch(req);
+      if (res && res.ok) cache.put("./index.html", res.clone());
+      return res;
+    } catch {
+      return await cache.match("./index.html");
+    }
+  })());
+  return;
+}
+
+  
+/* code removed on 2/16/2026 to prevent old cache on phone
+  if (req.mode === "navigate") {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       try {
@@ -49,7 +69,7 @@ self.addEventListener("fetch", (event) => {
       }
     })());
     return;
-  }
+  }*/
 
   // Other assets: cache-first, then network, then offline response
   event.respondWith((async () => {
@@ -70,6 +90,7 @@ self.addEventListener("fetch", (event) => {
     }
   })());
 });
+
 
 
 
