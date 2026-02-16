@@ -877,19 +877,12 @@ async function loadForEdit(submissionId) {
     const p = json.payload || {};
     const fields = p.fields || {};
     const repeaters = p.repeaters || {};
-    
-    // ---- PRESERVE ORIGINAL CREATED TIME ----
-    createdAtLocked = p.createdAt || null;
-      editId = submissionId;
-      currentId = submissionId;
-      mode = "edit";
 
-    
-     // ---- SET EDIT MODE ----
-      editId = submissionId;
-      currentId = submissionId;
-      mode = "edit";
-      createdAtLocked = p.createdAt || null;
+    // ---- SET EDIT MODE + PRESERVE ORIGINAL CREATED TIME ----
+    createdAtLocked = p.createdAt || null;
+    editId = submissionId;
+    currentId = submissionId;
+    mode = "edit";
 
     // Reset first (keeps it clean)
     form.reset();
@@ -901,7 +894,7 @@ async function loadForEdit(submissionId) {
     if (pageTypeEl) {
       const exists = [...pageTypeEl.options].some(o => o.value === pt);
       pageTypeEl.value = exists ? pt : "Leak Repair";
-      updatePageSections(); // makes correct section visible before we set values
+      updatePageSections();
     }
 
     // ---- SKETCH ----
@@ -912,18 +905,12 @@ async function loadForEdit(submissionId) {
       await drawDataUrlToCanvas_(existingSketch.dataUrl);
     }
 
-    // ---- REPEATERS (yours already works) ----
+    // ---- REPEATERS ----
     populateRepeatersForPage(pt, repeaters);
 
-    // ---- FIELDS (SMART) ----
-// Populate all fields (works even if the element is outside <form>, has NBSP spacing,
-// or uses id/data-field instead of name)
-populateFieldsSmart_(form, fields);
-
-// Optional: only keep this if you truly need it.
-// In most cases, populateFieldsSmart_ already triggers change/input events,
-// so updatePageSections() is only needed if pageType logic is special.
-updatePageSections();
+    // ---- FIELDS ----
+    populateFieldsSmart_(form, fields);
+    updatePageSections();
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
@@ -940,9 +927,6 @@ updatePageSections();
   }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  if (editId) loadForEdit(editId);
-});
 
 
 
@@ -1170,6 +1154,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
