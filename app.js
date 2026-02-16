@@ -1046,6 +1046,13 @@ async function buildPayload() {
   const fields = gatherFieldsNormalized(root);
   const repeaters = gatherRepeaters();
 
+  const createdAt =
+  (mode === "edit" && createdAtLocked)
+    ? createdAtLocked
+    : (createdAtLocked || new Date().toISOString());
+
+  updatedAt: new Date().toISOString(),
+
   const photoInput = form.querySelector('input[type="file"][data-photos]');
   const files = Array.from(photoInput?.files || []).slice(0, 5);
 
@@ -1308,6 +1315,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
