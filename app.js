@@ -1172,6 +1172,10 @@ async function sendSubmission_(payload) {
   let j = null;
   try { j = JSON.parse(txt); } catch {}
 
+   if (j?.message && String(j.message).includes("MTNG API OK")) {
+  throw new Error("Server returned doGet default response. Update did not run—check deployment/version.");
+}
+
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt.slice(0, 200)}`);
   if (j && j.ok === false) throw new Error(j.error || "Server returned ok:false");
 
@@ -1293,6 +1297,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
