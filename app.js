@@ -36,13 +36,8 @@ const sectionServices = document.getElementById("sectionServices");
 
 const urlParams = new URLSearchParams(window.location.search);
 
-// ===== URL PARAMS =====
-const params = new URLSearchParams(window.location.search);
-
 // MUST be let so "New Form" can clear it
 let editId = params.get("edit") || "";
-
-const ownerKey = params.get("key") || "";
 
 // initialize currentId based on whether we're editing
 let currentId = editId ? editId : newSubmissionId();
@@ -1174,6 +1169,7 @@ if ("serviceWorker" in navigator) {
 
 updatePageSections();
 updateNet();
+
 
 
 
