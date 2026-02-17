@@ -449,6 +449,13 @@ noteModalEdit.addEventListener("click", () => {
       </button>
     `;
 
+    const delBtn = `
+  <button class="icon-btn danger" title="Delete"
+    onclick="deleteSubmission('${attrEscape(id)}')">
+    🗑️
+  </button>
+`;
+
     return `
       <tr data-id="${attrEscape(id)}">
         <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
@@ -464,7 +471,7 @@ noteModalEdit.addEventListener("click", () => {
         <td style="text-align:center;">${editBtn}</td>
         <td style="text-align:center;">${printBtn}</td>
         <td style="text-align:center;">${notesBtn}</td>
-        <td style="text-align:center;">${notesBtn}</td>
+        <td style="text-align:center;">${delBtn}</td>  //delete icon goes here that calls function
       </tr>
     `;
   }).join("");
