@@ -682,6 +682,37 @@ tbody.addEventListener("click", (e) => {
       }
     }
 
+    async function deleteSubmission(id) {
+  // confirm
+  const ok = confirm(`Delete submission ${id}?\n\nThis cannot be undone.`);
+  if (!ok) return;
+
+  // build url
+  const url = new URL(API_URL);
+  url.searchParams.set("action", "delete");
+  url.searchParams.set("id", id);
+  if (typeof ownerKey !== "undefined" && ownerKey) url.searchParams.set("key", ownerKey);
+
+  // call backend
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  const txt = await res.text();
+
+  let j;
+  try { j = JSON.parse(txt); } catch { j = { ok: false, error: txt }; }
+
+  if (!j.ok) {
+    alert("Delete failed:\n" + (j.error || txt).slice(0, 400));
+    return;
+  }
+
+  // remove row from DOM (no full refresh needed)
+  const tr = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
+  if (tr) tr.remove();
+
+  // optional: if you maintain counts/paging, you can refresh instead:
+  // await loadOwnerList();
+}
+
 
     // UI hooks
    document.getElementById("refresh").addEventListener("click", () =>
