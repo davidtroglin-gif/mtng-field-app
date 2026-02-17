@@ -1,5 +1,13 @@
 import { db } from "./db.js";
 
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "SW_UPDATED") {
+      location.reload();
+    }
+  });
+}
+
 // ===== CONFIG =====
 const API_URL =
   "https://script.google.com/macros/s/AKfycby4A2Ci8N6IFLB7oORb7KKThB_jqW580SV0EvG67CZ1FFoudWgLttJ8PyOiqPMKXtDiEQ/exec";
@@ -1163,6 +1171,7 @@ if ("serviceWorker" in navigator) {
 
 updatePageSections();
 updateNet();
+
 
 
 
