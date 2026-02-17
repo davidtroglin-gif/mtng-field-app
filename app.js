@@ -1156,6 +1156,10 @@ async function sendSubmission_(payload) {
     payload.action = "submit";
   }
 
+     console.log("POST URL:", url.toString());
+     console.log("POST MODE/IDS:", { mode, editId, currentId, submissionId: payload.submissionId, action: payload.action });
+
+
   const res = await fetch(url.toString(), {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -1163,6 +1167,7 @@ async function sendSubmission_(payload) {
   });
 
   const txt = await res.text();
+  console.log("POST RESPONSE:", { status: res.status, txt });
 
   let j = null;
   try { j = JSON.parse(txt); } catch {}
@@ -1288,6 +1293,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
