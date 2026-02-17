@@ -532,7 +532,7 @@ if (!editId) {
 // =====================================================
 // Gather fields + repeaters
 // =====================================================
-function gatherFieldsNormalized(formEl) {
+/*function gatherFieldsNormalized(formEl) {
   const fields = {};
   const pt = (pageTypeEl?.value || "Leak Repair").trim();
 
@@ -558,7 +558,27 @@ function gatherFieldsNormalized(formEl) {
   });
 
   return fields;
+}*/
+
+function gatherFieldsNormalized() {
+  const fields = {};
+  const els = Array.from(form.querySelectorAll("input[name], textarea[name], select[name]"));
+
+  els.forEach((el) => {
+    const name = normKey(el.name);
+    if (!name) return;
+
+    let value = "";
+    if (el.type === "checkbox") value = !!el.checked;
+    else if (el.type === "radio") { if (!el.checked) return; value = normVal(el.value); }
+    else value = normVal(el.value);
+
+    fields[name] = value;
+  });
+
+  return fields;
 }
+
 
 function gatherRepeaters() {
   const repeaters = {};
@@ -1081,7 +1101,7 @@ async function buildPayload() {
 
   // IMPORTANT: gather from a root that includes all inputs
   const root = document.getElementById("app") || document;
-  const fields = gatherFieldsNormalized(root);
+  const fields = gatherFieldsNormalized();
   const repeaters = gatherRepeaters();
 
   // Preserve createdAt on edit; always set updatedAt
@@ -1158,6 +1178,10 @@ async function sendSubmission_(payload) {
 
      console.log("POST URL:", url.toString());
      console.log("POST MODE/IDS:", { mode, editId, currentId, submissionId: payload.submissionId, action: payload.action });
+
+   console.log("FIELDS COUNT:", Object.keys(payload.fields || {}).length);
+   console.log("REPEATERS KEYS:", Object.keys(payload.repeaters || {}));
+   console.log("SKETCH?", !!payload.sketch, "PHOTOS:", (payload.photos || []).length);
 
 
   const res = await fetch(url.toString(), {
@@ -1297,6 +1321,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
