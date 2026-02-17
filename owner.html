@@ -452,6 +452,7 @@ noteModalEdit.addEventListener("click", () => {
 
     return `
       <tr data-id="${attrEscape(id)}">
+        <td><button class="btn btn-danger" onclick="deleteSubmission('${submissionId}')">Delete</button></td>
         <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
         <td>${escapeHtml(it.pageType || "")}</td>
         <td>${escapeHtml(it.customerName || "")}</td>
