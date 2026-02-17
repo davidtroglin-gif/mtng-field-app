@@ -1075,6 +1075,35 @@ async function drawDataUrlToCanvas_(dataUrl) {
   });
 }
 
+// ============================
+// EDIT BOOTSTRAP (RUN ON LOAD)
+// ============================
+function setSubmitButtonLabel_() {
+  const submitBtn = document.querySelector('button[type="submit"]');
+  if (!submitBtn) return;
+  submitBtn.textContent = (mode === "edit") ? "Update Submission" : "Submit Now (If Online)";
+}
+
+window.addEventListener("load", async () => {
+  try {
+    setSubmitButtonLabel_();
+
+    if (editId) {
+      console.log("BOOT: editId detected -> loading payload", editId);
+      await loadForEdit(editId);
+      // loadForEdit() already sets mode/editId/currentId and updates button,
+      // but we’ll enforce the label again just in case:
+      setSubmitButtonLabel_();
+    } else {
+      console.log("BOOT: no editId -> new form");
+    }
+  } catch (err) {
+    console.error("BOOT ERROR:", err);
+    setStatus("Boot error: " + (err?.message || err));
+  }
+});
+
+
 
 // =====================================================
 // Build payload
@@ -1083,9 +1112,6 @@ async function drawDataUrlToCanvas_(dataUrl) {
 // EDIT / MODE / ID LOCK (DROP-IN)
 // =====================================================
 //const params = new URLSearchParams(location.search);
-
-// MUST be let so New Form can clear it
-//let editId = params.get("edit") || "";
 
 // Keep createdAt stable per record (important so edits don't look like "new" submissions)
 let createdAtLocked = null;
@@ -1321,6 +1347,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
