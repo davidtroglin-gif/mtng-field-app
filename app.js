@@ -36,10 +36,13 @@ const sectionServices = document.getElementById("sectionServices");
 
 const urlParams = new URLSearchParams(window.location.search);
 
-//const params = new URLSearchParams(location.search);
+// ===== URL PARAMS =====
+const params = new URLSearchParams(window.location.search);
 
 // MUST be let so "New Form" can clear it
 let editId = params.get("edit") || "";
+
+const ownerKey = params.get("key") || "";
 
 // initialize currentId based on whether we're editing
 let currentId = editId ? editId : newSubmissionId();
@@ -1012,10 +1015,10 @@ async function drawDataUrlToCanvas_(dataUrl) {
 // =====================================================
 // EDIT / MODE / ID LOCK (DROP-IN)
 // =====================================================
-const params = new URLSearchParams(location.search);
+//const params = new URLSearchParams(location.search);
 
 // MUST be let so New Form can clear it
-let editId = params.get("edit") || "";
+//let editId = params.get("edit") || "";
 
 // lock mode and currentId based on URL at load
 let mode = editId ? "edit" : "new";
@@ -1171,6 +1174,7 @@ if ("serviceWorker" in navigator) {
 
 updatePageSections();
 updateNet();
+
 
 
 
