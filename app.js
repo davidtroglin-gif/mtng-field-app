@@ -1012,7 +1012,7 @@ async function drawDataUrlToCanvas_(dataUrl) {
 // =====================================================
 // EDIT / MODE / ID LOCK (DROP-IN)
 // =====================================================
-const params = new URLSearchParams(location.search);
+//const params = new URLSearchParams(location.search);
 
 // MUST be let so New Form can clear it
 let editId = params.get("edit") || "";
@@ -1171,6 +1171,7 @@ if ("serviceWorker" in navigator) {
 
 updatePageSections();
 updateNet();
+
 
 
 
