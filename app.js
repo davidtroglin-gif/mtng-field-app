@@ -20,6 +20,9 @@ const API_URL =
 const params = new URLSearchParams(window.location.search);
 const ownerKey = (params.get("key") || "").trim(); // ✅ pulled from URL
 
+let editReady = false;
+
+
 // MUST be let so "New Form" can clear it
 let editId = (params.get("edit") || "").trim();
 
@@ -992,8 +995,10 @@ async function loadForEdit(submissionId) {
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
-    if (submitBtn) submitBtn.textContent = "Update Submission";
+    //if (submitBtn) submitBtn.textContent = "Update Submission";
+      if (submitBtn) submitBtn.disabled = true; 
 
+     try {
     setStatus("Edit mode ready ✅");
     console.log("✅ Edit load complete for", submissionId);
 
@@ -1002,6 +1007,7 @@ async function loadForEdit(submissionId) {
     setStatus("Edit load failed: " + (err?.message || err));
   } finally {
     _editLoading = false;
+        if (submitBtn) submitBtn.disabled = false;
   }
 }
 
@@ -1241,6 +1247,11 @@ async function sendSubmission_(payload) {
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+   if (mode === "edit" && !editReady) {
+    alert("Edit is still loading — please wait for the form to populate before updating.");
+    return;
+  }
+
   try {
     setStatus(mode === "edit" ? "Updating…" : "Submitting…");
 
@@ -1350,6 +1361,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
