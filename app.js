@@ -1216,6 +1216,9 @@ async function sendSubmission_(payload) {
     body: JSON.stringify(payload),
   });
 
+   console.log("FETCH redirected?", res.redirected, "final url:", res.url, "status:", res.status);
+
+
   const txt = await res.text();
   console.log("POST RESPONSE:", { status: res.status, txt });
 
@@ -1347,6 +1350,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
