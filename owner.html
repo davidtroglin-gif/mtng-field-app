@@ -128,7 +128,6 @@
         <table id="tbl">
           <thead>
             <tr>
-              <th>Delete</th>
               <th>Synced</th>
               <th>Job Type</th>
               <th>Customer</th>
@@ -140,8 +139,8 @@
               <th>SubmissionId</th>
               <th>Edit</th>
               <th>Print</th>
-              <!--th>Add Note</th-->
               <th>Notes</th>
+              <th>Delete</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -452,7 +451,6 @@ noteModalEdit.addEventListener("click", () => {
 
     return `
       <tr data-id="${attrEscape(id)}">
-        <td><button class="btn btn-danger" onclick="deleteSubmission('${submissionId}')">Delete</button></td>
         <td>${escapeHtml(fmtDate(it.syncedAt))}</td>
         <td>${escapeHtml(it.pageType || "")}</td>
         <td>${escapeHtml(it.customerName || "")}</td>
@@ -466,6 +464,7 @@ noteModalEdit.addEventListener("click", () => {
         <td style="text-align:center;">${editBtn}</td>
         <td style="text-align:center;">${printBtn}</td>
         <td style="text-align:center;">${notesBtn}</td>
+        <td style="text-align:center;">Delete</td>
       </tr>
     `;
   }).join("");
