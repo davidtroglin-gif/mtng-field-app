@@ -30,14 +30,9 @@ let mode = editId ? "edit" : "new";
 
 
 
+// ===== DEBUG HOOK (module-safe) =====
 window.mtngDebug = {
   state: () => ({ mode, editId, currentId, ownerKey }),
-  set: (patch) => {
-    if (patch.mode !== undefined) mode = patch.mode;
-    if (patch.editId !== undefined) editId = patch.editId;
-    if (patch.currentId !== undefined) currentId = patch.currentId;
-    return { mode, editId, currentId };
-  }
 };
 
 
@@ -1293,6 +1288,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
