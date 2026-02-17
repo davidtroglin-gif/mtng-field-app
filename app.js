@@ -1,5 +1,8 @@
 import { db } from "./db.js";
 
+/* =========================
+   SERVICE WORKER: auto-reload on update
+   ========================= */
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("message", (event) => {
     if (event.data?.type === "SW_UPDATED") {
@@ -8,15 +11,25 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// ===== CONFIG =====
+/* =========================
+   CONFIG / URL PARAMS
+   ========================= */
 const API_URL =
   "https://script.google.com/macros/s/AKfycby4A2Ci8N6IFLB7oORb7KKThB_jqW580SV0EvG67CZ1FFoudWgLttJ8PyOiqPMKXtDiEQ/exec";
-const params = new URLSearchParams(location.search);
-const editId = params.get("edit") || "";
-const ownerKey = params.get("key") || ""; // ✅ pulled from URL
 
+const params = new URLSearchParams(window.location.search);
+const ownerKey = (params.get("key") || "").trim(); // ✅ pulled from URL
 
-// ---- UI helpers ----
+// MUST be let so "New Form" can clear it
+let editId = (params.get("edit") || "").trim();
+
+// These are used throughout the app to decide insert vs update
+let currentId = editId ? editId : newSubmissionId();
+let mode = editId ? "edit" : "new";
+
+/* =========================
+   UI helpers / DOM
+   ========================= */
 const netStatusEl = document.getElementById("netStatus");
 const debugEl = document.getElementById("debug");
 const formMeta = document.getElementById("formMeta");
@@ -26,22 +39,50 @@ const form = document.getElementById("form");
 const pageTypeEl = document.getElementById("pageType");
 const listCard = document.getElementById("listCard");
 
-
-
 // ---- Section show/hide (4 pages) ----
 const sectionLeakRepair = document.getElementById("sectionLeakRepair");
 const sectionMains = document.getElementById("sectionMains");
 const sectionRetirement = document.getElementById("sectionRetirement");
 const sectionServices = document.getElementById("sectionServices");
 
-const urlParams = new URLSearchParams(window.location.search);
+/* =========================
+   NEW FORM BUTTON
+   ========================= */
+const newFormBtn = document.getElementById("newForm");
 
-// MUST be let so "New Form" can clear it
-let editId = params.get("edit") || "";
+newFormBtn?.addEventListener("click", () => {
+  editId = "";
+  mode = "new";
+  currentId = newSubmissionId();
 
-// initialize currentId based on whether we're editing
-let currentId = editId ? editId : newSubmissionId();
-let mode = editId ? "edit" : "new";
+  createdAtLocked = null;     // ✅ important
+  existingSketch = null;      // ✅ important
+  sketchDirty = false;        // ✅ important
+
+  const u = new URL(window.location.href);
+  u.searchParams.delete("edit");
+  history.replaceState({}, "", u.toString());
+
+  form?.reset();
+
+  if (pageTypeEl) {
+    pageTypeEl.value = "Leak Repair";
+    pageTypeEl.dispatchEvent(new Event("change"));
+  }
+
+  if (formMeta) formMeta.textContent = "";
+  if (debugEl) debugEl.textContent = "";
+});
+
+
+/* =========================
+   OPTIONAL: helper to refresh params (if you ever need it)
+   ========================= */
+function refreshUrlParams_() {
+  const p = new URLSearchParams(window.location.search);
+  editId = (p.get("edit") || "").trim();
+  // ownerKey usually stays constant; re-read only if you expect it to change
+}
 
 
 
@@ -123,11 +164,9 @@ function getDeviceId() {
   return v;
 }
 function newSubmissionId() {
-  return crypto.randomUUID?.() || (Date.now() + "_" + Math.random());
+  return crypto.randomUUID?.() || `${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
-let currentId = newSubmissionId();
-let mode = "new";
 
 // =====================================================
 // Page switching
@@ -1015,10 +1054,6 @@ async function drawDataUrlToCanvas_(dataUrl) {
 // MUST be let so New Form can clear it
 //let editId = params.get("edit") || "";
 
-// lock mode and currentId based on URL at load
-let mode = editId ? "edit" : "new";
-let currentId = editId ? editId : newSubmissionId();
-
 // Keep createdAt stable per record (important so edits don't look like "new" submissions)
 let createdAtLocked = null;
 
@@ -1083,6 +1118,85 @@ async function buildPayload() {
 
   return payload;
 }
+
+// ============================
+// SUBMIT / UPDATE (SERVER POST)
+// ============================
+async function sendSubmission_(payload) {
+  // make absolutely sure the id is stable
+  payload.submissionId = currentId;
+
+  const url = new URL(API_URL);
+
+  // owner key (needed for your doGet and can also be used for doPost if you want)
+  if (ownerKey) url.searchParams.set("key", ownerKey);
+
+  if (mode === "edit") {
+    url.searchParams.set("action", "update");
+    url.searchParams.set("id", currentId);
+
+    // safety: also include in body (in case server starts reading action from body)
+    payload.action = "update";
+  } else {
+    // your server routes anything other than "update" to submit_()
+    url.searchParams.set("action", "submit");
+    payload.action = "submit";
+  }
+
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  });
+
+  const txt = await res.text();
+
+  let j = null;
+  try { j = JSON.parse(txt); } catch {}
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt.slice(0, 200)}`);
+  if (j && j.ok === false) throw new Error(j.error || "Server returned ok:false");
+
+  return j || { ok: true, raw: txt };
+}
+
+// ============================
+// FORM SUBMIT HANDLER
+// ============================
+form?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  try {
+    setStatus(mode === "edit" ? "Updating…" : "Submitting…");
+
+    const payload = await buildPayload();   // ✅ your existing builder
+    const result = await sendSubmission_(payload);
+
+    console.log("✅ Saved:", result);
+
+    // After first successful submit, switch into edit mode (so next save updates)
+    if (mode !== "edit") {
+      mode = "edit";
+      editId = currentId;
+
+      // update the URL to include edit id (keep key)
+      const u = new URL(window.location.href);
+      u.searchParams.set("edit", currentId);
+      if (ownerKey) u.searchParams.set("key", ownerKey);
+      history.replaceState({}, "", u.toString());
+
+      // update submit button label
+      const submitBtn = document.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = "Update Submission";
+    }
+
+    setStatus("Saved ✅");
+  } catch (err) {
+    console.error(err);
+    setStatus("Save failed: " + (err?.message || err));
+    alert("Save failed: " + (err?.message || err));
+  }
+});
 
 
 // --- helpers -------------------------------------------------
@@ -1158,17 +1272,10 @@ function populateRepeater(bindingKey, rows) {
   //console.log(`✅ populated ${bindingKey}:`, arr.length);
 }
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.addEventListener("message", (event) => {
-    if (event.data?.type === "SW_UPDATED") {
-      location.reload();
-    }
-  });
-}
-
 
 updatePageSections();
 updateNet();
+
 
 
 
