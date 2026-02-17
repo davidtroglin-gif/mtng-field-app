@@ -27,6 +27,24 @@ let editId = (params.get("edit") || "").trim();
 let currentId = editId ? editId : newSubmissionId();
 let mode = editId ? "edit" : "new";
 
+
+
+
+window.mtngDebug = {
+  state: () => ({ mode, editId, currentId, ownerKey }),
+  set: (patch) => {
+    if (patch.mode !== undefined) mode = patch.mode;
+    if (patch.editId !== undefined) editId = patch.editId;
+    if (patch.currentId !== undefined) currentId = patch.currentId;
+    return { mode, editId, currentId };
+  }
+};
+
+
+
+
+
+
 /* =========================
    UI helpers / DOM
    ========================= */
@@ -1275,6 +1293,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
