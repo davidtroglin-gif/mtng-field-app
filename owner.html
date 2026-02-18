@@ -624,7 +624,7 @@ tbody.addEventListener("click", (e) => {
 
         const Type = p.pageType || p.type || p.fields?.Type || p.fields?.type || "";
         
-        detailTitle.textContent = `${p.pageType || "Submission"} — ${selectedId}`;
+        detailTitle.textContent = `${Type || "Submission"} — ${selectedId}`;
         detailMeta.textContent = `Device: ${p.deviceId || ""} • Created: ${fmtDate(p.createdAt)} • Page: ${p.pageType || ""}`;
         detailCard.style.display = "block";
 
