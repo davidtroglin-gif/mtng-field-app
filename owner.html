@@ -453,12 +453,11 @@ noteModalEdit.addEventListener("click", () => {
       </button>
     `;
 
-    const delBtn = `
+  const delBtn = `
   <button class="icon-btn danger" title="Delete"
-    onclick="deleteSubmission('${attrEscape(id)}')">
-    🗑️
-  </button>
+    onclick="deleteSubmission(this.closest('tr').dataset.id)">🗑️</button>
 `;
+
 
     return `
       <tr data-id="${attrEscape(id)}">
@@ -682,23 +681,27 @@ tbody.addEventListener("click", (e) => {
       }
     }
 
-    async function deleteSubmission(id) {
-  // confirm
-  const ok = confirm(`Delete submission ${id}?\n\nThis cannot be undone.`);
-  if (!ok) return;
+   function getOwnerKey_() {
+  // tries common places in order
+  if (typeof ownerKey !== "undefined" && ownerKey) return ownerKey;
+  if (typeof OWNER_KEY !== "undefined" && OWNER_KEY) return OWNER_KEY;
 
-  // build url
+  // fallback: pull from ?key= in the dashboard URL
+  return new URLSearchParams(window.location.search).get("key") || "";
+}
+
+async function deleteSubmission(id) {
+  if (!confirm(`Delete submission ${id}?`)) return;
+
   const url = new URL(API_URL);
   url.searchParams.set("action", "delete");
   url.searchParams.set("id", id);
-  if (typeof ownerKey !== "undefined" && ownerKey) url.searchParams.set("key", ownerKey);
 
-  // call backend
+  const k = getOwnerKey_();
+  if (k) url.searchParams.set("key", k);
+
   const res = await fetch(url.toString(), { cache: "no-store" });
   const txt = await res.text();
-
-      // <-- add this line
-  alert(`DELETE HTTP ${res.status}\n\n${txt}`);
 
   let j;
   try { j = JSON.parse(txt); } catch { j = { ok: false, error: txt }; }
@@ -708,12 +711,9 @@ tbody.addEventListener("click", (e) => {
     return;
   }
 
-  // remove row from DOM (no full refresh needed)
+  // Remove the row immediately
   const tr = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
   if (tr) tr.remove();
-
-  // optional: if you maintain counts/paging, you can refresh instead:
-  // await loadOwnerList();
 }
 
 
