@@ -711,6 +711,8 @@ async function deleteSubmission(id) {
   url.searchParams.set("id", id);
   url.searchParams.set("key", key); // ✅ this is what requireOwner_ checks
 
+  console.log("Owner key:", key);  // Debugging: Check if the key is correctly set
+
   const res = await fetch(url.toString(), { cache: "no-store" });
   const txt = await res.text();
 
