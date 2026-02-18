@@ -690,15 +690,24 @@ tbody.addEventListener("click", (e) => {
   return new URLSearchParams(window.location.search).get("key") || "";
 }
 
+function getOwnerKey_() {
+  // Your dashboard URL already has ?key=Walker17
+  return new URLSearchParams(window.location.search).get("key") || "";
+}
+
 async function deleteSubmission(id) {
   if (!confirm(`Delete submission ${id}?`)) return;
+
+  const key = getOwnerKey_();
+  if (!key) {
+    alert("Missing owner key in dashboard URL. Add ?key=YOURKEY");
+    return;
+  }
 
   const url = new URL(API_URL);
   url.searchParams.set("action", "delete");
   url.searchParams.set("id", id);
-
-  const k = getOwnerKey_();
-  if (k) url.searchParams.set("key", k);
+  url.searchParams.set("key", key); // ✅ this is what requireOwner_ checks
 
   const res = await fetch(url.toString(), { cache: "no-store" });
   const txt = await res.text();
@@ -711,7 +720,6 @@ async function deleteSubmission(id) {
     return;
   }
 
-  // Remove the row immediately
   const tr = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
   if (tr) tr.remove();
 }
