@@ -691,8 +691,6 @@ tbody.addEventListener("click", (e) => {
   // fallback: pull from ?key= in the dashboard URL
   return new URLSearchParams(window.location.search).get("key") || "";
 }
-    console.log("Owner key:", key);  // Debugging: Check if the key is correctly set
-
 function getOwnerKey_() {
   // Your dashboard URL already has ?key=Walker17
   return new URLSearchParams(window.location.search).get("key") || "";
@@ -702,6 +700,7 @@ async function deleteSubmission(id) {
   if (!confirm(`Delete submission ${id}?`)) return;
 
   const key = getOwnerKey_();
+  console.log("Owner key:", key);  // Debugging: Check if the key is correctly set
   if (!key) {
     alert("Missing owner key in dashboard URL. Add ?key=YOURKEY");
     return;
