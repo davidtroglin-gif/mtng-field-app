@@ -626,7 +626,7 @@ tbody.addEventListener("click", (e) => {
         
         detailTitle.textContent = `${Type || "Submission"} — ${selectedId}`;
         detailMeta.textContent = `Device: ${p.deviceId || ""} • Created: ${fmtDate(p.createdAt)} • Page: ${p.pageType || ""}`;
-        detailCard.style.display = "block";
+        detailCard.style.display = "none";
 
         const keyFields = [
           "Customer Name","Customer Address","Customer City","Customer County","Customer Phone",
@@ -691,6 +691,7 @@ tbody.addEventListener("click", (e) => {
   // fallback: pull from ?key= in the dashboard URL
   return new URLSearchParams(window.location.search).get("key") || "";
 }
+    console.log("Owner key:", key);  // Debugging: Check if the key is correctly set
 
 function getOwnerKey_() {
   // Your dashboard URL already has ?key=Walker17
