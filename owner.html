@@ -224,12 +224,12 @@
     const photoLinks = document.getElementById("photoLinks");
     const photoImgs = document.getElementById("photoImgs");
 
-    //const key = new URLSearchParams(location.search).get("key") || "";
-    const key = new URLSearchParams(window.location.search).get("key");
+    const key = new URLSearchParams(location.search).get("key") || "";
+   /* const key = new URLSearchParams(window.location.search).get("key");
 if (!key) {
     alert("Missing owner key in dashboard URL. Add ?key=YOUR_OWNER_KEY");
     return;
-}
+}*/
 
 
     let items = [];
