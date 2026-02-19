@@ -900,7 +900,7 @@ function populateFieldsSmart_(formEl, fieldsObj) {
 }
 
 
-/*async function loadForEdit(submissionId) {
+async function loadForEdit(submissionId) {
   if (_editLoading) return;
   _editLoading = true;
 
@@ -965,21 +965,25 @@ function populateFieldsSmart_(formEl, fieldsObj) {
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
     //if (submitBtn) submitBtn.textContent = "Update Submission";
-      if (submitBtn) submitBtn.disabled = true; 
+    if (submitBtn) submitBtn.disabled = true;
 
-     try {
-    setStatus("Edit mode ready ✅");
-    console.log("✅ Edit load complete for", submissionId);
-
+    // ---- FINALLY BLOCK ----
+    try {
+      setStatus("Edit mode ready ✅");
+      console.log("✅ Edit load complete for", submissionId);
+    } catch (err) {
+      console.error(err);
+      setStatus("Edit load failed: " + (err?.message || err));
+    } finally {
+      _editLoading = false;
+      if (submitBtn) submitBtn.disabled = false;
+    }
   } catch (err) {
     console.error(err);
-    setStatus("Edit load failed: " + (err?.message || err));
-  } finally {
-    _editLoading = false;
-        if (submitBtn) submitBtn.disabled = false;
+    setStatus("Error: " + err.message);
   }
-  }
-*/
+}
+
 // =====================================================
 // Photos compression
 // =====================================================
@@ -1327,6 +1331,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
