@@ -449,11 +449,11 @@ noteModalEdit.addEventListener("click", () => {
     `;
 
     const printBtn = document.createElement("button");
-printBtn.type = "button";
-printBtn.className = "noteIconBtn";
-printBtn.title = "Open print";
-printBtn.innerHTML = "🖨️";
-printBtn.setAttribute("data-print-id", attrEscape(id))
+    printBtn.type = "button";
+    printBtn.className = "noteIconBtn";
+    printBtn.title = "Open print";
+    printBtn.innerHTML = "🖨️";
+    printBtn.setAttribute("data-print-id", attrEscape(id))
 
     const notesBtn = `
       <button type="button" class="noteIconBtn" data-note-id="${attrEscape(id)}"
@@ -515,7 +515,8 @@ if (printBtn) {
   console.log("Print URL:", pr.toString());  // Log the URL to debug
 
   // Open the print page in a new window
-  window.open(pr.toString(), "_blank");
+  //window.open(pr.toString(), "_blank");
+  window.location.href = pr.toString();
   return;
 }
 
