@@ -900,7 +900,7 @@ function populateFieldsSmart_(formEl, fieldsObj) {
 }
 
 
-async function loadForEdit(submissionId) {
+/*async function loadForEdit(submissionId) {
   if (_editLoading) return;
   _editLoading = true;
 
@@ -979,7 +979,7 @@ async function loadForEdit(submissionId) {
         if (submitBtn) submitBtn.disabled = false;
   }
   }
-
+*/
 // =====================================================
 // Photos compression
 // =====================================================
@@ -1327,5 +1327,6 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
