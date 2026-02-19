@@ -532,37 +532,6 @@ if (!editId) {
   if (retNewMaterialsEl) addRetNewMaterialsRow();
 }
 
-// =====================================================
-// Gather fields + repeaters
-// =====================================================
-/*function gatherFieldsNormalized(formEl) {
-  const fields = {};
-  const pt = (pageTypeEl?.value || "Leak Repair").trim();
-
-  const scope =
-    pt === "Leak Repair" ? sectionLeakRepair :
-    pt === "Mains"       ? sectionMains :
-    pt === "Retirement"  ? sectionRetirement :
-    pt === "Services"    ? sectionServices :
-    formEl;
-
-  const els = Array.from(scope.querySelectorAll("input[name], textarea[name], select[name]"));
-
-  els.forEach((el) => {
-    const name = normKey(el.name);
-    if (!name) return;
-
-    let value = "";
-    if (el.type === "checkbox") value = !!el.checked;
-    else if (el.type === "radio") { if (!el.checked) return; value = normVal(el.value); }
-    else value = normVal(el.value);
-
-    fields[name] = value;
-  });
-
-  return fields;
-}*/
-
 function gatherFieldsNormalized() {
   const fields = {};
   const els = Array.from(form.querySelectorAll("input[name], textarea[name], select[name]"));
@@ -1009,7 +978,8 @@ async function loadForEdit(submissionId) {
     _editLoading = false;
         if (submitBtn) submitBtn.disabled = false;
   }
-
+  }
+}
 
 // =====================================================
 // Photos compression
@@ -1358,3 +1328,4 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
