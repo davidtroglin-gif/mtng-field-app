@@ -498,17 +498,27 @@ tbody.addEventListener("click", (e) => {
   const rowId = tr.dataset.id;
   if (!rowId) return;
 
-  const editBtn = e.target.closest("[data-edit-id]");
-  if (editBtn) {
-    e.preventDefault();
-    e.stopPropagation();
-    const sid = editBtn.getAttribute("data-edit-id");
-    const u = new URL("https://davidtroglin-gif.github.io/mtng-field-app/index.html");
-    u.searchParams.set("edit", sid);
-    u.searchParams.set("key", key);
-    window.open(u.toString(), "_blank");
-    return;
-  }
+  const printBtn = e.target.closest("[data-print-id]");
+
+if (printBtn) {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  const sid = printBtn.getAttribute("data-print-id");
+
+  // Construct the correct URL for the print action
+  const pr = new URL(API_URL);
+  pr.searchParams.set("action", "print");
+  pr.searchParams.set("id", sid);  // Pass the selectedId here for the print action
+  pr.searchParams.set("key", key); // Pass the owner key for authentication
+  
+  console.log("Print URL:", pr.toString());  // Log the URL to debug
+
+  // Open the print page in a new window
+  window.open(pr.toString(), "_blank");
+  return;
+}
+
 
    document.querySelectorAll("[data-print-id]").forEach((btn) => {
   btn.addEventListener("click", (e) => {
