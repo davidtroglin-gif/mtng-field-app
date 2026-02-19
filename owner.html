@@ -498,7 +498,8 @@ tbody.addEventListener("click", (e) => {
   const rowId = tr.dataset.id;
   if (!rowId) return;
 
-  const printBtn = e.target.closest("[data-print-id]");
+ // Print button event handler
+const printBtn = e.target.closest("[data-print-id]");
 
 if (printBtn) {
   e.preventDefault();
@@ -506,19 +507,23 @@ if (printBtn) {
   
   const sid = printBtn.getAttribute("data-print-id");
 
-  // Construct the correct URL for the print action
-  const pr = new URL(API_URL);
-  pr.searchParams.set("action", "print");
-  pr.searchParams.set("id", sid);  // Pass the selectedId here for the print action
-  pr.searchParams.set("key", key); // Pass the owner key for authentication
+  // Construct the print URL (send the submission ID and key to the Apps Script)
+  const printUrl = new URL(API_URL);  // The URL to your Apps Script
+  printUrl.searchParams.set("action", "print");
+  printUrl.searchParams.set("id", sid);  // Pass the selectedId
+  printUrl.searchParams.set("key", key); // Pass the key for authorization
   
-  console.log("Print URL:", pr.toString());  // Log the URL to debug
+  console.log("Print URL:", printUrl.toString());  // Log the URL for debugging
 
-  // Open the print page in a new window
-  //window.open(pr.toString(), "_blank");
-  window.location.href = pr.toString();
-  return;
+  // Open the print URL in a new window
+  const printWindow = window.open(printUrl.toString(), "_blank");
+
+  // Check if the window opened successfully
+  if (!printWindow) {
+    setStatus("Failed to open print window. Please check pop-up settings.");
+  }
 }
+
 
 
    document.querySelectorAll("[data-print-id]").forEach((btn) => {
