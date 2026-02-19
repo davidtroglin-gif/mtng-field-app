@@ -1009,9 +1009,6 @@ async function loadForEdit(submissionId) {
     _editLoading = false;
         if (submitBtn) submitBtn.disabled = false;
   }
-}
-
-
 
 
 // =====================================================
@@ -1361,6 +1358,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
