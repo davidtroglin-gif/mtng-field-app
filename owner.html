@@ -448,9 +448,12 @@ noteModalEdit.addEventListener("click", () => {
       <button type="button" class="noteIconBtn" data-edit-id="${attrEscape(id)}" title="Open details">✏️</button>
     `;
 
-    const printBtn = `
-      <button type="button" class="noteIconBtn" data-print-id="${attrEscape(id)}" title="Open print">🖨️</button>
-    `;
+    const printBtn = document.createElement("button");
+printBtn.type = "button";
+printBtn.className = "noteIconBtn";
+printBtn.title = "Open print";
+printBtn.innerHTML = "🖨️";
+printBtn.setAttribute("data-print-id", attrEscape(id))
 
     const notesBtn = `
       <button type="button" class="noteIconBtn" data-note-id="${attrEscape(id)}"
@@ -507,18 +510,18 @@ tbody.addEventListener("click", (e) => {
     return;
   }
 
-   const printBtn = e.target.closest("[data-print-id]");
-  if (printBtn) {
+   document.querySelectorAll("[data-print-id]").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const sid = printBtn.getAttribute("data-print-id");
+    const sid = e.target.getAttribute("data-print-id");
     const pr = new URL(API_URL);
     pr.searchParams.set("action", "print");
     pr.searchParams.set("id", sid);
     pr.searchParams.set("key", key);
     window.open(pr.toString(), "_blank");
-    return;
-  }
+  });
+});
 
   const noteBtn = e.target.closest("[data-note-id]");
   if (noteBtn) {
