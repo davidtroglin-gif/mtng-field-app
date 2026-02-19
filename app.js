@@ -975,6 +975,7 @@ async function loadForEdit(submissionId) {
       console.error(err);
       setStatus("Edit load failed: " + (err?.message || err));
     } finally {
+        editReady = true;
       _editLoading = false;
       if (submitBtn) submitBtn.disabled = false;
     }
@@ -1331,6 +1332,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
