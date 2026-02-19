@@ -224,7 +224,13 @@
     const photoLinks = document.getElementById("photoLinks");
     const photoImgs = document.getElementById("photoImgs");
 
-    const key = new URLSearchParams(location.search).get("key") || "";
+    //const key = new URLSearchParams(location.search).get("key") || "";
+    const key = new URLSearchParams(window.location.search).get("key");
+if (!key) {
+    alert("Missing owner key in dashboard URL. Add ?key=YOUR_OWNER_KEY");
+    return;
+}
+
 
     let items = [];
     let selectedId = "";
@@ -489,15 +495,19 @@ tbody.addEventListener("click", (e) => {
   const rowId = tr.dataset.id;
   if (!rowId) return;
 
-  const noteBtn = e.target.closest("[data-note-id]");
-  if (noteBtn) {
+  const editBtn = e.target.closest("[data-edit-id]");
+  if (editBtn) {
     e.preventDefault();
     e.stopPropagation();
-    openNoteModal(noteBtn.getAttribute("data-note-id"));
+    const sid = editBtn.getAttribute("data-edit-id");
+    const u = new URL("https://davidtroglin-gif.github.io/mtng-field-app/index.html");
+    u.searchParams.set("edit", sid);
+    u.searchParams.set("key", key);
+    window.open(u.toString(), "_blank");
     return;
   }
 
-  const printBtn = e.target.closest("[data-print-id]");
+   const printBtn = e.target.closest("[data-print-id]");
   if (printBtn) {
     e.preventDefault();
     e.stopPropagation();
@@ -510,17 +520,22 @@ tbody.addEventListener("click", (e) => {
     return;
   }
 
-  const editBtn = e.target.closest("[data-edit-id]");
-  if (editBtn) {
+  const noteBtn = e.target.closest("[data-note-id]");
+  if (noteBtn) {
     e.preventDefault();
     e.stopPropagation();
-    const sid = editBtn.getAttribute("data-edit-id");
-    const u = new URL("https://davidtroglin-gif.github.io/mtng-field-app/index.html");
-    u.searchParams.set("edit", sid);
-    u.searchParams.set("key", key);
-    window.open(u.toString(), "_blank");
+    openNoteModal(noteBtn.getAttribute("data-note-id"));
     return;
   }
+
+  const deleteBtn = e.target.closest("[data-delete-id]");
+  if (deleteBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    deleteSubmission(rowId);  // Pass selectedId to delete
+    return;
+  }
+});  
 
   openDetail(rowId);
 });
@@ -563,125 +578,131 @@ tbody.addEventListener("click", (e) => {
       }
       return v;
     }
+async function openDetail(id) {
+  if (!id) {
+    setStatus("Invalid Submission ID");
+    return;
+  }
 
-    async function openDetail(id){
-      if (!key) {
-        setStatus("Missing owner key. Open as: owner.html?key=YOUR_OWNER_KEY");
-        return;
-      }
+  if (openingDetail) return;
+  openingDetail = true;
 
-      if (openingDetail) return;
-      openingDetail = true;
+  try {
+    selectedId = id;
+    setStatus("Loading details…");
 
-      try {
-        selectedId = id;
-        setStatus("Loading details…");
+    // Fetch details from the API using the ID
+    const url = new URL(API_URL);
+    url.searchParams.set("action", "get");
+    url.searchParams.set("id", selectedId);
+    url.searchParams.set("key", key);
+    
+    const res = await fetch(url);
+    const data = await res.json();
 
-        document.getElementById("markPrinted").onclick = async () => {
-          try {
-            setStatus("Marking Printed…");
-            const by = getOwnerName();
-            await ownerPost("printed", selectedId, { by });
-            await fetchList();
-            await openDetail(selectedId);
-            setStatus("Printed ✅");
-          } catch (e) { setStatus("Error: " + e.message); }
-        };
-
-        document.getElementById("markSubmitted").onclick = async () => {
-          try {
-            setStatus("Marking Submitted…");
-            await ownerPost("submitted", selectedId);
-            await fetchList();
-            await openDetail(selectedId);
-            setStatus("Submitted ✅");
-          } catch (e) { setStatus("Error: " + e.message); }
-        };
-
-        document.getElementById("addNote").onclick = async () => {
-          try {
-            const note = prompt("Notes:", "") || "";
-            if (!note.trim()) return;
-            setStatus("Saving Note…");
-            await ownerPost("note", selectedId, { note });
-            await fetchList();
-            await openDetail(selectedId);
-            setStatus("Note saved ✅");
-          } catch (e) { setStatus("Error: " + e.message); }
-        };
-
-        const url = new URL(API_URL);
-        url.searchParams.set("action", "get");
-        url.searchParams.set("id", selectedId);
-        url.searchParams.set("key", key);
-        url.searchParams.set("_", Date.now().toString());
-
-        const json = await fetchJsonOrThrow(url, { cache: "no-store" });
-
-        const p = json.payload || {};
-        const f = p.fields || {};
-        const r = p.repeaters || {};
-
-        const Type = p.pageType || p.type || p.fields?.Type || p.fields?.type || "";
-        
-        detailTitle.textContent = `${Type || "Submission"} — ${selectedId}`;
-        detailMeta.textContent = `Device: ${p.deviceId || ""} • Created: ${fmtDate(p.createdAt)} • Page: ${p.pageType || ""}`;
-        detailCard.style.display = "none";
-
-        const keyFields = [
-          "Customer Name","Customer Address","Customer City","Customer County","Customer Phone",
-          "Service Address (if different than customers)","Date","Contractor","MLO Number","Register Number",
-          "Foreman","Accepted By","MTNG On-Site Personnel","Date Completed"
-        ];
-
-        kv.innerHTML = keyFields.map(k => `
-          <div style="margin:6px 0;">
-            <div class="small">${escapeHtml(k)}</div>
-            <div style="font-weight:700;">${escapeHtml(String(getF(f, k) || ""))}</div>
-          </div>
-        `).join("");
-
-        rep.textContent = JSON.stringify(r, null, 2);
-        raw.textContent = JSON.stringify(p, null, 2);
-
-        const sketchUrl = p.media?.sketchUrl || "";
-        const photos = Array.isArray(p.media?.photoUrls) ? p.media.photoUrls : [];
-
-        sketchLinks.innerHTML = sketchUrl
-          ? `<a href="${attrEscape(sketchUrl)}" target="_blank" rel="noopener">Open Sketch</a>`
-          : "No sketch";
-
-        if (sketchUrl) {
-          sketchImg.src = sketchUrl;
-          sketchImg.style.display = "block";
-        } else {
-          sketchImg.style.display = "none";
-        }
-
-        photoLinks.innerHTML = photos.length
-          ? photos.map((u,i)=>`<div><a href="${attrEscape(u)}" target="_blank" rel="noopener">Photo ${i+1}</a></div>`).join("")
-          : "No photos";
-
-        photoImgs.innerHTML = photos.map(u => `<img src="${attrEscape(u)}" alt="Photo" style="margin-top:8px;" />`).join("");
-
-        openPrintBtn.onclick = () => {
-          const pr = new URL(API_URL);
-          pr.searchParams.set("action","print");
-          pr.searchParams.set("id", selectedId);
-          pr.searchParams.set("key", key);
-          window.open(pr.toString(), "_blank");
-        };
-
-        closeDetailBtn.onclick = () => {
-          detailCard.style.display = "none";
-          selectedId = "";
-        };
-
-        setStatus("Ready");
-      } finally {
-        openingDetail = false;
-      }
+    if (!data.ok) {
+      setStatus("Error: Submission details not found.");
+      return;
     }
+
+    // Populate the UI with the fetched data
+    const submission = data.payload || {};
+    const fields = submission.fields || {};
+
+    // Set Title and Meta
+    const type = submission.pageType || "Submission";
+    document.getElementById("detailTitle").textContent = `${type} — ${id}`;
+    document.getElementById("detailMeta").textContent = `Device: ${submission.deviceId || ""} • Created: ${fmtDate(submission.createdAt)} • Page: ${type}`;
+
+    // Set Key Fields (Customer Info, etc.)
+    const keyFields = [
+      "Customer Name", "Customer Address", "Customer City", "Customer County", "Customer Phone",
+      "Service Address (if different than customers)", "Date", "Contractor", "MLO Number", "Register Number",
+      "Foreman", "Accepted By", "MTNG On-Site Personnel", "Date Completed"
+    ];
+
+    const kv = document.getElementById("kv");
+    kv.innerHTML = keyFields.map(k => `
+      <div style="margin:6px 0;">
+        <div class="small">${escapeHtml(k)}</div>
+        <div style="font-weight:700;">${escapeHtml(String(fields[k] || ""))}</div>
+      </div>
+    `).join("");
+
+    // Render repeaters (fields with multiple rows like pipe materials, tests, etc.)
+    const rep = document.getElementById("rep");
+    rep.textContent = JSON.stringify(submission.repeaters, null, 2);
+
+    // Handle media (sketch and photos)
+    const sketchUrl = submission.media?.sketchUrl || "";
+    const photos = Array.isArray(submission.media?.photoUrls) ? submission.media.photoUrls : [];
+    const sketchImg = document.getElementById("sketchImg");
+    const sketchLinks = document.getElementById("sketchLinks");
+    const photoLinks = document.getElementById("photoLinks");
+    const photoImgs = document.getElementById("photoImgs");
+
+    sketchLinks.innerHTML = sketchUrl
+      ? `<a href="${escapeHtml(sketchUrl)}" target="_blank" rel="noopener">Open Sketch</a>`
+      : "No sketch available";
+
+    if (sketchUrl) {
+      sketchImg.src = sketchUrl;
+      sketchImg.style.display = "block";
+    } else {
+      sketchImg.style.display = "none";
+    }
+
+    photoLinks.innerHTML = photos.length
+      ? photos.map((u, i) => `<div><a href="${escapeHtml(u)}" target="_blank" rel="noopener">Photo ${i + 1}</a></div>`).join("")
+      : "No photos available";
+
+    photoImgs.innerHTML = photos.map(u => `<img src="${escapeHtml(u)}" alt="Photo" style="margin-top:8px;" />`).join("");
+
+    // Set status to ready once everything is loaded
+    setStatus("Ready");
+
+    // Attach actions (mark printed, mark submitted, etc.)
+    document.getElementById("markPrinted").onclick = async () => {
+      try {
+        setStatus("Marking Printed…");
+        const by = getOwnerName();
+        await ownerPost("printed", selectedId, { by });
+        await fetchList();
+        await openDetail(selectedId); // Re-fetch and refresh details
+        setStatus("Printed ✅");
+      } catch (e) { setStatus("Error: " + e.message); }
+    };
+
+    document.getElementById("markSubmitted").onclick = async () => {
+      try {
+        setStatus("Marking Submitted…");
+        await ownerPost("submitted", selectedId);
+        await fetchList();
+        await openDetail(selectedId); // Re-fetch and refresh details
+        setStatus("Submitted ✅");
+      } catch (e) { setStatus("Error: " + e.message); }
+    };
+
+    document.getElementById("addNote").onclick = async () => {
+      try {
+        const note = prompt("Notes:", "") || "";
+        if (!note.trim()) return;
+        setStatus("Saving Note…");
+        await ownerPost("note", selectedId, { note });
+        await fetchList();
+        await openDetail(selectedId); // Re-fetch and refresh details
+        setStatus("Note saved ✅");
+      } catch (e) { setStatus("Error: " + e.message); }
+    };
+
+  } catch (err) {
+    setStatus("Error: " + err.message);
+  } finally {
+    openingDetail = false; // Ensure this is reset even if there’s an error
+  }
+}
+
+  
 
    function getOwnerKey_() {
   // tries common places in order
