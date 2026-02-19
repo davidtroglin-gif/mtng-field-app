@@ -979,7 +979,6 @@ async function loadForEdit(submissionId) {
         if (submitBtn) submitBtn.disabled = false;
   }
   }
-}
 
 // =====================================================
 // Photos compression
@@ -1328,4 +1327,5 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
