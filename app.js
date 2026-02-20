@@ -1418,13 +1418,6 @@ form?.addEventListener("submit", async (e) => {
   }
 });
 
-form?.addEventListener("keydown", (e) => {
-  if (e.key !== "Enter") return;
-  const tag = (e.target.tagName || "").toLowerCase();
-  if (tag === "textarea") return;
-  e.preventDefault();
-});
-
    
 // --- helpers -------------------------------------------------
 function _nk(s) {
@@ -1499,9 +1492,17 @@ function populateRepeater(bindingKey, rows) {
   //console.log(`✅ populated ${bindingKey}:`, arr.length);
 }
 
+form?.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "textarea") return;
+  e.preventDefault();
+});
+
 
 updatePageSections();
 updateNet();
+
 
 
 
