@@ -546,14 +546,30 @@ function gatherFieldsNormalized() {
   const fields = {};
   const els = Array.from(form.querySelectorAll("input[name], textarea[name], select[name]"));
 
+  const isMeaningful = (val) => {
+    if (typeof val === "boolean") return true;               // keep true/false
+    const s = String(val ?? "").trim();
+    return s.length > 0;                                     // non-empty strings only
+  };
+
   els.forEach((el) => {
     const name = normKey(el.name);
     if (!name) return;
 
-    let value = "";
+    let value;
     if (el.type === "checkbox") value = !!el.checked;
     else if (el.type === "radio") { if (!el.checked) return; value = normVal(el.value); }
     else value = normVal(el.value);
+
+    // ✅ If we already have a meaningful value, don't overwrite it with empty
+    if (name in fields) {
+      const existing = fields[name];
+      const incomingMeaningful = isMeaningful(value);
+      const existingMeaningful = isMeaningful(existing);
+
+      // If incoming is empty and existing is meaningful, skip overwrite
+      if (!incomingMeaningful && existingMeaningful) return;
+    }
 
     fields[name] = value;
   });
@@ -1417,6 +1433,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
