@@ -1194,16 +1194,16 @@ async function buildPayload() {
   const root = document.getElementById("app") || document;
   let fields = gatherFieldsNormalized();
    console.log("FIELD CHECK:", {
-  pipeCondition: fields["Pipe Condition"],
-  odor: fields["Odor Readily Detectable"],
-  typeOfTap: fields["Type of Tap"],
-  foreman: fields["Foreman"],
-  fusion: fields["Fusion Tech"],
-  steel: fields["Steel Welder"],
-  hours: fields["Contract Labor Hours"],
-  dateCompleted: fields["Date Completed"],
-  mtng: fields["MTNG On-Site Personnel"],
-  acceptedBy: fields["Accepted By"],
+  pipeCondition: getF("Pipe Condition"),
+  odor: getF("Odor Readily Detectable"),
+  typeOfTap: getF("Type of Tap"),
+  foreman: getF("Foreman"),
+  fusion: getF("Fusion Tech"),
+  steel: getF("Steel Welder"),
+  hours: getF("Contract Labor Hours"),
+  dateCompleted: getF("Date Completed"),
+  mtng: getF("MTNG On-Site Personnel"),
+  acceptedBy: getF("Accepted By"),
 });
    let repeaters = gatherRepeaters();
    
@@ -1456,6 +1456,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
