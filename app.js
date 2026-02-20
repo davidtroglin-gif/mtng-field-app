@@ -1524,8 +1524,8 @@ form?.addEventListener("keydown", (e) => {
   e.preventDefault();
 });
 
-// ============================
-// OFFLINE: Drafts + Queue + Sync (works with your db.js)
+//==============================
+// OFFLINE: Drafts + Queue + Sync (wired to your HTML IDs)
 // ============================
 
 async function saveDraft_() {
@@ -1538,7 +1538,7 @@ async function saveDraft_() {
   setStatus("Draft saved ✅");
 }
 
-async function addToQueue_(reason = "offline") {
+async function addToQueue_(reason = "manual") {
   const payload = await buildPayload();
   await db.put("queue", {
     ...payload,
@@ -1563,16 +1563,16 @@ async function trySync() {
   }
 
   setStatus(`Syncing ${items.length}…`);
-
   let ok = 0;
+
   for (const item of items) {
     try {
-      // Ensure IDs/mode are consistent
+      // keep IDs/mode stable for server routing
       currentId = item.submissionId;
       mode = item.mode === "edit" ? "edit" : "new";
       editId = item.editId || (mode === "edit" ? item.submissionId : "");
 
-      await sendSubmission_(item);     // <-- uses your existing POST logic
+      await sendSubmission_(item);
       await db.del("queue", item.submissionId);
       ok++;
     } catch (e) {
@@ -1587,7 +1587,7 @@ async function trySync() {
   setStatus(`Sync done ✅ (${ok}/${items.length})`);
 }
 
-// Simple viewer (prints list in debug pane)
+// Simple viewer in debug pane (you can swap to a modal later)
 async function showStore_(storeName) {
   const items = await db.getAll(storeName);
 
@@ -1609,27 +1609,33 @@ async function showStore_(storeName) {
 }
 
 // ============================
-// BUTTON WIRING (update IDs to match your HTML)
+// BUTTONS (your IDs)
 // ============================
 
-// "Sync Now"
+// Sync Now
 document.getElementById("syncNow")?.addEventListener("click", () => {
   trySync().catch((e) => alert("Sync failed: " + (e?.message || e)));
 });
 
-// "Drafts"
-document.getElementById("draftsBtn")?.addEventListener("click", () => {
+// Drafts (show list)
+document.getElementById("openDrafts")?.addEventListener("click", () => {
   showStore_("drafts").catch((e) => alert("Drafts error: " + (e?.message || e)));
 });
 
-// "Queued"
-document.getElementById("queuedBtn")?.addEventListener("click", () => {
+// Queued (show list)
+document.getElementById("openQueue")?.addEventListener("click", () => {
   showStore_("queue").catch((e) => alert("Queue error: " + (e?.message || e)));
+});
+
+// Queue for Sync (manual queue)
+document.getElementById("queueForSync")?.addEventListener("click", () => {
+  addToQueue_("manual").catch((e) => alert("Queue failed: " + (e?.message || e)));
 });
 
 
 updatePageSections();
 updateNet();
+
 
 
 
