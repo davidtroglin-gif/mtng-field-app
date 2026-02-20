@@ -544,34 +544,45 @@ if (!editId) {
 
 function gatherFieldsNormalized() {
   const fields = {};
-  const els = Array.from(form.querySelectorAll("input[name], textarea[name], select[name]"));
 
-  const isMeaningful = (val) => {
-    if (typeof val === "boolean") return true;               // keep true/false
-    const s = String(val ?? "").trim();
-    return s.length > 0;                                     // non-empty strings only
-  };
+  // Use a root that includes all dynamic sections
+  const root = document.getElementById("app") || document;
+  const els = Array.from(root.querySelectorAll("input[name], textarea[name], select[name]"));
+
+  const isNonEmpty = (v) => String(v ?? "").trim().length > 0;
 
   els.forEach((el) => {
     const name = normKey(el.name);
     if (!name) return;
 
-    let value;
-    if (el.type === "checkbox") value = !!el.checked;
-    else if (el.type === "radio") { if (!el.checked) return; value = normVal(el.value); }
-    else value = normVal(el.value);
+    // ✅ Skip disabled controls (optional, but usually desired)
+    if (el.disabled) return;
 
-    // ✅ If we already have a meaningful value, don't overwrite it with empty
-    if (name in fields) {
-      const existing = fields[name];
-      const incomingMeaningful = isMeaningful(value);
-      const existingMeaningful = isMeaningful(existing);
-
-      // If incoming is empty and existing is meaningful, skip overwrite
-      if (!incomingMeaningful && existingMeaningful) return;
+    // CHECKBOXES: if duplicates exist, keep TRUE if any checkbox is checked
+    if (el.type === "checkbox") {
+      const incoming = !!el.checked;
+      const existing = !!fields[name];
+      fields[name] = existing || incoming; // OR logic
+      return;
     }
 
-    fields[name] = value;
+    // RADIOS: only set when checked
+    if (el.type === "radio") {
+      if (!el.checked) return;
+      fields[name] = normVal(el.value);
+      return;
+    }
+
+    // TEXT/SELECT/TEXTAREA
+    const incoming = normVal(el.value);
+
+    // If a duplicate exists, don't overwrite a meaningful value with empty
+    if (name in fields) {
+      const existing = fields[name];
+      if (isNonEmpty(existing) && !isNonEmpty(incoming)) return;
+    }
+
+    fields[name] = incoming;
   });
 
   return fields;
@@ -1182,6 +1193,18 @@ async function buildPayload() {
   // IMPORTANT: gather from a root that includes all inputs
   const root = document.getElementById("app") || document;
   let fields = gatherFieldsNormalized();
+   console.log("FIELD CHECK:", {
+  pipeCondition: fields["Pipe Condition"],
+  odor: fields["Odor Readily Detectable"],
+  typeOfTap: fields["Type of Tap"],
+  foreman: fields["Foreman"],
+  fusion: fields["Fusion Tech"],
+  steel: fields["Steel Welder"],
+  hours: fields["Contract Labor Hours"],
+  dateCompleted: fields["Date Completed"],
+  mtng: fields["MTNG On-Site Personnel"],
+  acceptedBy: fields["Accepted By"],
+});
    let repeaters = gatherRepeaters();
    
    if (mode === "edit") {
@@ -1433,6 +1456,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
