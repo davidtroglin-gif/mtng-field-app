@@ -1094,22 +1094,16 @@ async function urlToDataUrlClient_(url) {
 }
 
 async function drawDataUrlToCanvas_(dataUrl) {
-  return await new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    if (!canvas || !ctx) return resolve();
+
     const img = new Image();
     img.onload = () => {
-      // Fit the image into the canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-      const w = img.width * scale;
-      const h = img.height * scale;
-      const x = (canvas.width - w) / 2;
-      const y = (canvas.height - h) / 2;
-
-      ctx.drawImage(img, x, y, w, h);
-      resolve(true);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve();
     };
-    img.onerror = () => resolve(false);
+    img.onerror = reject;
     img.src = dataUrl;
   });
 }
@@ -1410,6 +1404,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
