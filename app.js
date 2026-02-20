@@ -224,6 +224,7 @@ function pos(ev) {
 }
 function startDraw(ev) {
   if (!canvas || !ctx) return;
+   console.log("✍️ startDraw");
   drawing = true;
   last = pos(ev);
   markSketchDirty(); // ✅
@@ -232,6 +233,7 @@ function startDraw(ev) {
 function moveDraw(ev) {
   if (!canvas || !ctx) return;
   if (!drawing) return;
+    console.log("➡️ moveDraw");
    if (ev.cancelable) ev.preventDefault();
   markSketchDirty(); // ✅
   const p = pos(ev);
@@ -607,6 +609,7 @@ let existingSketch = null;
 let sketchDirty = false;
 
 function markSketchDirty() { sketchDirty = true; }
+console.log("✅ sketchDirty set TRUE");
 
 function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields, repeaters, sketch, photos }) {
   return {
@@ -1383,6 +1386,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
