@@ -513,11 +513,11 @@ if (editBtn) {
   const u = new URL(FIELD_APP_URL);
   u.searchParams.set("edit", sid);
 
-  // pass key through so the field app can load/save
-  if (key) u.searchParams.set("key", key);
-
-  // optional: tell the app we came from owner dashboard
-  u.searchParams.set("from", "owner");
+  // pass key in BOTH forms so either code path works
+  if (key) {
+    u.searchParams.set("key", key);
+    u.searchParams.set("ownerKey", key);
+  }
 
   const w = window.open(u.toString(), "_blank");
   if (!w) setStatus("Pop-up blocked. Allow pop-ups to open the editor.");
