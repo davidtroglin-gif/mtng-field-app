@@ -1415,7 +1415,7 @@ form?.addEventListener("submit", async (e) => {
 });
 
     // After first successful submit, switch into edit mode (so next save updates)
-    if (mode !== "edit") {
+  /*  if (mode !== "edit") {
       mode = "edit";
       editId = currentId;
 
@@ -1436,7 +1436,7 @@ form?.addEventListener("submit", async (e) => {
     setStatus("Save failed: " + (err?.message || err));
     alert("Save failed: " + (err?.message || err));
   }
-});
+});*/
 
 
 // --- helpers -------------------------------------------------
@@ -1515,6 +1515,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
