@@ -226,11 +226,13 @@ function startDraw(ev) {
   if (!canvas || !ctx) return;
   drawing = true;
   last = pos(ev);
+  markSketchDirty(); // ✅ ADD THIS
 }
 function moveDraw(ev) {
   if (!canvas || !ctx) return;
   if (!drawing) return;
   ev.preventDefault();
+   markSketchDirty(); // ✅ ADD THIS
   const p = pos(ev);
   ctx.beginPath();
   ctx.moveTo(last.x, last.y);
@@ -256,6 +258,7 @@ if (canvas) {
 document.getElementById("clearSketch")?.addEventListener("click", () => {
   if (!canvas || !ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+   markSketchDirty(); // ✅ ADD THIS
 });
 
 // =====================================================
@@ -1363,6 +1366,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
