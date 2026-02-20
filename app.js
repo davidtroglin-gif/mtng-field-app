@@ -17,9 +17,6 @@ if ("serviceWorker" in navigator) {
 const API_URL =
   "https://script.google.com/macros/s/AKfycby4A2Ci8N6IFLB7oORb7KKThB_jqW580SV0EvG67CZ1FFoudWgLttJ8PyOiqPMKXtDiEQ/exec";
 
-/*const params = new URLSearchParams(window.location.search);
-const ownerKey = (params.get("key") || "").trim(); // ✅ pulled from URL*/
-
 const params = new URLSearchParams(location.search);
 const ownerKey = params.get("ownerKey") || params.get("key") || "";
 
@@ -1642,6 +1639,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
