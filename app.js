@@ -1612,29 +1612,37 @@ async function showStore_(storeName) {
 // BUTTONS (your IDs)
 // ============================
 
-// Sync Now
-document.getElementById("syncNow")?.addEventListener("click", () => {
-  trySync().catch((e) => alert("Sync failed: " + (e?.message || e)));
-});
+document.addEventListener("DOMContentLoaded", () => {
+  // Sync Now
+  document.getElementById("syncNow")?.addEventListener("click", () => {
+    trySync().catch((e) => alert("Sync failed: " + (e?.message || e)));
+  });
 
-// Drafts (show list)
-document.getElementById("openDrafts")?.addEventListener("click", () => {
-  showStore_("drafts").catch((e) => alert("Drafts error: " + (e?.message || e)));
-});
+  // Drafts list
+  document.getElementById("openDrafts")?.addEventListener("click", () => {
+    showStore_("drafts").catch((e) => alert("Drafts error: " + (e?.message || e)));
+  });
 
-// Queued (show list)
-document.getElementById("openQueue")?.addEventListener("click", () => {
-  showStore_("queue").catch((e) => alert("Queue error: " + (e?.message || e)));
-});
+  // Queue list
+  document.getElementById("openQueue")?.addEventListener("click", () => {
+    showStore_("queue").catch((e) => alert("Queue error: " + (e?.message || e)));
+  });
 
-// Queue for Sync (manual queue)
-document.getElementById("queueForSync")?.addEventListener("click", () => {
-  addToQueue_("manual").catch((e) => alert("Queue failed: " + (e?.message || e)));
+  // Queue for Sync (manual)
+  document.getElementById("queueForSync")?.addEventListener("click", () => {
+    addToQueue_("manual").catch((e) => alert("Queue failed: " + (e?.message || e)));
+  });
+
+  // ✅ Save Draft (Option B)
+  document.getElementById("saveDraft")?.addEventListener("click", () => {
+    saveDraft_().catch((e) => alert("Draft save failed: " + (e?.message || e)));
+  });
 });
 
 
 updatePageSections();
 updateNet();
+
 
 
 
