@@ -899,6 +899,28 @@ function populateFieldsSmart_(formEl, fieldsObj) {
   }
 }
 
+function populateRepeaters(rep) {
+  if (!rep) return;
+
+  // Example for Leak Repair
+  if (rep.pipeMaterials && pipeMaterialsEl) {
+    pipeMaterialsEl.innerHTML = "";
+    rep.pipeMaterials.forEach(r => addPipeMaterialRow(r));
+  }
+
+  if (rep.otherMaterials && otherMaterialsEl) {
+    otherMaterialsEl.innerHTML = "";
+    rep.otherMaterials.forEach(r => addOtherMaterialRow(r));
+  }
+
+  if (rep.pipeTests && pipeTestsEl) {
+    pipeTestsEl.innerHTML = "";
+    rep.pipeTests.forEach(r => addPipeTestRow(r));
+  }
+
+  // Repeat for mains, services, retirement as needed
+}
+
 
 async function loadForEdit(submissionId) {
   if (_editLoading) return;
@@ -1332,6 +1354,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
