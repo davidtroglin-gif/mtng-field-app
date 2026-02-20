@@ -444,27 +444,23 @@ noteModalEdit.addEventListener("click", () => {
     const id = it.submissionId || "";
     const hasNote = (it.notes || "").toString().trim().length > 0;
 
-    const editBtn = `
-      <button type="button" class="noteIconBtn" data-edit-id="${attrEscape(id)}" title="Open details">✏️</button>
-    `;
+   const editBtn = `
+  <button type="button" class="noteIconBtn" data-edit-id="${attrEscape(id)}" title="Open details">✏️</button>
+`;
 
-    const printBtn = document.createElement("button");
-    printBtn.type = "button";
-    printBtn.className = "noteIconBtn";
-    printBtn.title = "Open print";
-    printBtn.innerHTML = "🖨️";
-    printBtn.setAttribute("data-print-id", attrEscape(id))
+const printBtn = `
+  <button type="button" class="noteIconBtn" data-print-id="${attrEscape(id)}" title="Open print">🖨️</button>
+`;
 
-    const notesBtn = `
-      <button type="button" class="noteIconBtn" data-note-id="${attrEscape(id)}"
-        title="${hasNote ? "View / Edit note" : "Add note"}">
-        ${hasNote ? "📝" : "➕"}
-      </button>
-    `;
+const notesBtn = `
+  <button type="button" class="noteIconBtn" data-note-id="${attrEscape(id)}"
+    title="${hasNote ? "View / Edit note" : "Add note"}">
+    ${hasNote ? "📝" : "➕"}
+  </button>
+`;
 
-  const delBtn = `
-  <button class="icon-btn danger" title="Delete"
-    onclick="deleteSubmission(this.closest('tr').dataset.id)">🗑️</button>
+const delBtn = `
+  <button type="button" class="icon-btn danger" data-trash-id="${attrEscape(id)}" title="Delete">🗑️</button>
 `;
 
 
@@ -489,73 +485,80 @@ noteModalEdit.addEventListener("click", () => {
   }).join("");
 }
 
-
-   // Row click (single handler)
-tbody.addEventListener("click", (e) => {
+    tbody.addEventListener("click", (e) => {
   const tr = e.target.closest("tr");
   if (!tr) return;
+
+  // If user clicked a button/icon inside the row, ignore here.
+  // The global document click handler will handle these.
+  if (e.target.closest("[data-edit-id],[data-print-id],[data-note-id],[data-trash-id],button,a")) return;
 
   const rowId = tr.dataset.id;
   if (!rowId) return;
 
- // Print button event handler
-const printBtn = e.target.closest("[data-print-id]");
-
-if (printBtn) {
-  e.preventDefault();
-  e.stopPropagation();
-  
-  const sid = printBtn.getAttribute("data-print-id");
-
-  // Construct the print URL (send the submission ID and key to the Apps Script)
-  const printUrl = new URL(API_URL);  // The URL to your Apps Script
-  printUrl.searchParams.set("action", "print");
-  printUrl.searchParams.set("id", sid);  // Pass the selectedId
-  printUrl.searchParams.set("key", key); // Pass the key for authorization
-  
-  console.log("Print URL:", printUrl.toString());  // Log the URL for debugging
-
-  // Open the print URL in a new window
-  const printWindow = window.open(printUrl.toString(), "_blank");
-
-  // Check if the window opened successfully
-  if (!printWindow) {
-    setStatus("Failed to open print window. Please check pop-up settings.");
-  }
-}
-
-
-
-   document.querySelectorAll("[data-print-id]").forEach((btn) => {
-  btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const sid = e.target.getAttribute("data-print-id");
-    const pr = new URL(API_URL);
-    pr.searchParams.set("action", "print");
-    pr.searchParams.set("id", sid);
-    pr.searchParams.set("key", key);
-    window.open(pr.toString(), "_blank");
-  });
+  openDetail(rowId);
 });
 
+ 
+
+     
+document.addEventListener("click", async (e) => {
+  // EDIT
+  const editBtn = e.target.closest("[data-edit-id]");
+  if (editBtn) {
+    e.preventDefault();
+    const sid = editBtn.getAttribute("data-edit-id");
+    openDetail(sid);
+    return;
+  }
+
+  // PRINT
+  const printBtn = e.target.closest("[data-print-id]");
+  if (printBtn) {
+    e.preventDefault();
+    const sid = printBtn.getAttribute("data-print-id");
+
+    const printUrl = new URL(API_URL);
+    printUrl.searchParams.set("action", "print");
+    printUrl.searchParams.set("id", sid);
+    if (key) printUrl.searchParams.set("key", key);
+    printUrl.searchParams.set("_", Date.now().toString());
+
+    const w = window.open(printUrl.toString(), "_blank");
+    if (!w) setStatus("Pop-up blocked. Allow pop-ups for this site to print.");
+    return;
+  }
+
+  // NOTES (use your modal)
   const noteBtn = e.target.closest("[data-note-id]");
   if (noteBtn) {
     e.preventDefault();
-    e.stopPropagation();
-    openNoteModal(noteBtn.getAttribute("data-note-id"));
+    const sid = noteBtn.getAttribute("data-note-id");
+    openNoteModal(sid);
     return;
   }
 
-  const deleteBtn = e.target.closest("[data-delete-id]");
-  if (deleteBtn) {
+  // DELETE
+  const trashBtn = e.target.closest("[data-trash-id]");
+  if (trashBtn) {
     e.preventDefault();
-    e.stopPropagation();
-    deleteSubmission(rowId);  // Pass selectedId to delete
+    const sid = trashBtn.getAttribute("data-trash-id");
+    if (!sid) return;
+
+    if (!confirm(`Delete this submission?\n\n${sid}`)) return;
+
+    try {
+      setStatus("Deleting…");
+      await deleteSubmission(sid);
+      await fetchList();
+      setStatus("Deleted ✅");
+    } catch (err) {
+      setStatus("Error: " + err.message);
+    }
     return;
-  } 
-  openDetail(rowId);
+  }
 });
+    
 
 
 
@@ -735,7 +738,47 @@ function getOwnerKey_() {
   return new URLSearchParams(window.location.search).get("key") || "";
 }
 
-async function deleteSubmission(id) {
+    async function deleteSubmission(submissionId) {
+  const url = new URL(API_URL);
+  url.searchParams.set("action", "delete");
+  url.searchParams.set("id", submissionId);
+  if (key) url.searchParams.set("key", key);
+  url.searchParams.set("_", Date.now().toString());
+
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  const txt = await res.text();
+
+  let json;
+  try { json = JSON.parse(txt); }
+  catch { throw new Error("Delete not JSON: " + txt.slice(0, 160)); }
+
+  if (!json.ok) throw new Error(json.error || "Delete failed");
+  return json;
+}
+    
+    /*document.addEventListener("click", async (e) => {
+  const trashBtn = e.target.closest("[data-trash-id]");
+  if (!trashBtn) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  const sid = trashBtn.getAttribute("data-trash-id");
+  if (!sid) return;
+
+  if (!confirm(`Delete this submission?\n\n${sid}`)) return;
+
+  try {
+    setStatus("Deleting…");
+    await deleteSubmission(sid);
+    await fetchList();
+    setStatus("Deleted ✅");
+  } catch (err) {
+    setStatus("Error: " + err.message);
+  }
+});*/
+
+/*async function deleteSubmission(id) {
   if (!confirm(`Delete submission ${id}?`)) return;
 
   const url = new URL(API_URL);
@@ -768,7 +811,7 @@ async function deleteSubmission(id) {
   } catch (err) {
     setStatus("Error: " + err.message);
   }
-}
+}*/
 
   /*
   let j;
