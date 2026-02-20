@@ -1403,17 +1403,41 @@ form?.addEventListener("submit", async (e) => {
 
     console.log("✅ Saved:", result);
     setStatus("Saved ✅");
-     
-    if (wasNew) {
-      setStatus("Saved ✅");
-      resetToNewForm();
-    } else {
-      setStatus("Saved ✅");
-    }
+
+    if (wasNew) resetToNewForm();
   } catch (err) {
     console.error(err);
-    setStatus("Save failed: " + (err?.message || err));
-    alert("Save failed: " + (err?.message || err));
+
+    // Decide if this is an offline/network-style failure
+    const msg = String(err?.message || err);
+    const isNetworkish =
+      !navigator.onLine ||
+      msg.includes("Failed to fetch") ||
+      msg.includes("NetworkError") ||
+      msg.includes("Load failed") ||
+      msg.includes("TypeError: Failed to fetch");
+
+    // ✅ Queue instead of failing (only for "new" submissions unless you want edits queued too)
+    if (isNetworkish) {
+      try {
+        await addToQueue_(navigator.onLine ? "network_error" : "offline");
+        setStatus("Queued ✅ (will sync when online)");
+        alert("No connection — saved to Queue and will sync when online.");
+
+        // optional: if it was a new submission, clear the form after queueing
+        if (wasNew) resetToNewForm();
+        return;
+      } catch (qErr) {
+        console.error("Queue failed:", qErr);
+        setStatus("Queue failed: " + (qErr?.message || qErr));
+        alert("Queue failed: " + (qErr?.message || qErr));
+        return;
+      }
+    }
+
+    // Otherwise: real error
+    setStatus("Save failed: " + msg);
+    alert("Save failed: " + msg);
   } finally {
     isSubmitting = false;
   }
@@ -1500,9 +1524,113 @@ form?.addEventListener("keydown", (e) => {
   e.preventDefault();
 });
 
+// ============================
+// OFFLINE: Drafts + Queue + Sync (works with your db.js)
+// ============================
+
+async function saveDraft_() {
+  const payload = await buildPayload();
+  await db.put("drafts", {
+    ...payload,
+    _savedAt: new Date().toISOString(),
+    _kind: "draft",
+  });
+  setStatus("Draft saved ✅");
+}
+
+async function addToQueue_(reason = "offline") {
+  const payload = await buildPayload();
+  await db.put("queue", {
+    ...payload,
+    _queuedAt: new Date().toISOString(),
+    _lastError: "",
+    _reason: reason,
+    _kind: "queue",
+  });
+  setStatus("Queued ✅ (will sync when online)");
+}
+
+async function trySync() {
+  if (!navigator.onLine) {
+    setStatus("Offline — cannot sync");
+    return;
+  }
+
+  const items = await db.getAll("queue");
+  if (!items.length) {
+    setStatus("Nothing queued ✅");
+    return;
+  }
+
+  setStatus(`Syncing ${items.length}…`);
+
+  let ok = 0;
+  for (const item of items) {
+    try {
+      // Ensure IDs/mode are consistent
+      currentId = item.submissionId;
+      mode = item.mode === "edit" ? "edit" : "new";
+      editId = item.editId || (mode === "edit" ? item.submissionId : "");
+
+      await sendSubmission_(item);     // <-- uses your existing POST logic
+      await db.del("queue", item.submissionId);
+      ok++;
+    } catch (e) {
+      await db.put("queue", {
+        ...item,
+        _lastError: String(e?.message || e),
+        _lastTryAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  setStatus(`Sync done ✅ (${ok}/${items.length})`);
+}
+
+// Simple viewer (prints list in debug pane)
+async function showStore_(storeName) {
+  const items = await db.getAll(storeName);
+
+  if (!items.length) {
+    debug(`${storeName}: (empty)`);
+    return;
+  }
+
+  debug(
+    `${storeName.toUpperCase()} (${items.length})\n` +
+      items
+        .map((x) => {
+          const when = x._savedAt || x._queuedAt || x.createdAt || "";
+          const err = x._lastError ? ` | ERROR: ${x._lastError}` : "";
+          return `${x.submissionId} | ${x.pageType} | ${when}${err}`;
+        })
+        .join("\n")
+  );
+}
+
+// ============================
+// BUTTON WIRING (update IDs to match your HTML)
+// ============================
+
+// "Sync Now"
+document.getElementById("syncNow")?.addEventListener("click", () => {
+  trySync().catch((e) => alert("Sync failed: " + (e?.message || e)));
+});
+
+// "Drafts"
+document.getElementById("draftsBtn")?.addEventListener("click", () => {
+  showStore_("drafts").catch((e) => alert("Drafts error: " + (e?.message || e)));
+});
+
+// "Queued"
+document.getElementById("queuedBtn")?.addEventListener("click", () => {
+  showStore_("queue").catch((e) => alert("Queue error: " + (e?.message || e)));
+});
+
 
 updatePageSections();
 updateNet();
+
 
 
 
