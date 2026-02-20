@@ -24,6 +24,7 @@ const params = new URLSearchParams(location.search);
 const ownerKey = params.get("ownerKey") || params.get("key") || "";
 
 let editReady = false;
+let isSubmitting = false;
 
 
 // MUST be let so "New Form" can clear it
@@ -1334,12 +1335,17 @@ async function sendSubmission_(payload) {
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt.slice(0, 200)}`);
   if (j && j.ok === false) throw new Error(j.error || "Server returned ok:false");
 
-  return j || { ok: true, raw: txt };
-}
+  if (j && j.ok === true) return j;
+   if (j && j.ok === false) throw new Error(j.error || "Server returned ok:false");
+
+   // If server returned non-JSON but HTTP 200, treat as failure (prevents false success)
+   throw new Error("Unexpected server response: " + txt.slice(0, 160));
+   }
 
 // ============================
 // FORM SUBMIT HANDLER
 // ============================
+
 function resetToNewForm() {
   // reset state
   mode = "new";
@@ -1384,12 +1390,9 @@ function resetToNewForm() {
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  if (mode === "edit" && !editReady) {
-    alert("Edit is still loading — please wait for the form to populate before updating.");
-    return;
-  }
+  if (isSubmitting) return;
+  isSubmitting = true;
 
-  // ✅ snapshot mode at click time
   const wasNew = (mode === "new");
 
   try {
@@ -1399,46 +1402,30 @@ form?.addEventListener("submit", async (e) => {
     const result = await sendSubmission_(payload);
 
     console.log("✅ Saved:", result);
-   console.log("RESET CHECK:", { wasNew, modeNow: mode });
+
     if (wasNew) {
       setStatus("Saved ✅");
       resetToNewForm();
-      return;
+    } else {
+      setStatus("Saved ✅");
     }
-
-    setStatus("Saved ✅");
   } catch (err) {
     console.error(err);
     setStatus("Save failed: " + (err?.message || err));
     alert("Save failed: " + (err?.message || err));
+  } finally {
+    isSubmitting = false;
   }
 });
 
-    // After first successful submit, switch into edit mode (so next save updates)
-  /*  if (mode !== "edit") {
-      mode = "edit";
-      editId = currentId;
+form?.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "textarea") return;
+  e.preventDefault();
+});
 
-      // update the URL to include edit id (keep key)
-      const u = new URL(window.location.href);
-      u.searchParams.set("edit", currentId);
-      if (ownerKey) u.searchParams.set("key", ownerKey);
-      history.replaceState({}, "", u.toString());
-
-      // update submit button label
-      const submitBtn = document.querySelector('button[type="submit"]');
-      if (submitBtn) submitBtn.textContent = "Update Submission";
-    }
-
-    setStatus("Saved ✅");
-  } catch (err) {
-    console.error(err);
-    setStatus("Save failed: " + (err?.message || err));
-    alert("Save failed: " + (err?.message || err));
-  }
-});*/
-
-
+   
 // --- helpers -------------------------------------------------
 function _nk(s) {
   // use your normKey if present, otherwise fallback
@@ -1515,6 +1502,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
