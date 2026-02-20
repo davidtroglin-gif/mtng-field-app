@@ -1402,7 +1402,8 @@ form?.addEventListener("submit", async (e) => {
     const result = await sendSubmission_(payload);
 
     console.log("✅ Saved:", result);
-
+    setStatus("Saved ✅");
+     
     if (wasNew) {
       setStatus("Saved ✅");
       resetToNewForm();
@@ -1502,6 +1503,7 @@ form?.addEventListener("keydown", (e) => {
 
 updatePageSections();
 updateNet();
+
 
 
 
