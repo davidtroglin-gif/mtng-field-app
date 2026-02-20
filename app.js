@@ -1340,10 +1340,49 @@ async function sendSubmission_(payload) {
 // ============================
 // FORM SUBMIT HANDLER
 // ============================
+function resetToNewForm() {
+  // reset state
+  mode = "new";
+  editId = "";
+  editReady = false;
+  createdAtLocked = null;
+
+  // new submission id
+  currentId = newSubmissionId();
+
+  // clear form
+  form?.reset();
+
+  // reset page type sections (shows correct section)
+  updatePageSections?.();
+
+  // clear sketch
+  existingSketch = null;
+  sketchDirty = false;
+  if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // clear photos input
+  const photoInput = form?.querySelector('input[type="file"][data-photos]');
+  if (photoInput) photoInput.value = "";
+
+  // clean URL (remove edit)
+  const u = new URL(window.location.href);
+  u.searchParams.delete("edit");
+  history.replaceState({}, "", u.toString());
+
+  // reset submit button label
+  const submitBtn = document.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = "Submit Submission";
+
+  setStatus?.("Ready");
+}
+
+
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-   if (mode === "edit" && !editReady) {
+  // Keep this guard for edits
+  if (mode === "edit" && !editReady) {
     alert("Edit is still loading — please wait for the form to populate before updating.");
     return;
   }
@@ -1351,10 +1390,27 @@ form?.addEventListener("submit", async (e) => {
   try {
     setStatus(mode === "edit" ? "Updating…" : "Submitting…");
 
-    const payload = await buildPayload();   // ✅ your existing builder
+    const payload = await buildPayload();
     const result = await sendSubmission_(payload);
 
     console.log("✅ Saved:", result);
+
+    // ✅ After a NEW submit, reset for next job
+    if (mode === "new") {
+      setStatus("Saved ✅");
+      resetToNewForm();
+      return;
+    }
+
+    // ✅ After an EDIT update, keep form open
+    setStatus("Saved ✅");
+
+  } catch (err) {
+    console.error(err);
+    setStatus("Save failed: " + (err?.message || err));
+    alert("Save failed: " + (err?.message || err));
+  }
+});
 
     // After first successful submit, switch into edit mode (so next save updates)
     if (mode !== "edit") {
@@ -1457,6 +1513,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
