@@ -651,7 +651,8 @@ async function openDetail(id) {
     rep.textContent = JSON.stringify(submission.repeaters, null, 2);
 
     // Handle media (sketch and photos)
-    const sketchUrl = submission.media?.sketchUrl || "";
+    //const sketchUrl = submission.media?.sketchUrl || "";
+    const sketchUrl = submission.media?.sketchUrl || submission.sketch?.dataUrl || "";
     const photos = Array.isArray(submission.media?.photoUrls) ? submission.media.photoUrls : [];
     const sketchImg = document.getElementById("sketchImg");
     const sketchLinks = document.getElementById("sketchLinks");
