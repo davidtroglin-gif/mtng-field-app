@@ -1191,7 +1191,8 @@ async function buildPayload() {
   const deviceId = getDeviceId();
 
   // IMPORTANT: gather from a root that includes all inputs
-  const root = document.getElementById("app") || document;
+  //const root = document.getElementById("app") || document;
+   const getF = (label) => fields[normKey(label)];
   let fields = gatherFieldsNormalized();
    console.log("FIELD CHECK:", {
   pipeCondition: getF("Pipe Condition"),
@@ -1456,6 +1457,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
