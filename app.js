@@ -1160,12 +1160,20 @@ async function buildPayload() {
   }
 
   // Sketch
-  const sketch =
-    canvas
-      ? (sketchDirty
-          ? { filename: `sketch_${currentId}.png`, dataUrl: canvas.toDataURL("image/png") }
-          : (existingSketch || null))
-      : (existingSketch || null);
+      let sketch = null;
+      
+      if (canvas && sketchDirty) {
+        // user drew OR cleared -> store current canvas
+        sketch = {
+          filename: `sketch_${currentId}.png`,
+          dataUrl: canvas.toDataURL("image/png"),
+        };
+      } else if (existingSketch?.dataUrl) {
+        // editing but sketch unchanged -> keep existing sketch
+        sketch = existingSketch;
+      } else {
+        sketch = null;
+      }
 
   const payload = normalizePayload({
     submissionId: currentId,
@@ -1366,6 +1374,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
