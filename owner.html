@@ -768,76 +768,7 @@ function getOwnerKey_() {
   return json;
 }
     
-    /*document.addEventListener("click", async (e) => {
-  const trashBtn = e.target.closest("[data-trash-id]");
-  if (!trashBtn) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  const sid = trashBtn.getAttribute("data-trash-id");
-  if (!sid) return;
-
-  if (!confirm(`Delete this submission?\n\n${sid}`)) return;
-
-  try {
-    setStatus("Deleting…");
-    await deleteSubmission(sid);
-    await fetchList();
-    setStatus("Deleted ✅");
-  } catch (err) {
-    setStatus("Error: " + err.message);
-  }
-});*/
-
-/*async function deleteSubmission(id) {
-  if (!confirm(`Delete submission ${id}?`)) return;
-
-  const url = new URL(API_URL);
-  url.searchParams.set("action", "delete");
-  url.searchParams.set("id", submissionId);
-  url.searchParams.set("key", key); // ✅ this is what requireOwner_ checks
-  url.searchParams.set("_", Date.now().toString());
-
-  
-
-  const res = await fetch(url.toString(), { cache: "no-store" });
-  const txt = await res.text();
-
-  //const res = await fetch(url.toString(), { cache: "no-store" });
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error || "Delete failed");
-  return json;
-}
-
-    if (trashBtn) {
-  e.preventDefault();
-  const sid = trashBtn.getAttribute("data-trash-id");
-  if (!confirm("Delete this submission?")) return;
-
-  try {
-    setStatus("Deleting…");
-    await deleteSubmission(sid);
-    await fetchList();
-    setStatus("Deleted ✅");
-  } catch (err) {
-    setStatus("Error: " + err.message);
-  }
-}*/
-
-  /*
-  let j;
-  try { j = JSON.parse(txt); } catch { j = { ok: false, error: txt }; }
-
-  if (!j.ok) {
-    alert("Delete failed:\n" + (j.error || txt).slice(0, 400));
-    return;
-  }
-
-  const tr = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
-  if (tr) tr.remove();
-}*/
-
+    
 
     // UI hooks
    document.getElementById("refresh").addEventListener("click", () =>
