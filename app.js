@@ -1606,9 +1606,29 @@ async function showStore_(storeName) {
 }
 
 // ============================
-// BUTTONS (your IDs)
+// BUTTON WIRING (script tag is bottom of body)
 // ============================
 
+document.getElementById("saveDraft")?.addEventListener("click", () => {
+  saveDraft_().catch((e) => alert("Draft save failed: " + (e?.message || e)));
+});
+
+document.getElementById("syncNow")?.addEventListener("click", () => {
+  trySync().catch((e) => alert("Sync failed: " + (e?.message || e)));
+});
+
+document.getElementById("openDrafts")?.addEventListener("click", () => {
+  showStore_("drafts").catch((e) => alert("Drafts error: " + (e?.message || e)));
+});
+
+document.getElementById("openQueue")?.addEventListener("click", () => {
+  showStore_("queue").catch((e) => alert("Queue error: " + (e?.message || e)));
+});
+
+document.getElementById("queueForSync")?.addEventListener("click", () => {
+  addToQueue_("manual").catch((e) => alert("Queue failed: " + (e?.message || e)));
+});
+/*
 document.addEventListener("DOMContentLoaded", () => {
   // Sync Now
   document.getElementById("syncNow")?.addEventListener("click", () => {
@@ -1634,11 +1654,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("saveDraft")?.addEventListener("click", () => {
     saveDraft_().catch((e) => alert("Draft save failed: " + (e?.message || e)));
   });
-});
+});*/
 
 
 updatePageSections();
 updateNet();
+
 
 
 
