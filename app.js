@@ -1384,30 +1384,29 @@ function resetToNewForm() {
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  // Keep this guard for edits
   if (mode === "edit" && !editReady) {
     alert("Edit is still loading — please wait for the form to populate before updating.");
     return;
   }
 
+  // ✅ snapshot mode at click time
+  const wasNew = (mode === "new");
+
   try {
-    setStatus(mode === "edit" ? "Updating…" : "Submitting…");
+    setStatus(wasNew ? "Submitting…" : "Updating…");
 
     const payload = await buildPayload();
     const result = await sendSubmission_(payload);
 
     console.log("✅ Saved:", result);
-
-    // ✅ After a NEW submit, reset for next job
-    if (mode === "new") {
+   console.log("RESET CHECK:", { wasNew, modeNow: mode });
+    if (wasNew) {
       setStatus("Saved ✅");
       resetToNewForm();
       return;
     }
 
-    // ✅ After an EDIT update, keep form open
     setStatus("Saved ✅");
-
   } catch (err) {
     console.error(err);
     setStatus("Save failed: " + (err?.message || err));
@@ -1516,6 +1515,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
