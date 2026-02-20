@@ -986,28 +986,36 @@ async function loadForEdit(submissionId) {
     }
 
     // ---- SKETCH ----
-    existingSketch = p.sketch || null;
-   sketchDirty = false;
-   
-   // 1) Prefer embedded dataUrl if present
-   if (existingSketch?.dataUrl) {
-     await drawDataUrlToCanvas_(existingSketch.dataUrl);
-   } else {
-     // 2) Fallback: pull from saved Drive URL
-     const sketchUrl = p.media?.sketchUrl || "";
-     if (sketchUrl) {
-       const dataUrl = await urlToDataUrlClient_(sketchUrl);
-       if (dataUrl) {
-         existingSketch = {
-           filename: existingSketch?.filename || `sketch_${submissionId}.png`,
-           dataUrl,
-         };
-         await drawDataUrlToCanvas_(dataUrl);
-       } else {
-         console.warn("No dataUrl returned for sketchUrl:", sketchUrl);
-       }
-     }
-   }
+   // ---- SKETCH ----
+existingSketch = p.sketch || null;
+sketchDirty = false;
+
+const sketchUrl = p.media?.sketchUrl || "";
+console.log("EDIT SKETCH:", {
+  hasEmbeddedDataUrl: !!existingSketch?.dataUrl,
+  sketchUrl,
+});
+
+if (existingSketch?.dataUrl) {
+  await drawDataUrlToCanvas_(existingSketch.dataUrl);
+  console.log("✅ drew embedded sketch dataUrl");
+} else if (sketchUrl) {
+  const dataUrl = await urlToDataUrlClient_(sketchUrl);
+  console.log("FETCHED SKETCH dataUrl len:", dataUrl ? dataUrl.length : 0);
+
+  if (dataUrl) {
+    existingSketch = {
+      filename: existingSketch?.filename || `sketch_${submissionId}.png`,
+      dataUrl,
+    };
+    await drawDataUrlToCanvas_(dataUrl);
+    console.log("✅ drew sketch from media.sketchUrl");
+  } else {
+    console.warn("⚠️ sketchUrl fetch returned empty dataUrl");
+  }
+} else {
+  console.warn("⚠️ no sketch found (no embedded dataUrl, no media.sketchUrl)");
+}
 
     // ---- REPEATERS ----
     populateRepeatersForPage(pt, repeaters);
@@ -1402,6 +1410,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
