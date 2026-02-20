@@ -555,14 +555,14 @@ function gatherFieldsNormalized() {
     const name = normKey(el.name);
     if (!name) return;
 
-    // ✅ Skip disabled controls (optional, but usually desired)
+    // Skip disabled inputs (prevents hidden/disabled duplicates from overwriting)
     if (el.disabled) return;
 
-    // CHECKBOXES: if duplicates exist, keep TRUE if any checkbox is checked
+    // CHECKBOXES: keep TRUE if any duplicate checkbox is checked
     if (el.type === "checkbox") {
       const incoming = !!el.checked;
       const existing = !!fields[name];
-      fields[name] = existing || incoming; // OR logic
+      fields[name] = existing || incoming;
       return;
     }
 
@@ -573,10 +573,10 @@ function gatherFieldsNormalized() {
       return;
     }
 
-    // TEXT/SELECT/TEXTAREA
+    // TEXT / SELECT / TEXTAREA
     const incoming = normVal(el.value);
 
-    // If a duplicate exists, don't overwrite a meaningful value with empty
+    // If duplicate exists, don't overwrite a meaningful value with empty
     if (name in fields) {
       const existing = fields[name];
       if (isNonEmpty(existing) && !isNonEmpty(incoming)) return;
@@ -1456,6 +1456,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
