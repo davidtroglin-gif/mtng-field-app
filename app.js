@@ -226,13 +226,14 @@ function startDraw(ev) {
   if (!canvas || !ctx) return;
   drawing = true;
   last = pos(ev);
-  markSketchDirty(); // ✅ ADD THIS
+  markSketchDirty(); // ✅
+  if (ev.cancelable) ev.preventDefault(); // ✅ helps on touch
 }
 function moveDraw(ev) {
   if (!canvas || !ctx) return;
   if (!drawing) return;
-  ev.preventDefault();
-   markSketchDirty(); // ✅ ADD THIS
+   if (ev.cancelable) ev.preventDefault();
+  markSketchDirty(); // ✅
   const p = pos(ev);
   ctx.beginPath();
   ctx.moveTo(last.x, last.y);
@@ -1175,6 +1176,14 @@ async function buildPayload() {
         sketch = null;
       }
 
+   console.log("SKETCH DEBUG:", {
+  canvas: !!canvas,
+  sketchDirty,
+  existingSketch: !!existingSketch,
+  sketchHasDataUrl: !!(sketch && sketch.dataUrl),
+  sketchDataUrlLen: sketch?.dataUrl?.length || 0
+});
+
   const payload = normalizePayload({
     submissionId: currentId,
     pageType: pageTypeEl?.value || "Leak Repair",
@@ -1374,6 +1383,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
