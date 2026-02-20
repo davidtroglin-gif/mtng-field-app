@@ -41,7 +41,8 @@ window.mtngDebug = {
   state: () => ({ mode, editId, currentId, ownerKey }),
 };
 
-
+let _loadedFieldsBaseline = {};
+let _loadedRepeatersBaseline = {};
 
 
 
@@ -1024,6 +1025,10 @@ if (existingSketch?.dataUrl) {
     populateFieldsSmart_(form, fields);
     updatePageSections();
 
+     // Preserve original values so missing inputs on the form can't wipe data on save
+      _loadedFieldsBaseline = { ...(fields || {}) };
+      _loadedRepeatersBaseline = JSON.parse(JSON.stringify(repeaters || {})); // deep copy
+
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
     //if (submitBtn) submitBtn.textContent = "Update Submission";
@@ -1160,8 +1165,16 @@ async function buildPayload() {
 
   // IMPORTANT: gather from a root that includes all inputs
   const root = document.getElementById("app") || document;
-  const fields = gatherFieldsNormalized();
-  const repeaters = gatherRepeaters();
+  let fields = gatherFieldsNormalized();
+   let repeaters = gatherRepeaters();
+   
+   if (mode === "edit") {
+     // ✅ Keep anything not present / not captured in the current form
+     fields = { ..._loadedFieldsBaseline, ...fields };
+   
+     // If repeaters sometimes go missing, preserve those too
+     repeaters = { ..._loadedRepeatersBaseline, ...repeaters };
+   }
 
   // Preserve createdAt on edit; always set updatedAt
   const createdAt =
@@ -1404,6 +1417,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
