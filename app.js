@@ -1356,6 +1356,9 @@ function resetToNewForm() {
   // reset page type sections (shows correct section)
   updatePageSections?.();
 
+   const pt = pageTypeEl?.value || "Leak Repair";
+   populateRepeatersForPage?.(pt, {});   // clears repeater rows
+
   // clear sketch
   existingSketch = null;
   sketchDirty = false;
@@ -1513,6 +1516,7 @@ function populateRepeater(bindingKey, rows) {
 
 updatePageSections();
 updateNet();
+
 
 
 
