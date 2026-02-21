@@ -119,6 +119,11 @@
           </select>
         </div>
         <div>
+          <label>Owner Key</label>
+          <input id="ownerKey" placeholder="Enter key…" />
+          <div class="small">Stored for this tab only.</div>
+        </div>
+        <div>
           <label>Actions</label>
           <button id="refresh" type="button">Refresh</button>
         </div>
@@ -224,12 +229,47 @@
     const photoLinks = document.getElementById("photoLinks");
     const photoImgs = document.getElementById("photoImgs");
 
-    const key = new URLSearchParams(location.search).get("key") || "";
-   /* const key = new URLSearchParams(window.location.search).get("key");
-if (!key) {
-    alert("Missing owner key in dashboard URL. Add ?key=YOUR_OWNER_KEY");
-    return;
-}*/
+    //const key = new URLSearchParams(location.search).get("key") || "";
+
+   // ===== OWNER KEY + HELPERS =====
+const qs = new URLSearchParams(location.search);
+
+let key =
+  (qs.get("key") || "").trim() ||
+  (sessionStorage.getItem("mtng_owner_key") || "").trim();
+
+const ownerKeyEl = document.getElementById("ownerKey");
+if (ownerKeyEl) {
+  ownerKeyEl.value = key || "";
+
+  ownerKeyEl.addEventListener("change", () => {
+    key = ownerKeyEl.value.trim();
+    if (key) sessionStorage.setItem("mtng_owner_key", key);
+  });
+}
+
+// If key was in URL, stash it then remove from address bar
+if (key && qs.get("key")) {
+  sessionStorage.setItem("mtng_owner_key", key);
+  const clean = new URL(location.href);
+  clean.searchParams.delete("key");
+  history.replaceState({}, "", clean.toString());
+}
+
+function apiUrl(action) {
+  const url = new URL(API_URL);
+  url.searchParams.set("action", action);
+  if (key) url.searchParams.set("key", key);
+  url.searchParams.set("_", Date.now().toString()); // cache-bust
+  return url;
+}
+
+function requireKey() {
+  if (key) return true;
+  alert("Enter Owner Key to access the dashboard.");
+  ownerKeyEl?.focus();
+  return false;
+}
 
 
     let items = [];
@@ -317,10 +357,12 @@ if (!key) {
 
       setStatus("Loading list…");
 
-      const url = new URL(API_URL);
+     /* const url = new URL(API_URL);
       url.searchParams.set("action", "list");
       url.searchParams.set("key", key);
-      url.searchParams.set("_", Date.now().toString()); // cache-bust
+      url.searchParams.set("_", Date.now().toString()); // cache-bust*/
+      if (!requireKey()) return;
+      const url = apiUrl("list");
 
       const json = await fetchJsonOrThrow(url, { cache: "no-store" });
       items = json.items || [];
@@ -581,10 +623,12 @@ if (editBtn) {
 
 
     async function ownerPost(op, submissionId, extra = {}) {
-      const url = new URL(API_URL);
+      /*const url = new URL(API_URL);
       url.searchParams.set("action", "owner");
       url.searchParams.set("key", key);
-      url.searchParams.set("_", Date.now().toString());
+      url.searchParams.set("_", Date.now().toString());*/
+      if (!requireKey()) return;
+      const url = apiUrl("owner");
 
       const res = await fetch(url.toString(), {
         method: "POST",
@@ -624,10 +668,13 @@ async function openDetail(id) {
     setStatus("Loading details…");
 
     // Fetch details from the API using the ID
-    const url = new URL(API_URL);
+    /*const url = new URL(API_URL);
     url.searchParams.set("action", "get");
     url.searchParams.set("id", selectedId);
-    url.searchParams.set("key", key);
+    url.searchParams.set("key", key);*/
+    if (!requireKey()) return;
+    const url = apiUrl("get");
+    url.searchParams.set("id", selectedId);
     
     const res = await fetch(url);
     const data = await res.json();
@@ -751,11 +798,14 @@ function getOwnerKey_() {
 }
 
     async function deleteSubmission(submissionId) {
-  const url = new URL(API_URL);
+  /*const url = new URL(API_URL);
   url.searchParams.set("action", "delete");
   url.searchParams.set("id", submissionId);
   if (key) url.searchParams.set("key", key);
-  url.searchParams.set("_", Date.now().toString());
+  url.searchParams.set("_", Date.now().toString());*/
+      if (!requireKey()) return;
+    const url = apiUrl("delete");
+    url.searchParams.set("id", submissionId);
 
   const res = await fetch(url.toString(), { cache: "no-store" });
   const txt = await res.text();
