@@ -118,11 +118,12 @@
             <option value="Services">Services</option>
           </select>
         </div>
-        <div style="visibility:hidden">
+        <div id="ownerKeyWrap" style="display:none;">
           <label>Owner Key</label>
-          <input id="ownerKey" placeholder="Enter key…" />
+          <input id="ownerKey" type="password" placeholder="Enter key…" />
           <div class="small">Stored for this tab only.</div>
         </div>
+      </div>
         <div>
           <label>Actions</label>
           <button id="refresh" type="button">Refresh</button>
@@ -238,13 +239,26 @@ let key =
   (qs.get("key") || "").trim() ||
   (sessionStorage.getItem("mtng_owner_key") || "").trim();
 
+const ownerKeyWrap = document.getElementById("ownerKeyWrap");
 const ownerKeyEl = document.getElementById("ownerKey");
+
+function showKeyUI(show) {
+  if (!ownerKeyWrap) return;
+  ownerKeyWrap.style.display = show ? "block" : "none";
+}
+
 if (ownerKeyEl) {
   ownerKeyEl.value = key || "";
 
+  // ✅ show only if missing key
+  showKeyUI(!key);
+
   ownerKeyEl.addEventListener("change", () => {
     key = ownerKeyEl.value.trim();
-    if (key) sessionStorage.setItem("mtng_owner_key", key);
+    if (key) {
+      sessionStorage.setItem("mtng_owner_key", key);
+      showKeyUI(false); // ✅ hide once set
+    }
   });
 }
 
@@ -267,6 +281,7 @@ function apiUrl(action) {
 function requireKey() {
   if (key) return true;
   alert("Enter Owner Key to access the dashboard.");
+  showKeyUI(true);
   ownerKeyEl?.focus();
   return false;
 }
