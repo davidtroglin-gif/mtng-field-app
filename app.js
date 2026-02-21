@@ -1628,37 +1628,31 @@ document.getElementById("openQueue")?.addEventListener("click", () => {
 document.getElementById("queueForSync")?.addEventListener("click", () => {
   addToQueue_("manual").catch((e) => alert("Queue failed: " + (e?.message || e)));
 });
-/*
-document.addEventListener("DOMContentLoaded", () => {
-  // Sync Now
-  document.getElementById("syncNow")?.addEventListener("click", () => {
-    trySync().catch((e) => alert("Sync failed: " + (e?.message || e)));
-  });
 
-  // Drafts list
-  document.getElementById("openDrafts")?.addEventListener("click", () => {
-    showStore_("drafts").catch((e) => alert("Drafts error: " + (e?.message || e)));
-  });
+document.getElementById("openOwnerDash")?.addEventListener("click", () => {
+  // Use key from URL first, then sessionStorage, otherwise prompt
+  let k =
+    (ownerKey || "").trim() ||
+    (sessionStorage.getItem("mtng_owner_key") || "").trim();
 
-  // Queue list
-  document.getElementById("openQueue")?.addEventListener("click", () => {
-    showStore_("queue").catch((e) => alert("Queue error: " + (e?.message || e)));
-  });
+  if (!k) {
+    k = (prompt("Enter owner password/key to open the dashboard:") || "").trim();
+  }
 
-  // Queue for Sync (manual)
-  document.getElementById("queueForSync")?.addEventListener("click", () => {
-    addToQueue_("manual").catch((e) => alert("Queue failed: " + (e?.message || e)));
-  });
+  if (!k) return;
 
-  // ✅ Save Draft (Option B)
-  document.getElementById("saveDraft")?.addEventListener("click", () => {
-    saveDraft_().catch((e) => alert("Draft save failed: " + (e?.message || e)));
-  });
-});*/
+  sessionStorage.setItem("mtng_owner_key", k);
+
+  // Go to owner dashboard (same folder as index.html)
+  const url = new URL("./owner.html", window.location.href);
+  url.searchParams.set("key", k);
+  window.location.href = url.toString();
+});
 
 
 updatePageSections();
 updateNet();
+
 
 
 
