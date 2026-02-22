@@ -210,7 +210,7 @@ function updateJobNumberLabel(pageType) {
   if (!label) return;
 
   const pt = String(pageType || "").trim();
-  if (pt === "Services") label.textContent = "SLO Number";
+  if (pt === "Services" || pt == "Retirement") label.textContent = "SLO Number";
   else if (pt === "Leak Repair") label.textContent = "LRO Number";
   else label.textContent = "MLO Number"; // Mains + default
 }
@@ -1668,6 +1668,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
