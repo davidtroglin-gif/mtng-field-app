@@ -199,6 +199,27 @@ function updatePageSections() {
 pageTypeEl?.addEventListener("change", updatePageSections);
 updatePageSections();
 
+//Change MLO Label to SRO, LRO depending on sheet//
+function updateJobNumberLabel(pageType) {
+  const label = document.getElementById("mloLabel");
+  if (!label) return;
+
+  const pt = String(pageType || "").trim();
+
+  if (pt === "Services") label.textContent = "SLO Number";
+  else if (pt === "Leak Repair") label.textContent = "LRO Number";
+  else label.textContent = "MLO Number"; // Mains + default
+}
+
+const pageTypeEl = document.getElementById("pageType");
+
+pageTypeEl?.addEventListener("change", () => {
+  updateJobNumberLabel(pageTypeEl.value);
+});
+
+// run once on initial load
+updateJobNumberLabel(pageTypeEl?.value);
+
 // =====================================================
 // Sketch canvas
 // =====================================================
@@ -1652,6 +1673,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
