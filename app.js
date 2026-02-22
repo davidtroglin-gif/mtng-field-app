@@ -191,11 +191,16 @@ function newSubmissionId() {
 // =====================================================
 function updatePageSections() {
   const pt = pageTypeEl?.value || "Leak Repair";
+
+  // ✅ update the label anytime page type changes
+  updateJobNumberLabel(pt);
+
   if (sectionLeakRepair) sectionLeakRepair.style.display = pt === "Leak Repair" ? "block" : "none";
   if (sectionMains) sectionMains.style.display = pt === "Mains" ? "block" : "none";
   if (sectionRetirement) sectionRetirement.style.display = pt === "Retirement" ? "block" : "none";
   if (sectionServices) sectionServices.style.display = pt === "Services" ? "block" : "none";
 }
+
 pageTypeEl?.addEventListener("change", updatePageSections);
 updatePageSections();
 
@@ -205,20 +210,10 @@ function updateJobNumberLabel(pageType) {
   if (!label) return;
 
   const pt = String(pageType || "").trim();
-
   if (pt === "Services") label.textContent = "SLO Number";
   else if (pt === "Leak Repair") label.textContent = "LRO Number";
   else label.textContent = "MLO Number"; // Mains + default
 }
-
-const pageTypeEl = document.getElementById("pageType");
-
-pageTypeEl?.addEventListener("change", () => {
-  updateJobNumberLabel(pageTypeEl.value);
-});
-
-// run once on initial load
-updateJobNumberLabel(pageTypeEl?.value);
 
 // =====================================================
 // Sketch canvas
@@ -1673,6 +1668,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
