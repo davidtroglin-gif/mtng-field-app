@@ -77,27 +77,6 @@
     }
   </style>
 
-  <title>Print and Update Status</title>
-    <script>
-        function printAndSetStatus() {
-            // Trigger the print dialog
-            window.print();
-
-            // Listen for after print to show pop-up
-            window.onafterprint = function () {
-                const status = window.confirm("Do you want to set the status to 'Completed'? If not, it will remain open on the dashboard.");
-
-                if (status) {
-                    // Call Google Apps Script function to update status to 'Completed'
-                    google.script.run.setStatusToCompleted();
-                } else {
-                    // Call Google Apps Script function to leave status open
-                    google.script.run.leaveOpenInDashboard();
-                }
-            };
-        }
-    </script>
-  
 </head>
   <body>
   <header>
