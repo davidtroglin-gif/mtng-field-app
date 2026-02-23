@@ -104,7 +104,6 @@ function refreshUrlParams_() {
 
 
 
-//OLD CODE OLD CODE OLD CODE
 // =====================================================
 // Normalization helpers (CLIENT)
 // =====================================================
@@ -204,7 +203,9 @@ function updatePageSections() {
 pageTypeEl?.addEventListener("change", updatePageSections);
 updatePageSections();
 
-//Change MLO Label to SRO, LRO depending on sheet//
+//======================================
+//Change MLO Label to SRO, LRO depending on sheet
+//======================================
 function updateJobNumberLabel(pageType) {
   const label = document.getElementById("mloLabel");
   if (!label) return;
@@ -1668,6 +1669,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
