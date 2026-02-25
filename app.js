@@ -341,11 +341,11 @@ function addPipeMaterialRow(data = {}) {
         data["ST Pipe Thickness"] || ""
       }">
       <label>Coating Type</label><input data-r="pipeMaterials" data-k="Coating Type" value="${data["Coating Type"] || ""}">
-      <label>Depth (inches)</label><input data-r="pipeMaterials" data-k="Depth (inches)" value="${
-        data["Depth (inches)"] || ""
+      <label>Depth (feet)</label><input data-r="pipeMaterials" data-k="Depth (feet)" value="${
+        data["Depth (feet)"] || ""
       }">
-      <label>Length (inches)</label><input data-r="pipeMaterials" data-k="Length (inches)" value="${
-        data["Length (inches)"] || ""
+      <label>Length (feet)</label><input data-r="pipeMaterials" data-k="Length (feet)" value="${
+        data["Length (feet)"] || ""
       }">
     `)
   );
@@ -399,11 +399,11 @@ function addMainsMaterialRow(data = {}) {
         data["ST Pipe Thickness"] || ""
       }">
       <label>Coating Types</label><input data-r="mainsMaterials" data-k="Coating Types" value="${data["Coating Types"] || ""}">
-      <label>Depth (inches)</label><input data-r="mainsMaterials" data-k="Depth (inches)" value="${
-        data["Depth (inches)"] || ""
+      <label>Depth (feet)</label><input data-r="mainsMaterials" data-k="Depth (feet)" value="${
+        data["Depth (feet)"] || ""
       }">
-      <label>Length (inches)</label><input data-r="mainsMaterials" data-k="Length (inches)" value="${
-        data["Length (inches)"] || ""
+      <label>Length (feet)</label><input data-r="mainsMaterials" data-k="Length (feet)" value="${
+        data["Length (feet)"] || ""
       }">
     `)
   );
@@ -457,11 +457,11 @@ function addSvcMaterialRow(data = {}) {
         data["ST Pipe Thickness"] || ""
       }">
       <label>Coating Types</label><input data-r="svcMaterials" data-k="Coating Types" value="${data["Coating Types"] || ""}">
-      <label>Depth (inches)</label><input data-r="svcMaterials" data-k="Depth (inches)" value="${
-        data["Depth (inches)"] || ""
+      <label>Depth (feet)</label><input data-r="svcMaterials" data-k="Depth (feet)" value="${
+        data["Depth (feet)"] || ""
       }">
-      <label>Length (inches)</label><input data-r="svcMaterials" data-k="Length (inches)" value="${
-        data["Length (inches)"] || ""
+      <label>Length (feet)</label><input data-r="svcMaterials" data-k="Length (feet)" value="${
+        data["Length (feet)"] || ""
       }">
     `)
   );
@@ -1669,6 +1669,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
