@@ -932,7 +932,7 @@ function populateFieldsSmart_(formEl, fieldsObj) {
        const isBoolish =
   !NEVER_BOOLISH.has(kNorm || kRaw) && (
     typeof v === "boolean" ||
-    (typeof v === "string" && ["true","false","yes","no","y","n","1","0","checked","on","off"].includes(v.trim().toLowerCase())) ||
+    (typeof v === "string" && ["true","false","yes","no","y","n","0","checked","on","off"].includes(v.trim().toLowerCase())) ||
     typeof v === "number"
   );
        
@@ -1678,6 +1678,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
