@@ -925,7 +925,7 @@ function populateFieldsSmart_(formEl, fieldsObj) {
 
     // ---- CHECKBOXES ----
     const cbs = els.filter(e => (e.type || "").toLowerCase() === "checkbox");
-    if (cbs.length > 1) {
+    if (cbs.length > 1 && cbs.length === els.length) {
       // If payload is boolean-ish, treat as "same checkbox duplicated on page"
       // (Mains + Services) and set them all the same.
 
@@ -1678,6 +1678,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
