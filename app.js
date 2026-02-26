@@ -870,7 +870,7 @@ function _set_(el, v) {
 }
 
 function populateFieldsSmart_(formEl, fieldsObj) {
-   const NEVER_BOOLISH = new Set(["Quantity"]); // add any numeric fields here
+  const NEVER_BOOLISH = new Set([normKey("Quantity")]);  // ✅ normalized
   const fields = (fieldsObj && typeof fieldsObj === "object") ? fieldsObj : {};
 
   // Build normalized name index (form + document) to handle NBSP/spacing mismatches
@@ -892,6 +892,7 @@ function populateFieldsSmart_(formEl, fieldsObj) {
   for (const [k, v] of Object.entries(fields)) {
     const kRaw  = String(k ?? "");
     const kNorm = normKey(kRaw);
+    const key   = kNorm || normKey(kRaw);
 
     // 1) exact name inside form
     let els = Array.from(formEl.querySelectorAll(`[name="${_attrEsc_(kRaw)}"]`));
@@ -929,12 +930,12 @@ function populateFieldsSmart_(formEl, fieldsObj) {
       // If payload is boolean-ish, treat as "same checkbox duplicated on page"
       // (Mains + Services) and set them all the same.
 
-       const isBoolish =
-  !NEVER_BOOLISH.has(kNorm || kRaw) && (
-    typeof v === "boolean" ||
-    (typeof v === "string" && ["true","false","yes","no","y","n","1","0","checked","on","off"].includes(v.trim().toLowerCase())) ||
-    typeof v === "number"
-  );
+      const isBoolish =
+      !NEVER_BOOLISH.has(key) && (
+        typeof v === "boolean" ||
+        (typeof v === "string" && ["true","false","yes","no","y","n","1","0","checked","on","off"].includes(v.trim().toLowerCase())) ||
+        typeof v === "number"
+      );
        
      // const isBoolish =
        // typeof v === "boolean" ||
@@ -1678,6 +1679,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
