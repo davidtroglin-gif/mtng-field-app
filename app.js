@@ -356,7 +356,7 @@ function addOtherMaterialRow(data = {}) {
       <label>Type</label><input data-r="otherMaterials" data-k="Type" value="${data["Type"] || ""}">
       <label>Size</label><input data-r="otherMaterials" data-k="Size" value="${data["Size"] || ""}">
       <label>Material</label><input data-r="otherMaterials" data-k="Material" value="${data["Material"] || ""}">
-      <label>Quantity</label><input data-r="otherMaterials" data-k="Quantity" value="${data["Quantity"] || ""}">
+      <label>Quantity</label><input type="number" name="quantity" data-r="otherMaterials" data-k="Quantity" value="${data["Quantity"] || ""}">
     `)
   );
 }
@@ -414,7 +414,7 @@ function addMainsOtherMaterialRow(data = {}) {
       <label>Type</label><input data-r="mainsOtherMaterials" data-k="Type" value="${data["Type"] || ""}">
       <label>Size</label><input data-r="mainsOtherMaterials" data-k="Size" value="${data["Size"] || ""}">
       <label>Material</label><input data-r="mainsOtherMaterials" data-k="Material" value="${data["Material"] || ""}">
-      <label>Quantity</label><input data-r="mainsOtherMaterials" data-k="Quantity" value="${data["Quantity"] || ""}">
+      <label>Quantity</label><input type="number" name="quantity" data-r="mainsOtherMaterials" data-k="Quantity" value="${data["Quantity"] || ""}">
     `)
   );
 }
@@ -472,7 +472,7 @@ function addSvcOtherMaterialRow(data = {}) {
       <label>Type</label><input data-r="svcOtherMaterials" data-k="Type" value="${data["Type"] || ""}">
       <label>Size</label><input data-r="svcOtherMaterials" data-k="Size" value="${data["Size"] || ""}">
       <label>Material</label><input data-r="svcOtherMaterials" data-k="Material" value="${data["Material"] || ""}">
-      <label>Quantity</label><input data-r="svcOtherMaterials" data-k="Quantity" value="${data["Quantity"] || ""}">
+      <label>Quantity</label><input type="number" name="quantity" data-r="svcOtherMaterials" data-k="Quantity" value="${data["Quantity"] || ""}">
     `)
   );
 }
@@ -529,7 +529,7 @@ function addRetNewMaterialsRow(data = {}) {
       <label>Materials Used</label><input data-r="retNewMaterials" data-k="Materials Used" value="${data["Materials Used"] || ""}">
       <label>Size</label><input data-r="retNewMaterials" data-k="Size" value="${data["Size"] || ""}">
       <label>Material</label><input data-r="retNewMaterials" data-k="Material" value="${data["Material"] || ""}">
-      <label>Quantity</label><input data-r="retNewMaterials" data-k="Quantity" value="${data["Quantity"] || ""}">
+      <label>Quantity</label><input type="number" name="quantity" data-r="retNewMaterials" data-k="Quantity" value="${data["Quantity"] || ""}">
     `)
   );
 }
@@ -1678,6 +1678,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
