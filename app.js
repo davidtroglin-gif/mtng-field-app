@@ -172,6 +172,37 @@ addHourlyLaborRowBtn?.addEventListener("click", () => addHourlyLaborRow());
 buildHourlyEquipmentRows();
 addHourlyLaborRow();
 
+function loadHourlyRateReport(data = {}) {
+  const contractorEl = document.getElementById("hr_contractorName");
+  const acceptedDateEl = document.getElementById("hr_mtngAcceptedDate");
+  const timeStartedEl = document.getElementById("hr_timeStarted");
+  const completedEl = document.getElementById("hr_completed");
+  const workPerformedEl = document.getElementById("hr_workPerformed");
+
+  if (contractorEl) contractorEl.value = data.contractorName || "Walker Construction";
+  if (acceptedDateEl) acceptedDateEl.value = data.mtngAcceptedDate || "";
+  if (timeStartedEl) timeStartedEl.value = data.timeStarted || "";
+  if (completedEl) completedEl.value = data.completed || "";
+  if (workPerformedEl) workPerformedEl.value = data.workPerformed || "";
+
+  // Reset labor rows
+  if (hourlyLaborBody) hourlyLaborBody.innerHTML = "";
+
+  const laborRows = Array.isArray(data.laborRows) ? data.laborRows : [];
+  if (laborRows.length) {
+    laborRows.forEach(row => addHourlyLaborRow(row));
+  } else {
+    addHourlyLaborRow();
+  }
+
+  // Rebuild equipment rows from saved data
+  buildHourlyEquipmentRows(Array.isArray(data.equipmentRows) ? data.equipmentRows : []);
+
+  // Recalculate totals from row values
+  recalcHourlyRateForm();
+}
+
+
 /* =========================
    NEW FORM BUTTON
    ========================= */
@@ -1450,10 +1481,15 @@ async function buildPayload() {
     editId
   });
 
-  // Add Hourly Rate Report details only for that form
-  if (pageType === "MTNG Hourly Rate Report") {
-    payload.hourlyRateReport = collectHourlyRateReport();
-  }
+ // Add Hourly Rate Report details only for that form
+if (pageType === "MTNG Hourly Rate Report") {
+  const currentHourly = collectHourlyRateReport();
+
+  payload.hourlyRateReport = (mode === "edit")
+    ? { ...(_loadedHourlyRateBaseline || {}), ...currentHourly }
+    : currentHourly;
+   console.log("HOURLY PAYLOAD:", payload.hourlyRateReport);
+}
 
   // Safety guard: prevent accidental "edit becomes new"
   if (mode === "edit" && editId && payload.submissionId !== editId) {
@@ -1837,6 +1873,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
