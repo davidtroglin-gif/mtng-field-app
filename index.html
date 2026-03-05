@@ -530,25 +530,28 @@
   </div>
 </section>
 
-      <!-- ===================================================== -->
-      <!-- SHARED: SKETCH + PHOTOS + SUBMIT (ALL PAGES)           -->
-      <!-- ===================================================== -->
-      <h4 style="margin:14px 0 6px;">Sketch</h4>
-      <canvas id="sketch" width="1200" height="700"></canvas>
-      <div class="btnrow" style="margin-top:10px;">
-        <button type="button" id="clearSketch">Clear Sketch</button>
-        
-      </div>
+     <!-- ===================================================== -->
+<!-- SHARED: SKETCH + PHOTOS + SUBMIT (ALL PAGES)           -->
+<!-- ===================================================== -->
+<section id="sectionSketchPhotos">
+  <h4 style="margin:14px 0 6px;">Sketch</h4>
+  <canvas id="sketch" width="1200" height="700"></canvas>
 
-      <h4 style="margin:14px 0 6px;">Photos (max 5)</h4>
-      <input id="photos" type="file" accept="image/*" multiple data-photos/>
+  <div class="btnrow" style="margin-top:10px;">
+    <button type="button" id="clearSketch">Clear Sketch</button>
+  </div>
 
-      <div class="btnrow" style="margin-top:12px;">
-        <!--button type="button" id="queueForSync">Queue for Sync</button-->
-        <!--button type="button" id="saveDraft">Save Draft</button-->
-        <button type="submit">Submit Now (if online)</button>
-      </div>
+  <h4 style="margin:14px 0 6px;">Photos (max 5)</h4>
+  <input id="photos" type="file" accept="image/*" multiple data-photos/>
 
+  <div class="btnrow" style="margin-top:12px;">
+    <button type="submit">Submit Now (if online)</button>
+  </div>
+
+  <div class="small" id="formMeta"></div>
+</section>
+
+      
       <div class="small" id="formMeta"></div>
     </form>
 
@@ -561,6 +564,7 @@
   <script type="module" src="./app.js?v=2026-02-22-1"></script>
 </body>
 </html>
+
 
 
 
