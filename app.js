@@ -62,6 +62,112 @@ const sectionLeakRepair = document.getElementById("sectionLeakRepair");
 const sectionMains = document.getElementById("sectionMains");
 const sectionRetirement = document.getElementById("sectionRetirement");
 const sectionServices = document.getElementById("sectionServices");
+const sectionHourlyRate = document.getElementById("sectionHourlyRate");
+
+const hourlyLaborBody = document.getElementById("hourlyLaborBody");
+const hourlyEquipmentBody = document.getElementById("hourlyEquipmentBody");
+const addHourlyLaborRowBtn = document.getElementById("addHourlyLaborRowBtn");
+
+const EQUIPMENT_LIST = [
+  "Hoe Ram w/ Backhoe",
+  "Power Tools (Pump, Saw, ECT.)",
+  "Backhoe",
+  "Skid Steer Loader",
+  "Dump Truck & Trailer",
+  "Service Truck (Pickup)",
+  "Welding Rig",
+  "Trencher greater 90 hp",
+  "Air compressor w/ accessories"
+];
+
+function num(v) {
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
+}
+
+function addHourlyLaborRow(data = {}) {
+  if (!hourlyLaborBody) return;
+
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input type="text" class="hr-labor-name" value="${data.name || ""}"></td>
+    <td><input type="number" class="hr-labor-hours" step="0.01" value="${data.hours || ""}"></td>
+    <td><input type="number" class="hr-labor-rate" step="0.01" value="${data.rate || ""}"></td>
+    <td><input type="number" class="hr-labor-total" step="0.01" value="${data.total || ""}" readonly></td>
+    <td><button type="button" class="remove-hourly-labor-row">X</button></td>
+  `;
+
+  hourlyLaborBody.appendChild(tr);
+
+  tr.querySelector(".hr-labor-hours")?.addEventListener("input", recalcHourlyRateForm);
+  tr.querySelector(".hr-labor-rate")?.addEventListener("input", recalcHourlyRateForm);
+  tr.querySelector(".remove-hourly-labor-row")?.addEventListener("click", () => {
+    tr.remove();
+    recalcHourlyRateForm();
+  });
+
+  recalcHourlyRateForm();
+}
+
+function buildHourlyEquipmentRows(savedRows = []) {
+  if (!hourlyEquipmentBody) return;
+  hourlyEquipmentBody.innerHTML = "";
+
+  EQUIPMENT_LIST.forEach((item) => {
+    const match = savedRows.find(r => (r.name || "") === item) || {};
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" class="hr-equip-name" value="${item}" readonly></td>
+      <td><input type="number" class="hr-equip-hours" step="0.01" value="${match.hours || ""}"></td>
+      <td><input type="number" class="hr-equip-rate" step="0.01" value="${match.rate || ""}"></td>
+      <td><input type="number" class="hr-equip-total" step="0.01" value="${match.total || ""}" readonly></td>
+    `;
+
+    hourlyEquipmentBody.appendChild(tr);
+
+    tr.querySelector(".hr-equip-hours")?.addEventListener("input", recalcHourlyRateForm);
+    tr.querySelector(".hr-equip-rate")?.addEventListener("input", recalcHourlyRateForm);
+  });
+
+  recalcHourlyRateForm();
+}
+
+function recalcHourlyRateForm() {
+  let totalLabor = 0;
+  let totalEquipment = 0;
+
+  document.querySelectorAll("#hourlyLaborBody tr").forEach((tr) => {
+    const hours = num(tr.querySelector(".hr-labor-hours")?.value);
+    const rate = num(tr.querySelector(".hr-labor-rate")?.value);
+    const total = hours * rate;
+    const totalEl = tr.querySelector(".hr-labor-total");
+    if (totalEl) totalEl.value = total ? total.toFixed(2) : "";
+    totalLabor += total;
+  });
+
+  document.querySelectorAll("#hourlyEquipmentBody tr").forEach((tr) => {
+    const hours = num(tr.querySelector(".hr-equip-hours")?.value);
+    const rate = num(tr.querySelector(".hr-equip-rate")?.value);
+    const total = hours * rate;
+    const totalEl = tr.querySelector(".hr-equip-total");
+    if (totalEl) totalEl.value = total ? total.toFixed(2) : "";
+    totalEquipment += total;
+  });
+
+  const totalLaborEl = document.getElementById("hr_totalLabor");
+  const totalEquipmentEl = document.getElementById("hr_totalEquipment");
+  const grandTotalEl = document.getElementById("hr_grandTotal");
+
+  if (totalLaborEl) totalLaborEl.value = totalLabor ? totalLabor.toFixed(2) : "";
+  if (totalEquipmentEl) totalEquipmentEl.value = totalEquipment ? totalEquipment.toFixed(2) : "";
+  if (grandTotalEl) grandTotalEl.value = (totalLabor + totalEquipment) ? (totalLabor + totalEquipment).toFixed(2) : "";
+}
+
+addHourlyLaborRowBtn?.addEventListener("click", () => addHourlyLaborRow());
+
+buildHourlyEquipmentRows();
+addHourlyLaborRow();
 
 /* =========================
    NEW FORM BUTTON
@@ -198,6 +304,7 @@ function updatePageSections() {
   if (sectionMains) sectionMains.style.display = pt === "Mains" ? "block" : "none";
   if (sectionRetirement) sectionRetirement.style.display = pt === "Retirement" ? "block" : "none";
   if (sectionServices) sectionServices.style.display = pt === "Services" ? "block" : "none";
+  if (sectionHourlyRate) sectionHourlyRate.style.display = pt === "MTNG Hourly Rate Report" ? "block" : "none";
 }
 
 pageTypeEl?.addEventListener("change", updatePageSections);
@@ -1209,37 +1316,67 @@ let createdAtLocked = null;
 // If you load an existing payload elsewhere, set createdAtLocked from it.
 // But even if you don't, this will still behave well.
 
+function collectHourlyRateReport() {
+  const laborRows = Array.from(document.querySelectorAll("#hourlyLaborBody tr")).map((tr) => ({
+    name: tr.querySelector(".hr-labor-name")?.value?.trim() || "",
+    hours: tr.querySelector(".hr-labor-hours")?.value || "",
+    rate: tr.querySelector(".hr-labor-rate")?.value || "",
+    total: tr.querySelector(".hr-labor-total")?.value || ""
+  })).filter(r => r.name || r.hours || r.rate || r.total);
+
+  const equipmentRows = Array.from(document.querySelectorAll("#hourlyEquipmentBody tr")).map((tr) => ({
+    name: tr.querySelector(".hr-equip-name")?.value?.trim() || "",
+    hours: tr.querySelector(".hr-equip-hours")?.value || "",
+    rate: tr.querySelector(".hr-equip-rate")?.value || "",
+    total: tr.querySelector(".hr-equip-total")?.value || ""
+  })).filter(r => r.hours || r.rate || r.total);
+
+  return {
+    contractorName: document.getElementById("hr_contractorName")?.value?.trim() || "Walker Construction",
+    mtngAcceptedDate: document.getElementById("hr_mtngAcceptedDate")?.value || "",
+    timeStarted: document.getElementById("hr_timeStarted")?.value || "",
+    completed: document.getElementById("hr_completed")?.value || "",
+    workPerformed: document.getElementById("hr_workPerformed")?.value?.trim() || "",
+    totalLabor: document.getElementById("hr_totalLabor")?.value || "",
+    totalEquipment: document.getElementById("hr_totalEquipment")?.value || "",
+    grandTotal: document.getElementById("hr_grandTotal")?.value || "",
+    laborRows,
+    equipmentRows
+  };
+}
+
+
 // =====================================================
 // buildPayload (DROP-IN REPLACEMENT)
 // =====================================================
 async function buildPayload() {
   const deviceId = getDeviceId();
 
-  // IMPORTANT: gather from a root that includes all inputs
-  //const root = document.getElementById("app") || document;
-   const getF = (label) => fields[normKey(label)];
+  const getF = (label) => fields[normKey(label)];
   let fields = gatherFieldsNormalized();
-   console.log("FIELD CHECK:", {
-  pipeCondition: getF("Pipe Condition"),
-  odor: getF("Odor Readily Detectable"),
-  typeOfTap: getF("Type of Tap"),
-  foreman: getF("Foreman"),
-  fusion: getF("Fusion Tech"),
-  steel: getF("Steel Welder"),
-  hours: getF("Contract Labor Hours"),
-  dateCompleted: getF("Date Completed"),
-  mtng: getF("MTNG On-Site Personnel"),
-  acceptedBy: getF("Accepted By"),
-});
-   let repeaters = gatherRepeaters();
-   
-   if (mode === "edit") {
-     // ✅ Keep anything not present / not captured in the current form
-     fields = { ..._loadedFieldsBaseline, ...fields };
-   
-     // If repeaters sometimes go missing, preserve those too
-     repeaters = { ..._loadedRepeatersBaseline, ...repeaters };
-   }
+
+  console.log("FIELD CHECK:", {
+    pipeCondition: getF("Pipe Condition"),
+    odor: getF("Odor Readily Detectable"),
+    typeOfTap: getF("Type of Tap"),
+    foreman: getF("Foreman"),
+    fusion: getF("Fusion Tech"),
+    steel: getF("Steel Welder"),
+    hours: getF("Contract Labor Hours"),
+    dateCompleted: getF("Date Completed"),
+    mtng: getF("MTNG On-Site Personnel"),
+    acceptedBy: getF("Accepted By"),
+  });
+
+  let repeaters = gatherRepeaters();
+
+  if (mode === "edit") {
+    // Keep anything not present / not captured in the current form
+    fields = { ..._loadedFieldsBaseline, ...fields };
+
+    // Preserve repeaters if current form doesn't capture them
+    repeaters = { ..._loadedRepeatersBaseline, ...repeaters };
+  }
 
   // Preserve createdAt on edit; always set updatedAt
   const createdAt =
@@ -1260,32 +1397,34 @@ async function buildPayload() {
   }
 
   // Sketch
-      let sketch = null;
-      
-      if (canvas && sketchDirty) {
-        // user drew OR cleared -> store current canvas
-        sketch = {
-          filename: `sketch_${currentId}.png`,
-          dataUrl: canvas.toDataURL("image/png"),
-        };
-      } else if (existingSketch?.dataUrl) {
-        // editing but sketch unchanged -> keep existing sketch
-        sketch = existingSketch;
-      } else {
-        sketch = null;
-      }
+  let sketch = null;
 
-   console.log("SKETCH DEBUG:", {
-  canvas: !!canvas,
-  sketchDirty,
-  existingSketch: !!existingSketch,
-  sketchHasDataUrl: !!(sketch && sketch.dataUrl),
-  sketchDataUrlLen: sketch?.dataUrl?.length || 0
-});
+  if (canvas && sketchDirty) {
+    // user drew OR cleared -> store current canvas
+    sketch = {
+      filename: `sketch_${currentId}.png`,
+      dataUrl: canvas.toDataURL("image/png"),
+    };
+  } else if (existingSketch?.dataUrl) {
+    // editing but sketch unchanged -> keep existing sketch
+    sketch = existingSketch;
+  } else {
+    sketch = null;
+  }
+
+  console.log("SKETCH DEBUG:", {
+    canvas: !!canvas,
+    sketchDirty,
+    existingSketch: !!existingSketch,
+    sketchHasDataUrl: !!(sketch && sketch.dataUrl),
+    sketchDataUrlLen: sketch?.dataUrl?.length || 0
+  });
+
+  const pageType = pageTypeEl?.value || "Leak Repair";
 
   const payload = normalizePayload({
     submissionId: currentId,
-    pageType: pageTypeEl?.value || "Leak Repair",
+    pageType,
     deviceId,
     createdAt,
     updatedAt,
@@ -1296,6 +1435,11 @@ async function buildPayload() {
     mode,
     editId
   });
+
+  // Add Hourly Rate Report details only for that form
+  if (pageType === "MTNG Hourly Rate Report") {
+    payload.hourlyRateReport = collectHourlyRateReport();
+  }
 
   // Safety guard: prevent accidental "edit becomes new"
   if (mode === "edit" && editId && payload.submissionId !== editId) {
@@ -1679,6 +1823,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
