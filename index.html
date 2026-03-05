@@ -25,11 +25,17 @@
     h3,h4 { margin: 0 0 8px; }
    .right-half {width: 50%; margin-left: auto;}
     .hourly-summary { width: 24%; margin-left: auto; margin-top: 10px; display: grid; grid-template-columns: 1fr; gap: 10px;}
-
-.hourly-summary input {
-  width: 100%;
-  box-sizing: border-box;
-}
+    #hourlyEquipmentTable {width: 100%;table-layout: fixed;}
+    #hourlyEquipmentTable th:nth-child(1),
+    #hourlyEquipmentTable td:nth-child(1) {width: 52%;}
+    #hourlyEquipmentTable th:nth-child(2),
+    #hourlyEquipmentTable td:nth-child(2),
+    #hourlyEquipmentTable th:nth-child(3),
+    #hourlyEquipmentTable td:nth-child(3),
+    #hourlyEquipmentTable th:nth-child(4),
+    #hourlyEquipmentTable td:nth-child(4) {width: 16%;}
+    #hourlyEquipmentTable input {width: 100%; box-sizing: border-box;}
+    .hourly-summary input {width: 100%; box-sizing: border-box;}
     
   </style>
 </head>
@@ -578,6 +584,7 @@
   <script type="module" src="./app.js?v=2026-02-22-1"></script>
 </body>
 </html>
+
 
 
 
