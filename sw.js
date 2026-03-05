@@ -1,6 +1,6 @@
 /* sw.js — MTNG Field Forms */
 
-const CACHE_NAME = "mtng-v2026-03-5-1";
+const CACHE_NAME = "mtng-v2026-03-05-1";
 
 // Cache-bust JS by including version query in precache list.
 // Make sure index.html uses the same versioned URL:
@@ -74,6 +74,7 @@ self.addEventListener("fetch", (event) => {
     }
   })());
 });
+
 
 
 
