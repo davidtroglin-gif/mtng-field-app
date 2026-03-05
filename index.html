@@ -36,6 +36,7 @@
           <option value="Mains">Mains</option>
           <option value="Retirement">Retirement</option>
           <option value="Services">Services</option>
+          <option value="MTNG Hourly Rate Report">MTNG Hourly Rate Report</option>
         </select>
       </div>
       <!--div>
@@ -446,6 +447,89 @@
         <input name="Accepted By" />
       </section>
 
+       <!-- ===================================================== -->
+      <!-- PAGE 5: HOURLY RATE REPORT                             -->
+      <!-- ===================================================== -->
+      <section id="sectionHourlyRate" style="display:none;">
+  <h2>MTNG Hourly Rate Report</h2>
+
+  <div class="grid two">
+    <div>
+      <label>Contractor Name</label>
+      <input type="text" id="hr_contractorName" value="Walker Construction" />
+    </div>
+    <div>
+      <label>MTNG Accepted Date</label>
+      <input type="date" id="hr_mtngAcceptedDate" />
+    </div>
+  </div>
+
+  <div class="grid two">
+    <div>
+      <label>Time Started</label>
+      <input type="time" id="hr_timeStarted" />
+    </div>
+    <div>
+      <label>Completed</label>
+      <input type="time" id="hr_completed" />
+    </div>
+  </div>
+
+  <h3>Labor</h3>
+  <table class="repeat-table" id="hourlyLaborTable">
+    <thead>
+      <tr>
+        <th>Labor / Name</th>
+        <th>Hours</th>
+        <th>$ / Hour</th>
+        <th>$ Total</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="hourlyLaborBody"></tbody>
+  </table>
+
+  <button type="button" id="addHourlyLaborRowBtn">+ Add Labor Row</button>
+
+  <div class="grid one" style="margin-top:10px;">
+    <div>
+      <label>Total Labor</label>
+      <input type="number" id="hr_totalLabor" step="0.01" readonly />
+    </div>
+  </div>
+
+  <h3>Equipment Used</h3>
+  <table class="repeat-table" id="hourlyEquipmentTable">
+    <thead>
+      <tr>
+        <th>Equipment</th>
+        <th>Hours</th>
+        <th>$ / Hour</th>
+        <th>$ Total</th>
+      </tr>
+    </thead>
+    <tbody id="hourlyEquipmentBody"></tbody>
+  </table>
+
+  <div class="grid two" style="margin-top:10px;">
+    <div>
+      <label>Total Equipment</label>
+      <input type="number" id="hr_totalEquipment" step="0.01" readonly />
+    </div>
+    <div>
+      <label>Total Labor / Equipment</label>
+      <input type="number" id="hr_grandTotal" step="0.01" readonly />
+    </div>
+  </div>
+
+  <div class="grid one">
+    <div>
+      <label>Work Performed</label>
+      <textarea id="hr_workPerformed" rows="5"></textarea>
+    </div>
+  </div>
+</section>
+
       <!-- ===================================================== -->
       <!-- SHARED: SKETCH + PHOTOS + SUBMIT (ALL PAGES)           -->
       <!-- ===================================================== -->
@@ -477,6 +561,7 @@
   <script type="module" src="./app.js?v=2026-02-22-1"></script>
 </body>
 </html>
+
 
 
 
