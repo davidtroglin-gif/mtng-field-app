@@ -311,6 +311,13 @@ function updatePageSections() {
 
   // Hide customer section for hourly report
   if (sectionCustomer) sectionCustomer.style.display = isHourlyRate ? "none" : "block";
+
+   
+   console.log("PAGE TYPE:", pt);
+   console.log("isHourlyRate:", isHourlyRate);
+   console.log("sectionCustomer found:", !!sectionCustomer);
+   console.log("sectionCustomer display:", sectionCustomer?.style.display);
+   
 }
 
 pageTypeEl?.addEventListener("change", updatePageSections);
@@ -1829,6 +1836,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
