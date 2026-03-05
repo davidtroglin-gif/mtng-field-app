@@ -64,6 +64,7 @@ const sectionRetirement = document.getElementById("sectionRetirement");
 const sectionServices = document.getElementById("sectionServices");
 const sectionCustomer = document.getElementById("sectionCustomer");
 const sectionHourlyRate = document.getElementById("sectionHourlyRate");
+const sectionSketchPhotos = document.getElementById("sectionSketchPhotos");
 
 const hourlyLaborBody = document.getElementById("hourlyLaborBody");
 const hourlyEquipmentBody = document.getElementById("hourlyEquipmentBody");
@@ -298,7 +299,6 @@ function newSubmissionId() {
 function updatePageSections() {
   const pt = pageTypeEl?.value || "Leak Repair";
 
-  // ✅ update the label anytime page type changes
   updateJobNumberLabel(pt);
 
   if (sectionLeakRepair) sectionLeakRepair.style.display = pt === "Leak Repair" ? "block" : "none";
@@ -307,17 +307,11 @@ function updatePageSections() {
   if (sectionServices) sectionServices.style.display = pt === "Services" ? "block" : "none";
   if (sectionHourlyRate) sectionHourlyRate.style.display = pt === "MTNG Hourly Rate Report" ? "block" : "none";
 
-   const isHourlyRate = pt === "MTNG Hourly Rate Report";
+  const isHourlyRate = pt === "MTNG Hourly Rate Report";
 
-  // Hide customer section for hourly report
+  // Hide shared sections for hourly report
   if (sectionCustomer) sectionCustomer.style.display = isHourlyRate ? "none" : "block";
-
-   
-   console.log("PAGE TYPE:", pt);
-   console.log("isHourlyRate:", isHourlyRate);
-   console.log("sectionCustomer found:", !!sectionCustomer);
-   console.log("sectionCustomer display:", sectionCustomer?.style.display);
-   
+  if (sectionSketchPhotos) sectionSketchPhotos.style.display = isHourlyRate ? "none" : "block";
 }
 
 pageTypeEl?.addEventListener("change", updatePageSections);
@@ -1836,6 +1830,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
