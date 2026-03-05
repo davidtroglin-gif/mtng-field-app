@@ -120,7 +120,7 @@ function buildHourlyEquipmentRows(savedRows = []) {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><input type="text" class="hr-equip-name" value="${item}" readonly style="font-size:8px"></td>
+      <td><input type="text" class="hr-equip-name" value="${item}" readonly style="font-size:12px"></td>
       <td><input type="number" class="hr-equip-hours" step="0.01" value="${match.hours || ""}"></td>
       <td><input type="number" class="hr-equip-rate" step="0.01" value="${match.rate || ""}"></td>
       <td><input type="number" class="hr-equip-total" step="0.01" value="${match.total || ""}" readonly></td>
@@ -1830,6 +1830,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
