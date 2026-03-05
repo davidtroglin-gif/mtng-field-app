@@ -41,6 +41,7 @@ window.mtngDebug = {
 
 let _loadedFieldsBaseline = {};
 let _loadedRepeatersBaseline = {};
+let _loadedHourlyRateBaseline = {};
 
 
 
@@ -1132,6 +1133,7 @@ async function loadForEdit(submissionId) {
     const p = json.payload || {};
     const fields = p.fields || {};
     const repeaters = p.repeaters || {};
+    const hourlyRateReport = p.hourlyRateReport || {};
 
     // ---- SET EDIT MODE + PRESERVE ORIGINAL CREATED TIME ----
     createdAtLocked = p.createdAt || null;
@@ -1153,54 +1155,59 @@ async function loadForEdit(submissionId) {
     }
 
     // ---- SKETCH ----
-   // ---- SKETCH ----
-existingSketch = p.sketch || null;
-sketchDirty = false;
+    existingSketch = p.sketch || null;
+    sketchDirty = false;
 
-const sketchUrl = p.media?.sketchUrl || "";
-console.log("EDIT SKETCH:", {
-  hasEmbeddedDataUrl: !!existingSketch?.dataUrl,
-  sketchUrl,
-});
+    const sketchUrl = p.media?.sketchUrl || "";
+    console.log("EDIT SKETCH:", {
+      hasEmbeddedDataUrl: !!existingSketch?.dataUrl,
+      sketchUrl,
+    });
 
-if (existingSketch?.dataUrl) {
-  await drawDataUrlToCanvas_(existingSketch.dataUrl);
-  console.log("✅ drew embedded sketch dataUrl");
-} else if (sketchUrl) {
-  const dataUrl = await urlToDataUrlClient_(sketchUrl);
-  console.log("FETCHED SKETCH dataUrl len:", dataUrl ? dataUrl.length : 0);
+    if (existingSketch?.dataUrl) {
+      await drawDataUrlToCanvas_(existingSketch.dataUrl);
+      console.log("✅ drew embedded sketch dataUrl");
+    } else if (sketchUrl) {
+      const dataUrl = await urlToDataUrlClient_(sketchUrl);
+      console.log("FETCHED SKETCH dataUrl len:", dataUrl ? dataUrl.length : 0);
 
-  if (dataUrl) {
-    existingSketch = {
-      filename: existingSketch?.filename || `sketch_${submissionId}.png`,
-      dataUrl,
-    };
-    await drawDataUrlToCanvas_(dataUrl);
-    console.log("✅ drew sketch from media.sketchUrl");
-  } else {
-    console.warn("⚠️ sketchUrl fetch returned empty dataUrl");
-  }
-} else {
-  console.warn("⚠️ no sketch found (no embedded dataUrl, no media.sketchUrl)");
-}
+      if (dataUrl) {
+        existingSketch = {
+          filename: existingSketch?.filename || `sketch_${submissionId}.png`,
+          dataUrl,
+        };
+        await drawDataUrlToCanvas_(dataUrl);
+        console.log("✅ drew sketch from media.sketchUrl");
+      } else {
+        console.warn("⚠️ sketchUrl fetch returned empty dataUrl");
+      }
+    } else {
+      console.warn("⚠️ no sketch found (no embedded dataUrl, no media.sketchUrl)");
+    }
 
     // ---- REPEATERS ----
     populateRepeatersForPage(pt, repeaters);
 
     // ---- FIELDS ----
     populateFieldsSmart_(form, fields);
+
+    // ---- CUSTOM FORM DATA ----
+    if (pt === "MTNG Hourly Rate Report") {
+      loadHourlyRateReport(hourlyRateReport);
+    }
+
     updatePageSections();
 
-     // Preserve original values so missing inputs on the form can't wipe data on save
-      _loadedFieldsBaseline = { ...(fields || {}) };
-      _loadedRepeatersBaseline = JSON.parse(JSON.stringify(repeaters || {})); // deep copy
+    // Preserve original values so missing inputs on the form can't wipe data on save
+    _loadedFieldsBaseline = { ...(fields || {}) };
+    _loadedRepeatersBaseline = JSON.parse(JSON.stringify(repeaters || {})); // deep copy
+    _loadedHourlyRateBaseline = JSON.parse(JSON.stringify(hourlyRateReport || {})); // deep copy
 
     // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
-    //if (submitBtn) submitBtn.textContent = "Update Submission";
+    // if (submitBtn) submitBtn.textContent = "Update Submission";
     if (submitBtn) submitBtn.disabled = true;
 
-    // ---- FINALLY BLOCK ----
     try {
       setStatus("Edit mode ready ✅");
       console.log("✅ Edit load complete for", submissionId);
@@ -1208,16 +1215,16 @@ if (existingSketch?.dataUrl) {
       console.error(err);
       setStatus("Edit load failed: " + (err?.message || err));
     } finally {
-        editReady = true;
+      editReady = true;
       _editLoading = false;
       if (submitBtn) submitBtn.disabled = false;
     }
   } catch (err) {
     console.error(err);
-    setStatus("Error: " + err.message);
+    setStatus("Error: " + (err?.message || err));
+    _editLoading = false;
   }
 }
-
 // =====================================================
 // Photos compression
 // =====================================================
@@ -1830,6 +1837,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
