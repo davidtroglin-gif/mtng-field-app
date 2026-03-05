@@ -23,9 +23,7 @@
     .btnrow button { flex:1; }
     .small { font-size: 12px; color:#666; }
     h3,h4 { margin: 0 0 8px; }
-    #hr_grandTotal {width: 50%;}
-    #hr_totalEquipment {width: 50%;}
-    .grid two { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top:8px; }
+   .right-half {width: 50%; margin-left: auto;}
     
   </style>
 </head>
@@ -511,18 +509,18 @@
     <tbody id="hourlyEquipmentBody"></tbody>
   </table>
 
+  <div class="right-half">
   <div class="grid two" style="margin-top:10px;">
-    <div class="grid two">
-      <div style="visibility:hidden;"><label></label></div>
+    <div>
       <label>Total Equipment 2</label>
       <input type="number" id="hr_totalEquipment" step="0.01" readonly />
     </div>
     <div>
-      <div style="display:none;"><label></label></div>
       <label>Total Labor / Equipment 2</label>
       <input type="number" id="hr_grandTotal" step="0.01" readonly />
     </div>
   </div>
+</div>
 
   <div class="grid one">
     <div>
@@ -573,6 +571,7 @@
   <script type="module" src="./app.js?v=2026-02-22-1"></script>
 </body>
 </html>
+
 
 
 
