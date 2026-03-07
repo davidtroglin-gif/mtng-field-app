@@ -89,7 +89,7 @@
   <div class="modalCard">
     <div class="modalHead">
       <div class="modalTitle" id="noteModalTitle">Notes</div>
-      <button id="noteModalClose" type="button" style="width:auto;">Close</button>
+      < id="noteModalClose" type="" style="width:auto;">Close</>
     </div>
 
     <div class="modalBody">
@@ -97,8 +97,8 @@
     </div>
 
     <div class="modalBtns">
-      <button id="noteModalEdit" type="button">Edit</button>
-      <button id="noteModalSave" type="button" disabled>Save</button>
+      < id="noteModalEdit" type="">Edit</>
+      < id="noteModalSave" type="" disabled>Save</>
     </div>
 
     <div class="small" id="noteModalMeta" style="margin-top:8px;"></div>
@@ -130,7 +130,7 @@
          </div>
        <div>
           <label>Actions</label>
-          <button id="refresh" type="button">Refresh</button>
+          < id="refresh" type="">Refresh</>
         </div>
        </div>
       </div>
@@ -173,7 +173,7 @@
           <button id="openPrint" type="button">Open Print</button>
           <button id="markPrinted" type="button">Printed</button>
           <button id="markSubmitted" type="button">Submitted</button>
-          <button id="addNote" type="button">Add Note</button>
+          <button id="addNote" type="button">addNote</button>
           <button id="closeDetail" type="button">Close</button>
         </div>
       </div>
@@ -517,10 +517,7 @@ const printBtn = `
 `;
 
 const notesBtn = `
-  <button type="button" class="noteIconBtn" data-note-id="${attrEscape(id)}"
-    title="${hasNote ? "View / Edit note" : "Add note"}">
-    ${hasNote ? "📝" : "➕"}
-  </button>
+  <button class="btn success" onclick="markComplete('${item.submissionId}')">✓</button>
 `;
 
 const delBtn = `
