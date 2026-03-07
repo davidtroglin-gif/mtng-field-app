@@ -85,25 +85,7 @@
      <a id="backToFieldApp" href="#" class="small" style="float:right">← Back to Field App</a>
      
   </header>
-  <div id="noteModalBack" class="modalBack">
-  <div class="modalCard">
-    <div class="modalHead">
-      <div class="modalTitle" id="noteModalTitle">Notes</div>
-      < id="noteModalClose" type="" style="width:auto;">Close</>
-    </div>
-
-    <div class="modalBody">
-      <textarea id="noteModalText" placeholder="No notes yet…" disabled></textarea>
-    </div>
-
-    <div class="modalBtns">
-      < id="noteModalEdit" type="">Edit</>
-      < id="noteModalSave" type="" disabled>Save</>
-    </div>
-
-    <div class="small" id="noteModalMeta" style="margin-top:8px;"></div>
-  </div>
-</div>
+  
   <main>
     <div class="card">
       <div class="row">
@@ -130,7 +112,7 @@
          </div>
        <div>
           <label>Actions</label>
-          < id="refresh" type="">Refresh</>
+          <button id="refresh" type="button">Refresh</button>
         </div>
        </div>
       </div>
@@ -154,7 +136,7 @@
               <th>SubmissionId</th>
               <th>Edit</th>
               <th>Print</th>
-              <th>Notes</th>
+              <th>Complete</th>
               <th></th>
             </tr>
           </thead>
@@ -416,99 +398,14 @@ function requireKey() {
   return hay.includes(q);
 }
 
-    // ---- Notes Modal ----
-const noteModalBack  = document.getElementById("noteModalBack");
-const noteModalClose = document.getElementById("noteModalClose");
-const noteModalTitle = document.getElementById("noteModalTitle");
-const noteModalText  = document.getElementById("noteModalText");
-const noteModalEdit  = document.getElementById("noteModalEdit");
-const noteModalSave  = document.getElementById("noteModalSave");
-const noteModalMeta  = document.getElementById("noteModalMeta");
+async function markComplete(submissionId) {
+  if (!requireKey()) throw new Error("Missing owner key");
 
-let noteModalId = "";
-let noteModalEditing = false;
+  const url = apiUrl("set_status");
+  url.searchParams.set("id", submissionId);
+  url.searchParams.set("status", "Completed");
 
-function openNoteModal(submissionId){
-  noteModalId = submissionId;
-  noteModalEditing = false;
-
-  const it = items.find(x => String(x.submissionId) === String(submissionId));
-  const note = (it?.notes ?? "").toString();
-
-  noteModalTitle.textContent = `Notes — ${submissionId}`;
-  noteModalText.value = note;
-
-  // view mode defaults
-  noteModalText.disabled = true;
-  noteModalEdit.disabled = false;
-  noteModalSave.disabled = true;
-
-  noteModalMeta.textContent = it
-    ? `Customer: ${it.customerName || ""} • Page: ${it.pageType || ""} • Synced: ${fmtDate(it.syncedAt)}`
-    : "";
-
-  // show modal
-  noteModalBack.style.display = "flex";
-
-  // helpful on tablet: scroll textarea into view
-  setTimeout(() => noteModalText.scrollIntoView({ block: "nearest" }), 0);
-}
-
- noteModalSave.addEventListener("click", async () => {
-  if (!noteModalId) return;
-  try {
-    setStatus("Saving note…");
-    await ownerPost("note", noteModalId, { note: noteModalText.value });
-
-    const it = items.find(x => String(x.submissionId) === String(noteModalId));
-    if (it) it.notes = noteModalText.value;
-
-    await fetchList();
-
-    setStatus("Note saved ✅");
-    closeNoteModal(true);
-  } catch (e) {
-    setStatus("Error: " + e.message);
-  }
-});
-
-
-function closeNoteModal(force = false){
-  // if editing, avoid accidental close unless force
-  if (!force && noteModalEditing) {
-    const ok = confirm("You’re editing this note. Close without saving?");
-    if (!ok) return;
-  }
-  noteModalBack.style.display = "none";
-  noteModalId = "";
-  noteModalEditing = false;
-}
-
-noteModalClose.addEventListener("click", () => closeNoteModal());
-noteModalBack.addEventListener("click", (e) => {
-  if (e.target === noteModalBack) closeNoteModal(); // click backdrop closes (with confirm if editing)
-});
-window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && noteModalBack.style.display === "flex") closeNoteModal();
-});
-
-
-noteModalEdit.addEventListener("click", () => {
-  noteModalEditing = true;
-  noteModalText.disabled = false;
-  noteModalText.focus();
-
-  noteModalEdit.disabled = true;
-  noteModalSave.disabled = false;
-});
-
-    async function markComplete(submissionId) {
-  const result = await apiGet({
-    action: "set_status",
-    id: submissionId,
-    status: "Completed",
-    ownerKey: key
-  });
+  const result = await fetchJsonOrThrow(url, { cache: "no-store" });
 
   if (!result?.ok) {
     throw new Error(result?.error || "Failed to mark complete");
@@ -639,16 +536,7 @@ if (completeBtn) {
   return;
 }
 
-  // NOTES (use your modal)
-  const noteBtn = e.target.closest("[data-note-id]");
-  if (noteBtn) {
-    e.preventDefault();
-    const sid = noteBtn.getAttribute("data-note-id");
-    openNoteModal(sid);
-    return;
-  }
-
-  // DELETE
+   // DELETE
   const trashBtn = e.target.closest("[data-trash-id]");
   if (trashBtn) {
     e.preventDefault();
