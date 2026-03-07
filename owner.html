@@ -379,10 +379,6 @@ function requireKey() {
 
       setStatus("Loading list…");
 
-     /* const url = new URL(API_URL);
-      url.searchParams.set("action", "list");
-      url.searchParams.set("key", key);
-      url.searchParams.set("_", Date.now().toString()); // cache-bust*/
       if (!requireKey()) return;
       const url = apiUrl("list");
 
@@ -401,7 +397,13 @@ function requireKey() {
   const q = (qEl.value || "").trim().toLowerCase();
   const pt = pageTypeEl.value || "";
 
-  if (pt && !samePageType(it.pageType, pt)) return false;
+  if (pt) {
+    if (samePageType(pt, "Completed")) {
+      if (!samePageType(it.status, "Completed")) return false;
+    } else {
+      if (!samePageType(it.pageType, pt)) return false;
+    }
+  }
 
   if (!q) return true;
 
