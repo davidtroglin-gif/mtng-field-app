@@ -102,7 +102,7 @@
             <option value="Retirement">Retirement</option>
             <option value="Services">Services</option>
             <option value="Completed">Completed</option>
-            <!--option value="Deleted"</option-->
+            <option value="Deleted">Deleted</option>
           </select>
         </div>
          <div id="ownerKeyWrap" style="display:none;">
@@ -375,23 +375,25 @@ function requireKey() {
       return String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
     }
 
-   function matchesFilters(it){
+function matchesFilters(it){
   const q = (qEl.value || "").trim().toLowerCase();
   const pt = pageTypeEl.value || "";
 
-  // Filter behavior:
-  // All = exclude completed
-  // Completed = only completed
-  // Other page types = page type match, exclude completed
+  const isCompleted = samePageType(it.status, "Completed");
+  const isDeleted = samePageType(it.status, "Deleted");
+
   if (pt) {
     if (samePageType(pt, "Completed")) {
-      if (!samePageType(it.status, "Completed")) return false;
+      if (!isCompleted) return false;
+    } else if (samePageType(pt, "Deleted")) {
+      if (!isDeleted) return false;
     } else {
       if (!samePageType(it.pageType, pt)) return false;
-      if (samePageType(it.status, "Completed")) return false;
+      if (isCompleted || isDeleted) return false;
     }
   } else {
-    if (samePageType(it.status, "Completed")) return false;
+    // All
+    if (isCompleted || isDeleted) return false;
   }
 
   if (!q) return true;
