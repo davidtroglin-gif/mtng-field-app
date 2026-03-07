@@ -379,12 +379,19 @@ function requireKey() {
   const q = (qEl.value || "").trim().toLowerCase();
   const pt = pageTypeEl.value || "";
 
+  // Filter behavior:
+  // All = exclude completed
+  // Completed = only completed
+  // Other page types = page type match, exclude completed
   if (pt) {
     if (samePageType(pt, "Completed")) {
       if (!samePageType(it.status, "Completed")) return false;
     } else {
       if (!samePageType(it.pageType, pt)) return false;
+      if (samePageType(it.status, "Completed")) return false;
     }
+  } else {
+    if (samePageType(it.status, "Completed")) return false;
   }
 
   if (!q) return true;
