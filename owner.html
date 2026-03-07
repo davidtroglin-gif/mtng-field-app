@@ -500,6 +500,21 @@ noteModalEdit.addEventListener("click", () => {
   noteModalSave.disabled = false;
 });
 
+    async function markComplete(submissionId) {
+  const result = await apiGet({
+    action: "set_status",
+    id: submissionId,
+    status: "Completed",
+    ownerKey: key
+  });
+
+  if (!result?.ok) {
+    throw new Error(result?.error || "Failed to mark complete");
+  }
+
+  return result;
+}
+
    function renderTable() {
   const filtered = items.filter(matchesFilters);
   metaEl.textContent = `Showing: ${filtered.length} of ${items.length}`;
@@ -517,8 +532,9 @@ const printBtn = `
 `;
 
 const notesBtn = `
-  <button class="btn success" onclick="markComplete('${item.submissionId}')">✓</button>
+  <button type="button" class="btn success" data-complete-id="${attrEscape(id)}" title="Mark Complete">✓</button>
 `;
+    
 
 const delBtn = `
   <button type="button" class="icon-btn danger" data-trash-id="${attrEscape(id)}" title="Delete">🗑️</button>
@@ -601,6 +617,25 @@ if (editBtn) {
     if (!w) setStatus("Pop-up blocked. Allow pop-ups for this site to print.");
     return;
   }
+
+  const completeBtn = e.target.closest("[data-complete-id]");
+if (completeBtn) {
+  e.preventDefault();
+  const sid = completeBtn.getAttribute("data-complete-id");
+  if (!sid) return;
+
+  if (!confirm(`Mark this submission as completed?\n\n${sid}`)) return;
+
+  try {
+    setStatus("Marking complete…");
+    await markComplete(sid);
+    await fetchList();
+    setStatus("Marked complete ✅");
+  } catch (err) {
+    setStatus("Error: " + err.message);
+  }
+  return;
+}
 
   // NOTES (use your modal)
   const noteBtn = e.target.closest("[data-note-id]");
