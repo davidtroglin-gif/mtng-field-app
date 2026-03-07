@@ -29,39 +29,7 @@
     .icon-btn.danger { opacity: .75; }
     .icon-btn.danger:hover { opacity: 1; transform: scale(0.98); }
 
-    /* --- Notes modal --- */
-.modalBack {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.35);
-  display: none;
-  align-items: center; justify-content: center;
-  padding: 14px;
-  z-index: 9999;
-}
-.modalCard {
-  width: min(720px, 100%);
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 14px;
-  padding: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.2);
-}
-.modalHead {
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  margin-bottom: 8px;
-}
-.modalTitle { font-weight: 800; }
-.modalBody textarea{
-  width: 100%;
-  min-height: 160px;
-  font-size: 16px;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  box-sizing: border-box;
-}
-.modalBtns { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
-.modalBtns button { flex:1; min-width:140px; }
+    
 .noteIconBtn{
   width:auto;
   padding: 6px 10px;
@@ -145,20 +113,7 @@
       </div>
     </div>
 
-    <div class="card" id="detailCard" style="display:none;">
-      <div class="row" style="align-items:flex-end;">
-        <div>
-          <div style="font-weight:800; font-size:18px;" id="detailTitle">Details</div>
-          <div class="small" id="detailMeta"></div>
-        </div>
-        <div class="btnrow">
-          <button id="openPrint" type="button">Open Print</button>
-          <button id="markPrinted" type="button">Printed</button>
-          <button id="markSubmitted" type="button">Submitted</button>
-          <button id="addNote" type="button">addNote</button>
-          <button id="closeDetail" type="button">Close</button>
-        </div>
-      </div>
+    
 
       <div class="row" style="margin-top:10px;">
         <div class="card" style="margin:0;">
@@ -440,7 +395,7 @@ const printBtn = `
 `;
 
 const notesBtn = `
-  <button type="button" class="btn success" data-complete-id="${attrEscape(id)}" title="Mark Complete">✓</button>
+  <button type="button" class="noteIconBtn" data-complete-id="${attrEscape(id)}" title="Mark Complete">✓</button>
 `;
     
 
