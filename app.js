@@ -330,6 +330,7 @@ function newSubmissionId() {
 // =====================================================
 function updatePageSections() {
   const pt = pageTypeEl?.value || "Leak Repair";
+  const isHourlyRate = pt === "MTNG Hourly Rate Report";
 
   updateJobNumberLabel(pt);
 
@@ -337,11 +338,8 @@ function updatePageSections() {
   if (sectionMains) sectionMains.style.display = pt === "Mains" ? "block" : "none";
   if (sectionRetirement) sectionRetirement.style.display = pt === "Retirement" ? "block" : "none";
   if (sectionServices) sectionServices.style.display = pt === "Services" ? "block" : "none";
-  if (sectionHourlyRate) sectionHourlyRate.style.display = pt === "MTNG Hourly Rate Report" ? "block" : "none";
+  if (sectionHourlyRate) sectionHourlyRate.style.display = isHourlyRate ? "block" : "none";
 
-  const isHourlyRate = pt === "MTNG Hourly Rate Report";
-
-  // Hide shared sections for hourly report
   if (sectionCustomer) sectionCustomer.style.display = isHourlyRate ? "none" : "block";
   if (sectionSketchPhotos) sectionSketchPhotos.style.display = isHourlyRate ? "none" : "block";
 }
@@ -1873,6 +1871,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
