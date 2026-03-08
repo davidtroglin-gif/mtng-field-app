@@ -331,6 +331,7 @@ function newSubmissionId() {
 function updatePageSections() {
   const pt = pageTypeEl?.value || "Leak Repair";
   const isHourlyRate = pt === "MTNG Hourly Rate Report";
+   const sectionSubmit = document.getElementById("sectionSubmit");
 
   updateJobNumberLabel(pt);
 
@@ -1871,6 +1872,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
