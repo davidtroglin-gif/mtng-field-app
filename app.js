@@ -796,8 +796,10 @@ function gatherRepeaters() {
 let existingSketch = null;
 let sketchDirty = false;
 
-function markSketchDirty() { sketchDirty = true; }
-console.log("✅ sketchDirty set TRUE");
+function markSketchDirty() {
+  sketchDirty = true;
+  console.log("✅ sketchDirty set TRUE");
+}
 
 function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields, repeaters, sketch, photos }) {
   return {
@@ -1441,20 +1443,18 @@ async function buildPayload() {
   }
 
   // Sketch
-  let sketch = null;
+ let sketch = null;
 
-  if (canvas && sketchDirty) {
-    // user drew OR cleared -> store current canvas
-    sketch = {
-      filename: `sketch_${currentId}.png`,
-      dataUrl: canvas.toDataURL("image/png"),
-    };
-  } else if (existingSketch?.dataUrl) {
-    // editing but sketch unchanged -> keep existing sketch
-    sketch = existingSketch;
-  } else {
-    sketch = null;
-  }
+if (canvas && sketchDirty) {
+  // only send sketch if user actually changed it
+  sketch = {
+    filename: `sketch_${currentId}.png`,
+    dataUrl: canvas.toDataURL("image/png"),
+  };
+} else {
+  // unchanged sketch: do not resend
+  sketch = null;
+}
 
   console.log("SKETCH DEBUG:", {
     canvas: !!canvas,
@@ -1872,6 +1872,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
