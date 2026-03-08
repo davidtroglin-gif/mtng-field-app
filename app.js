@@ -1643,22 +1643,29 @@ form?.addEventListener("submit", async (e) => {
       msg.includes("TypeError: Failed to fetch");
 
     // ✅ Queue instead of failing (only for "new" submissions unless you want edits queued too)
-    if (isNetworkish) {
-      try {
-        await addToQueue_(navigator.onLine ? "network_error" : "offline");
-        setStatus("Queued ✅ (will sync when online)");
-        alert("No connection — saved to Queue and will sync when online.");
+   if (isNetworkish) {
+  // For EDITS: likely false failure after Apps Script already saved
+  if (!wasNew) {
+    setStatus("Update may have saved — please verify in dashboard.");
+    alert("The update may have already saved. Please verify before trying again.");
+    return;
+  }
 
-        // optional: if it was a new submission, clear the form after queueing
-        if (wasNew) resetToNewForm();
-        return;
-      } catch (qErr) {
-        console.error("Queue failed:", qErr);
-        setStatus("Queue failed: " + (qErr?.message || qErr));
-        alert("Queue failed: " + (qErr?.message || qErr));
-        return;
-      }
-    }
+  // For NEW submissions: queue is still fine
+  try {
+    await addToQueue_(navigator.onLine ? "network_error" : "offline");
+    setStatus("Queued ✅ (will sync when online)");
+    alert("No connection — saved to Queue and will sync when online.");
+
+    if (wasNew) resetToNewForm();
+    return;
+  } catch (qErr) {
+    console.error("Queue failed:", qErr);
+    setStatus("Queue failed: " + (qErr?.message || qErr));
+    alert("Queue failed: " + (qErr?.message || qErr));
+    return;
+  }
+}
 
     // Otherwise: real error
     setStatus("Save failed: " + msg);
@@ -1880,6 +1887,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
