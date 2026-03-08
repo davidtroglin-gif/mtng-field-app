@@ -160,21 +160,6 @@
     const pageTypeEl = document.getElementById("pageType");
     
 
-    const detailCard = document.getElementById("detailCard");
-    const detailTitle = document.getElementById("detailTitle");
-    const detailMeta = document.getElementById("detailMeta");
-    const kv = document.getElementById("kv");
-    const rep = document.getElementById("rep");
-    const raw = document.getElementById("raw");
-    const openPrintBtn = document.getElementById("openPrint");
-    const closeDetailBtn = document.getElementById("closeDetail");
-
-    const sketchImg = document.getElementById("sketchImg");
-    const sketchLinks = document.getElementById("sketchLinks");
-    const photoLinks = document.getElementById("photoLinks");
-    const photoImgs = document.getElementById("photoImgs");
-
-    //const key = new URLSearchParams(location.search).get("key") || "";
 
    // ===== OWNER KEY + HELPERS =====
 const qs = new URLSearchParams(location.search);
@@ -423,23 +408,7 @@ const delBtn = `
       </tr>
     `;
   }).join("");
-}
-
-    tbody.addEventListener("click", (e) => {
-  const tr = e.target.closest("tr");
-  if (!tr) return;
-
-  // If user clicked a button/icon inside the row, ignore here.
-  // The global document click handler will handle these.
-  if (e.target.closest("[data-edit-id],[data-print-id],[data-note-id],[data-trash-id],button,a")) return;
-
-  const rowId = tr.dataset.id;
-  if (!rowId) return;
-
-  openDetail(rowId);
-});
-
- 
+} 
 
      
 document.addEventListener("click", async (e) => {
@@ -692,7 +661,7 @@ async function openDetail(id) {
 
   
 
-   function getOwnerKey_() {
+  /* function getOwnerKey_() {
   // tries common places in order
   if (typeof ownerKey !== "undefined" && ownerKey) return ownerKey;
   if (typeof OWNER_KEY !== "undefined" && OWNER_KEY) return OWNER_KEY;
@@ -703,14 +672,9 @@ async function openDetail(id) {
 function getOwnerKey_() {
   // Your dashboard URL already has ?key=Walker17
   return new URLSearchParams(window.location.search).get("key") || "";
-}
+}*/
 
     async function deleteSubmission(submissionId) {
-  /*const url = new URL(API_URL);
-  url.searchParams.set("action", "delete");
-  url.searchParams.set("id", submissionId);
-  if (key) url.searchParams.set("key", key);
-  url.searchParams.set("_", Date.now().toString());*/
       if (!requireKey()) return;
     const url = apiUrl("delete");
     url.searchParams.set("id", submissionId);
