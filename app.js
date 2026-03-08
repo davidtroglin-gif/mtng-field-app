@@ -543,7 +543,7 @@ function addMainsMaterialRow(data = {}) {
       <label>ST Pipe Thickness</label><input data-r="mainsMaterials" data-k="ST Pipe Thickness" value="${
         data["ST Pipe Thickness"] || ""
       }">
-      <label>Coating Types</label><input data-r="mainsMaterials" data-k="Coating Types" value="${data["Coating Types"] || ""}">
+      <label>Coating Type</label><input data-r="mainsMaterials" data-k="Coating Type" value="${data["Coating Type"] || ""}">
       <label>Depth (inches)</label><input data-r="mainsMaterials" data-k="Depth (inches)" value="${
         data["Depth (inches)"] || ""
       }">
@@ -601,7 +601,7 @@ function addSvcMaterialRow(data = {}) {
       <label>ST Pipe Thickness</label><input data-r="svcMaterials" data-k="ST Pipe Thickness" value="${
         data["ST Pipe Thickness"] || ""
       }">
-      <label>Coating Types</label><input data-r="svcMaterials" data-k="Coating Types" value="${data["Coating Types"] || ""}">
+      <label>Coating Type</label><input data-r="svcMaterials" data-k="Coating Type" value="${data["Coating Type"] || ""}">
       <label>Depth (inches)</label><input data-r="svcMaterials" data-k="Depth (inches)" value="${
         data["Depth (inches)"] || ""
       }">
@@ -1872,6 +1872,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
