@@ -1208,8 +1208,19 @@ async function loadForEdit(submissionId) {
           filename: existingSketch?.filename || `sketch_${submissionId}.png`,
           dataUrl,
         };
-        await drawDataUrlToCanvas_(dataUrl);
-        console.log("✅ drew sketch from media.sketchUrl");
+         if (dataUrl) {
+        existingSketch = {
+          filename: existingSketch?.filename || `sketch_${submissionId}.png`,
+          dataUrl,
+        };
+
+        try {
+          await drawDataUrlToCanvas_(dataUrl);
+          console.log("✅ drew sketch from media.sketchUrl");
+        } catch (err) {
+          console.error("Sketch draw failed:", err);
+          existingSketch = null;
+        }
       } else {
         console.warn("⚠️ sketchUrl fetch returned empty dataUrl");
       }
@@ -1313,7 +1324,7 @@ async function drawDataUrlToCanvas_(dataUrl) {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       resolve();
     };
-    img.onerror = reject;
+    img.onerror = () => reject(new Error("Sketch image failed to load"));
     img.src = dataUrl;
   });
 }
@@ -1872,6 +1883,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
