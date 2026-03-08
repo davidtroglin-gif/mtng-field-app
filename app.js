@@ -1187,47 +1187,44 @@ async function loadForEdit(submissionId) {
     }
 
     // ---- SKETCH ----
-    existingSketch = p.sketch || null;
-    sketchDirty = false;
+existingSketch = null;
+sketchDirty = false;
 
-    const sketchUrl = p.media?.sketchUrl || "";
-    console.log("EDIT SKETCH:", {
-      hasEmbeddedDataUrl: !!existingSketch?.dataUrl,
-      sketchUrl,
-    });
+try {
+  const sketchUrl = p.media?.sketchUrl || "";
+  console.log("EDIT SKETCH:", {
+    hasEmbeddedDataUrl: !!p.sketch?.dataUrl,
+    sketchUrl,
+  });
 
-    if (existingSketch?.dataUrl) {
-      await drawDataUrlToCanvas_(existingSketch.dataUrl);
-      console.log("✅ drew embedded sketch dataUrl");
-    } else if (sketchUrl) {
-      const dataUrl = await urlToDataUrlClient_(sketchUrl);
-      console.log("FETCHED SKETCH dataUrl len:", dataUrl ? dataUrl.length : 0);
+  if (p.sketch?.dataUrl) {
+    existingSketch = p.sketch;
+    await drawDataUrlToCanvas_(p.sketch.dataUrl);
+    console.log("✅ drew embedded sketch dataUrl");
+  } else if (sketchUrl && /^https?:\/\//i.test(sketchUrl)) {
+    const dataUrl = await urlToDataUrlClient_(sketchUrl);
+    console.log("FETCHED SKETCH dataUrl len:", dataUrl ? dataUrl.length : 0);
 
-      if (dataUrl) {
-        existingSketch = {
-          filename: existingSketch?.filename || `sketch_${submissionId}.png`,
-          dataUrl,
-        };
-         if (dataUrl) {
-        existingSketch = {
-          filename: existingSketch?.filename || `sketch_${submissionId}.png`,
-          dataUrl,
-        };
-
-        try {
-          await drawDataUrlToCanvas_(dataUrl);
-          console.log("✅ drew sketch from media.sketchUrl");
-        } catch (err) {
-          console.error("Sketch draw failed:", err);
-          existingSketch = null;
-        }
-      } else {
-        console.warn("⚠️ sketchUrl fetch returned empty dataUrl");
-      }
+    if (dataUrl) {
+      existingSketch = {
+        filename: p.sketch?.filename || `sketch_${submissionId}.png`,
+        dataUrl,
+      };
+      await drawDataUrlToCanvas_(dataUrl);
+      console.log("✅ drew sketch from media.sketchUrl");
     } else {
-      console.warn("⚠️ no sketch found (no embedded dataUrl, no media.sketchUrl)");
+      console.warn("⚠️ sketchUrl fetch returned empty dataUrl");
     }
-
+  } else if (sketchUrl) {
+    console.warn("⚠️ invalid sketchUrl ignored:", sketchUrl);
+  } else {
+    console.warn("⚠️ no sketch found (no embedded dataUrl, no media.sketchUrl)");
+  }
+} catch (err) {
+  console.error("⚠️ sketch load failed, continuing without sketch:", err);
+  existingSketch = null;
+  if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
     // ---- REPEATERS ----
     populateRepeatersForPage(pt, repeaters);
 
@@ -1883,6 +1880,7 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
 updatePageSections();
 updateNet();
+
 
 
 
