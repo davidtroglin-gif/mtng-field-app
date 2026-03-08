@@ -23,16 +23,12 @@ const ownerKey = params.get("ownerKey") || params.get("key") || "";
 let editReady = false;
 let isSubmitting = false;
 
-
 // MUST be let so "New Form" can clear it
 let editId = (params.get("edit") || "").trim();
 
 // These are used throughout the app to decide insert vs update
 let currentId = editId ? editId : newSubmissionId();
 let mode = editId ? "edit" : "new";
-
-
-
 
 // ===== DEBUG HOOK (module-safe) =====
 window.mtngDebug = {
@@ -42,9 +38,6 @@ window.mtngDebug = {
 let _loadedFieldsBaseline = {};
 let _loadedRepeatersBaseline = {};
 let _loadedHourlyRateBaseline = {};
-
-
-
 
 /* =========================
    UI helpers / DOM
@@ -58,7 +51,7 @@ const form = document.getElementById("form");
 const pageTypeEl = document.getElementById("pageType");
 const listCard = document.getElementById("listCard");
 
-// ---- Section show/hide (4 pages) ----
+// ---- Section show/hide ----
 const sectionLeakRepair = document.getElementById("sectionLeakRepair");
 const sectionMains = document.getElementById("sectionMains");
 const sectionRetirement = document.getElementById("sectionRetirement");
@@ -67,6 +60,7 @@ const sectionCustomer = document.getElementById("sectionCustomer");
 const sectionHourlyRate = document.getElementById("sectionHourlyRate");
 const sectionSketchPhotos = document.getElementById("sectionSketchPhotos");
 
+// ---- Hourly Rate DOM ----
 const hourlyLaborBody = document.getElementById("hourlyLaborBody");
 const hourlyEquipmentBody = document.getElementById("hourlyEquipmentBody");
 const addHourlyLaborRowBtn = document.getElementById("addHourlyLaborRowBtn");
@@ -83,11 +77,94 @@ const EQUIPMENT_LIST = [
   "Air compressor w/ accessories"
 ];
 
+/* =========================
+   Helpers
+   ========================= */
 function num(v) {
   const n = parseFloat(v);
   return isNaN(n) ? 0 : n;
 }
 
+function setStatus(msg) {
+  if (netStatusEl) netStatusEl.textContent = msg;
+}
+
+function debug(msg) {
+  console.log(msg);
+  if (debugEl) debugEl.textContent = msg;
+}
+
+function normKey(k) {
+  return String(k ?? "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normVal(v) {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "boolean") return v;
+  return String(v);
+}
+
+function isCheckedVal(v) {
+  if (v === true) return true;
+  if (v === false || v === null || v === undefined) return false;
+  const s = String(v).trim().toLowerCase();
+  return ["true", "yes", "y", "1", "checked", "on"].includes(s);
+}
+
+function isVisible(el) {
+  return !!(el && el.offsetParent !== null);
+}
+
+window.addEventListener("unhandledrejection", (e) =>
+  debug("Promise error: " + (e.reason?.message || e.reason))
+);
+window.addEventListener("error", (e) => debug("JS error: " + e.message));
+
+setStatus("Status: app.js loaded ✅");
+debug("app.js running ✅");
+
+// ---- Edit boot (DEBUG) ----
+debug(`Edit boot → editId=${editId || "(none)"} | key=${ownerKey ? "YES" : "NO"}`);
+
+// ---- SW registration ----
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch((e) => debug("SW error: " + e.message));
+  });
+}
+
+// ---- Online status ----
+function updateNet() {
+  setStatus(`Status: ${navigator.onLine ? "Online" : "Offline"}`);
+}
+updateNet();
+window.addEventListener("online", () => {
+  updateNet();
+  trySync().catch((e) => debug("Sync error: " + e.message));
+});
+window.addEventListener("offline", updateNet);
+
+// ---- device + submission ids ----
+function getDeviceId() {
+  const k = "mtng_device_id";
+  let v = localStorage.getItem(k);
+  if (!v) {
+    v = (crypto.randomUUID?.() || (Date.now() + "_" + Math.random())).toString();
+    localStorage.setItem(k, v);
+  }
+  return v;
+}
+
+function newSubmissionId() {
+  return crypto.randomUUID?.() || `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+/* =========================
+   Hourly Rate Report
+   ========================= */
 function addHourlyLaborRow(data = {}) {
   if (!hourlyLaborBody) return;
 
@@ -185,23 +262,15 @@ function loadHourlyRateReport(data = {}) {
   if (completedEl) completedEl.value = data.completed || "";
   if (workPerformedEl) workPerformedEl.value = data.workPerformed || "";
 
-  // Reset labor rows
   if (hourlyLaborBody) hourlyLaborBody.innerHTML = "";
 
   const laborRows = Array.isArray(data.laborRows) ? data.laborRows : [];
-  if (laborRows.length) {
-    laborRows.forEach(row => addHourlyLaborRow(row));
-  } else {
-    addHourlyLaborRow();
-  }
+  if (laborRows.length) laborRows.forEach(row => addHourlyLaborRow(row));
+  else addHourlyLaborRow();
 
-  // Rebuild equipment rows from saved data
   buildHourlyEquipmentRows(Array.isArray(data.equipmentRows) ? data.equipmentRows : []);
-
-  // Recalculate totals from row values
   recalcHourlyRateForm();
 }
-
 
 /* =========================
    NEW FORM BUTTON
@@ -213,9 +282,9 @@ newFormBtn?.addEventListener("click", () => {
   mode = "new";
   currentId = newSubmissionId();
 
-  createdAtLocked = null;     // ✅ important
-  existingSketch = null;      // ✅ important
-  sketchDirty = false;        // ✅ important
+  createdAtLocked = null;
+  existingSketch = null;
+  sketchDirty = false;
 
   const u = new URL(window.location.href);
   u.searchParams.delete("edit");
@@ -232,106 +301,12 @@ newFormBtn?.addEventListener("click", () => {
   if (debugEl) debugEl.textContent = "";
 });
 
-
 /* =========================
-   OPTIONAL: helper to refresh params (if you ever need it)
+   Page switching
    ========================= */
-function refreshUrlParams_() {
-  const p = new URLSearchParams(window.location.search);
-  editId = (p.get("edit") || "").trim();
-  // ownerKey usually stays constant; re-read only if you expect it to change
-}
-
-
-
-// =====================================================
-// Normalization helpers (CLIENT)
-// =====================================================
-function normKey(k) {
-  return String(k ?? "")
-    .replace(/\u00A0/g, " ") // NBSP
-    .replace(/\s+/g, " ") // collapse whitespace
-    .trim();
-}
-function normVal(v) {
-  if (v === null || v === undefined) return "";
-  // keep booleans
-  if (typeof v === "boolean") return v;
-  return String(v);
-}
-function isCheckedVal(v) {
-  if (v === true) return true;
-  if (v === false || v === null || v === undefined) return false;
-  const s = String(v).trim().toLowerCase();
-  return ["true", "yes", "y", "1", "checked", "on"].includes(s);
-}
-function isVisible(el) {
-  // visible = not display:none and not within a hidden parent
-  return !!(el && el.offsetParent !== null);
-}
-
-function setStatus(msg) {
-  if (netStatusEl) netStatusEl.textContent = msg;
-}
-function debug(msg) {
-  console.log(msg);
-  if (debugEl) debugEl.textContent = msg;
-}
-
-// show errors on-screen
-window.addEventListener("unhandledrejection", (e) =>
-  debug("Promise error: " + (e.reason?.message || e.reason))
-);
-window.addEventListener("error", (e) => debug("JS error: " + e.message));
-
-setStatus("Status: app.js loaded ✅");
-debug("app.js running ✅");
-
-// ---- Edit boot (DEBUG) ----
-const qs = new URLSearchParams(window.location.search);
-debug(`Edit boot → editId=${editId || "(none)"} | key=${ownerKey ? "YES" : "NO"}`);
-
-
-// ---- SW registration ----
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch((e) => debug("SW error: " + e.message));
-  });
-}
-
-// ---- Online status ----
-function updateNet() {
-  setStatus(`Status: ${navigator.onLine ? "Online" : "Offline"}`);
-}
-updateNet();
-window.addEventListener("online", () => {
-  updateNet();
-  trySync().catch((e) => debug("Sync error: " + e.message));
-});
-window.addEventListener("offline", updateNet);
-
-// ---- device + submission ids ----
-function getDeviceId() {
-  const k = "mtng_device_id";
-  let v = localStorage.getItem(k);
-  if (!v) {
-    v = (crypto.randomUUID?.() || (Date.now() + "_" + Math.random())).toString();
-    localStorage.setItem(k, v);
-  }
-  return v;
-}
-function newSubmissionId() {
-  return crypto.randomUUID?.() || `${Date.now()}_${Math.random().toString(16).slice(2)}`;
-}
-
-
-// =====================================================
-// Page switching
-// =====================================================
 function updatePageSections() {
   const pt = pageTypeEl?.value || "Leak Repair";
   const isHourlyRate = pt === "MTNG Hourly Rate Report";
-   const sectionSubmit = document.getElementById("sectionSubmit");
 
   updateJobNumberLabel(pt);
 
@@ -348,22 +323,19 @@ function updatePageSections() {
 pageTypeEl?.addEventListener("change", updatePageSections);
 updatePageSections();
 
-//======================================
-//Change MLO Label to SRO, LRO depending on sheet
-//======================================
 function updateJobNumberLabel(pageType) {
   const label = document.getElementById("mloLabel");
   if (!label) return;
 
   const pt = String(pageType || "").trim();
-  if (pt === "Services" || pt == "Retirement") label.textContent = "SLO Number";
+  if (pt === "Services" || pt === "Retirement") label.textContent = "SLO Number";
   else if (pt === "Leak Repair") label.textContent = "LRO Number";
-  else label.textContent = "MLO Number"; // Mains + default
+  else label.textContent = "MLO Number";
 }
 
-// =====================================================
-// Sketch canvas
-// =====================================================
+/* =========================
+   Sketch canvas
+   ========================= */
 const canvas = document.getElementById("sketch");
 const ctx = canvas?.getContext("2d");
 
@@ -374,6 +346,13 @@ if (ctx) {
 
 let drawing = false;
 let last = null;
+let existingSketch = null;
+let sketchDirty = false;
+
+function markSketchDirty() {
+  sketchDirty = true;
+  console.log("✅ sketchDirty set TRUE");
+}
 
 function pos(ev) {
   const r = canvas.getBoundingClientRect();
@@ -383,20 +362,21 @@ function pos(ev) {
     y: (p.clientY - r.top) * (canvas.height / r.height),
   };
 }
+
 function startDraw(ev) {
   if (!canvas || !ctx) return;
-   console.log("✍️ startDraw");
   drawing = true;
   last = pos(ev);
-  markSketchDirty(); // ✅
-  if (ev.cancelable) ev.preventDefault(); // ✅ helps on touch
+  markSketchDirty();
+  if (ev.cancelable) ev.preventDefault();
 }
+
 function moveDraw(ev) {
-  if (!canvas || !ctx) return;
-  if (!drawing) return;
-    console.log("➡️ moveDraw");
-   if (ev.cancelable) ev.preventDefault();
-  markSketchDirty(); // ✅
+  if (!canvas || !ctx || !drawing) return;
+  if (ev.cancelable) ev.preventDefault();
+
+  markSketchDirty();
+
   const p = pos(ev);
   ctx.beginPath();
   ctx.moveTo(last.x, last.y);
@@ -404,6 +384,7 @@ function moveDraw(ev) {
   ctx.stroke();
   last = p;
 }
+
 function endDraw() {
   drawing = false;
   last = null;
@@ -422,14 +403,12 @@ if (canvas) {
 document.getElementById("clearSketch")?.addEventListener("click", () => {
   if (!canvas || !ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-   markSketchDirty(); // ✅ ADD THIS
+  markSketchDirty();
 });
 
-// =====================================================
-// Repeater row helper (ONE version only)
-// - IMPORTANT: row wrapper has [data-row] AND class="card"
-// - Remove button included
-// =====================================================
+/* =========================
+   Repeater row helper
+   ========================= */
 function makeRow(innerHtml) {
   const div = document.createElement("div");
   div.setAttribute("data-row", "1");
@@ -445,9 +424,9 @@ function makeRow(innerHtml) {
   return div;
 }
 
-// =====================================================
-// Repeaters: containers
-// =====================================================
+/* =========================
+   Repeaters: containers
+   ========================= */
 // Leak Repair
 const pipeMaterialsEl = document.getElementById("pipeMaterials");
 const otherMaterialsEl = document.getElementById("otherMaterials");
@@ -468,10 +447,9 @@ const retSectionEl = document.getElementById("retSection");
 const retStructuresEl = document.getElementById("retStructures");
 const retNewMaterialsEl = document.getElementById("retNewMaterials");
 
-// =====================================================
-// Repeaters: add-row functions
-// =====================================================
-
+/* =========================
+   Repeaters: add-row functions
+   ========================= */
 // ---- Leak Repair ----
 function addPipeMaterialRow(data = {}) {
   pipeMaterialsEl?.appendChild(
@@ -482,19 +460,14 @@ function addPipeMaterialRow(data = {}) {
       <label>Date</label><input data-r="pipeMaterials" data-k="Date" value="${data["Date"] || ""}">
       <label>Coil #</label><input data-r="pipeMaterials" data-k="Coil #" value="${data["Coil #"] || ""}">
       <label>SDR of PE</label><input data-r="pipeMaterials" data-k="SDR of PE" value="${data["SDR of PE"] || ""}">
-      <label>ST Pipe Thickness</label><input data-r="pipeMaterials" data-k="ST Pipe Thickness" value="${
-        data["ST Pipe Thickness"] || ""
-      }">
+      <label>ST Pipe Thickness</label><input data-r="pipeMaterials" data-k="ST Pipe Thickness" value="${data["ST Pipe Thickness"] || ""}">
       <label>Coating Type</label><input data-r="pipeMaterials" data-k="Coating Type" value="${data["Coating Type"] || ""}">
-      <label>Depth (inches)</label><input data-r="pipeMaterials" data-k="Depth (inches)" value="${
-        data["Depth (inches)"] || ""
-      }">
-      <label>Length (feet)</label><input data-r="pipeMaterials" data-k="Length (feet)" value="${
-        data["Length (feet)"] || ""
-      }">
+      <label>Depth (inches)</label><input data-r="pipeMaterials" data-k="Depth (inches)" value="${data["Depth (inches)"] || ""}">
+      <label>Length (feet)</label><input data-r="pipeMaterials" data-k="Length (feet)" value="${data["Length (feet)"] || ""}">
     `)
   );
 }
+
 function addOtherMaterialRow(data = {}) {
   otherMaterialsEl?.appendChild(
     makeRow(`
@@ -505,17 +478,14 @@ function addOtherMaterialRow(data = {}) {
     `)
   );
 }
+
 function addPipeTestRow(data = {}) {
   pipeTestsEl?.appendChild(
     makeRow(`
       <label>Date Tested</label><input type="date" data-r="pipeTests" data-k="Date Tested" value="${data["Date Tested"] || ""}">
       <label>Test Type</label><input data-r="pipeTests" data-k="Test Type" value="${data["Test Type"] || ""}">
       <div class="check" style="margin-top:8px;">
-        <input type="checkbox" data-r="pipeTests" data-k="Soaped with no Leaks" ${isCheckedVal(
-          data["Soaped with no Leaks"]
-        )
-          ? "checked"
-          : ""}>
+        <input type="checkbox" data-r="pipeTests" data-k="Soaped with no Leaks" ${isCheckedVal(data["Soaped with no Leaks"]) ? "checked" : ""}>
         Soaped with no Leaks
       </div>
       <label>Pressure</label><input data-r="pipeTests" data-k="Pressure" value="${data["Pressure"] || ""}">
@@ -540,19 +510,14 @@ function addMainsMaterialRow(data = {}) {
       <label>Date</label><input data-r="mainsMaterials" data-k="Date" value="${data["Date"] || ""}">
       <label>Coil #</label><input data-r="mainsMaterials" data-k="Coil #" value="${data["Coil #"] || ""}">
       <label>SDR of PE</label><input data-r="mainsMaterials" data-k="SDR of PE" value="${data["SDR of PE"] || ""}">
-      <label>ST Pipe Thickness</label><input data-r="mainsMaterials" data-k="ST Pipe Thickness" value="${
-        data["ST Pipe Thickness"] || ""
-      }">
+      <label>ST Pipe Thickness</label><input data-r="mainsMaterials" data-k="ST Pipe Thickness" value="${data["ST Pipe Thickness"] || ""}">
       <label>Coating Type</label><input data-r="mainsMaterials" data-k="Coating Type" value="${data["Coating Type"] || ""}">
-      <label>Depth (inches)</label><input data-r="mainsMaterials" data-k="Depth (inches)" value="${
-        data["Depth (inches)"] || ""
-      }">
-      <label>Length (feet)</label><input data-r="mainsMaterials" data-k="Length (feet)" value="${
-        data["Length (feet)"] || ""
-      }">
+      <label>Depth (inches)</label><input data-r="mainsMaterials" data-k="Depth (inches)" value="${data["Depth (inches)"] || ""}">
+      <label>Length (feet)</label><input data-r="mainsMaterials" data-k="Length (feet)" value="${data["Length (feet)"] || ""}">
     `)
   );
 }
+
 function addMainsOtherMaterialRow(data = {}) {
   mainsOtherMaterialsEl?.appendChild(
     makeRow(`
@@ -563,17 +528,14 @@ function addMainsOtherMaterialRow(data = {}) {
     `)
   );
 }
+
 function addMainsPipeTestRow(data = {}) {
   mainsPipeTestsEl?.appendChild(
     makeRow(`
       <label>Date Tested</label><input type="date" data-r="mainsPipeTests" data-k="Date Tested" value="${data["Date Tested"] || ""}">
       <label>Test Type</label><input data-r="mainsPipeTests" data-k="Test Type" value="${data["Test Type"] || ""}">
       <div class="check" style="margin-top:8px;">
-        <input type="checkbox" data-r="mainsPipeTests" data-k="Soaped with no Leaks" ${isCheckedVal(
-          data["Soaped with no Leaks"]
-        )
-          ? "checked"
-          : ""}>
+        <input type="checkbox" data-r="mainsPipeTests" data-k="Soaped with no Leaks" ${isCheckedVal(data["Soaped with no Leaks"]) ? "checked" : ""}>
         Soaped with no Leaks
       </div>
       <label>Pressure</label><input data-r="mainsPipeTests" data-k="Pressure" value="${data["Pressure"] || ""}">
@@ -598,19 +560,14 @@ function addSvcMaterialRow(data = {}) {
       <label>Date</label><input data-r="svcMaterials" data-k="Date" value="${data["Date"] || ""}">
       <label>Coil #</label><input data-r="svcMaterials" data-k="Coil #" value="${data["Coil #"] || ""}">
       <label>SDR of PE</label><input data-r="svcMaterials" data-k="SDR of PE" value="${data["SDR of PE"] || ""}">
-      <label>ST Pipe Thickness</label><input data-r="svcMaterials" data-k="ST Pipe Thickness" value="${
-        data["ST Pipe Thickness"] || ""
-      }">
+      <label>ST Pipe Thickness</label><input data-r="svcMaterials" data-k="ST Pipe Thickness" value="${data["ST Pipe Thickness"] || ""}">
       <label>Coating Type</label><input data-r="svcMaterials" data-k="Coating Type" value="${data["Coating Type"] || ""}">
-      <label>Depth (inches)</label><input data-r="svcMaterials" data-k="Depth (inches)" value="${
-        data["Depth (inches)"] || ""
-      }">
-      <label>Length (feet)</label><input data-r="svcMaterials" data-k="Length (feet)" value="${
-        data["Length (feet)"] || ""
-      }">
+      <label>Depth (inches)</label><input data-r="svcMaterials" data-k="Depth (inches)" value="${data["Depth (inches)"] || ""}">
+      <label>Length (feet)</label><input data-r="svcMaterials" data-k="Length (feet)" value="${data["Length (feet)"] || ""}">
     `)
   );
 }
+
 function addSvcOtherMaterialRow(data = {}) {
   svcOtherMaterialsEl?.appendChild(
     makeRow(`
@@ -621,17 +578,14 @@ function addSvcOtherMaterialRow(data = {}) {
     `)
   );
 }
+
 function addSvcPipeTestRow(data = {}) {
   svcPipeTestsEl?.appendChild(
     makeRow(`
       <label>Date Tested</label><input type="date" data-r="svcPipeTests" data-k="Date Tested" value="${data["Date Tested"] || ""}">
       <label>Test Type</label><input data-r="svcPipeTests" data-k="Test Type" value="${data["Test Type"] || ""}">
       <div class="check" style="margin-top:8px;">
-        <input type="checkbox" data-r="svcPipeTests" data-k="Soaped with no Leaks" ${isCheckedVal(
-          data["Soaped with no Leaks"]
-        )
-          ? "checked"
-          : ""}>
+        <input type="checkbox" data-r="svcPipeTests" data-k="Soaped with no Leaks" ${isCheckedVal(data["Soaped with no Leaks"]) ? "checked" : ""}>
         Soaped with no Leaks
       </div>
       <label>Pressure</label><input data-r="svcPipeTests" data-k="Pressure" value="${data["Pressure"] || ""}">
@@ -659,6 +613,7 @@ function addRetSectionRow(data = {}) {
     `)
   );
 }
+
 function addRetStructuresRow(data = {}) {
   retStructuresEl?.appendChild(
     makeRow(`
@@ -668,6 +623,7 @@ function addRetStructuresRow(data = {}) {
     `)
   );
 }
+
 function addRetNewMaterialsRow(data = {}) {
   retNewMaterialsEl?.appendChild(
     makeRow(`
@@ -683,7 +639,7 @@ document.getElementById("addRetSection")?.addEventListener("click", () => addRet
 document.getElementById("addRetStructures")?.addEventListener("click", () => addRetStructuresRow());
 document.getElementById("addRetNewMaterials")?.addEventListener("click", () => addRetNewMaterialsRow());
 
-// initial starter rows (only if containers exist)
+// starter rows only for new mode
 if (!editId) {
   if (pipeMaterialsEl) addPipeMaterialRow();
   if (otherMaterialsEl) addOtherMaterialRow();
@@ -702,23 +658,19 @@ if (!editId) {
   if (retNewMaterialsEl) addRetNewMaterialsRow();
 }
 
+/* =========================
+   Gatherers
+   ========================= */
 function gatherFieldsNormalized() {
   const fields = {};
-
-  // Use a root that includes all dynamic sections
   const root = document.getElementById("app") || document;
   const els = Array.from(root.querySelectorAll("input[name], textarea[name], select[name]"));
-
   const isNonEmpty = (v) => String(v ?? "").trim().length > 0;
 
   els.forEach((el) => {
     const name = normKey(el.name);
-    if (!name) return;
+    if (!name || el.disabled) return;
 
-    // Skip disabled inputs (prevents hidden/disabled duplicates from overwriting)
-    if (el.disabled) return;
-
-    // CHECKBOXES: keep TRUE if any duplicate checkbox is checked
     if (el.type === "checkbox") {
       const incoming = !!el.checked;
       const existing = !!fields[name];
@@ -726,17 +678,14 @@ function gatherFieldsNormalized() {
       return;
     }
 
-    // RADIOS: only set when checked
     if (el.type === "radio") {
       if (!el.checked) return;
       fields[name] = normVal(el.value);
       return;
     }
 
-    // TEXT / SELECT / TEXTAREA
     const incoming = normVal(el.value);
 
-    // If duplicate exists, don't overwrite a meaningful value with empty
     if (name in fields) {
       const existing = fields[name];
       if (isNonEmpty(existing) && !isNonEmpty(incoming)) return;
@@ -748,11 +697,10 @@ function gatherFieldsNormalized() {
   return fields;
 }
 
-
 function gatherRepeaters() {
   const repeaters = {};
-
   const els = Array.from(document.querySelectorAll("[data-r][data-k]"));
+
   els.forEach((el) => {
     if (!isVisible(el)) return;
 
@@ -768,7 +716,6 @@ function gatherRepeaters() {
     }
 
     const rowId = rowEl.dataset.rowId;
-
     repeaters[r] = repeaters[r] || {};
     repeaters[r][rowId] = repeaters[r][rowId] || {};
 
@@ -782,7 +729,6 @@ function gatherRepeaters() {
     repeaters[r][rowId][k] = value;
   });
 
-  // Convert rowId maps → arrays and drop empty rows
   const out = {};
   Object.keys(repeaters).forEach((r) => {
     out[r] = Object.values(repeaters[r]).filter((row) =>
@@ -791,14 +737,6 @@ function gatherRepeaters() {
   });
 
   return out;
-}
-
-let existingSketch = null;
-let sketchDirty = false;
-
-function markSketchDirty() {
-  sketchDirty = true;
-  console.log("✅ sketchDirty set TRUE");
 }
 
 function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields, repeaters, sketch, photos }) {
@@ -821,192 +759,85 @@ function normalizePayload({ submissionId, pageType, deviceId, createdAt, fields,
   };
 }
 
-function fillRepeater(el, addRowFn, rows) {
-  if (!el || typeof addRowFn !== "function") return;
-
-  clearRepeaterContainer(el);
-
-  const safeRows = Array.isArray(rows) && rows.length ? rows : [{}];
-  safeRows.forEach(r => addRowFn(r || {}));
+/* =========================
+   Repeater population
+   ========================= */
+function clearRepeaterContainer(containerEl) {
+  if (!containerEl) return;
+  containerEl.querySelectorAll("[data-row]").forEach(r => r.remove());
 }
 
-// =====================================================
-// Repeaters: populate from saved payload
-// =====================================================
-
-// =====================================================
-// Repeaters: clear + populate from saved payload
-// Drop-in (single version)
-// =====================================================
-
-// Safe normalizer
 function normalizeRepeatersObj(repeaters) {
   return (repeaters && typeof repeaters === "object") ? repeaters : {};
 }
 
-// Map payload repeater keys -> container + addRow function
 const REPEATER_BINDINGS = {
-  // Leak Repair
-  pipeMaterials:   { container: () => document.getElementById("pipeMaterials"),   addRow: addPipeMaterialRow },
-  otherMaterials:  { container: () => document.getElementById("otherMaterials"),  addRow: addOtherMaterialRow },
-  pipeTests:       { container: () => document.getElementById("pipeTests"),       addRow: addPipeTestRow },
+  pipeMaterials: { container: () => document.getElementById("pipeMaterials"), addRow: addPipeMaterialRow },
+  otherMaterials: { container: () => document.getElementById("otherMaterials"), addRow: addOtherMaterialRow },
+  pipeTests: { container: () => document.getElementById("pipeTests"), addRow: addPipeTestRow },
 
-  // Mains
-  mainsMaterials:      { container: () => document.getElementById("mainsMaterials"),      addRow: addMainsMaterialRow },
+  mainsMaterials: { container: () => document.getElementById("mainsMaterials"), addRow: addMainsMaterialRow },
   mainsOtherMaterials: { container: () => document.getElementById("mainsOtherMaterials"), addRow: addMainsOtherMaterialRow },
-  mainsPipeTests:      { container: () => document.getElementById("mainsPipeTests"),      addRow: addMainsPipeTestRow },
+  mainsPipeTests: { container: () => document.getElementById("mainsPipeTests"), addRow: addMainsPipeTestRow },
 
-  // Services
-  svcMaterials:      { container: () => document.getElementById("svcMaterials"),      addRow: addSvcMaterialRow },
+  svcMaterials: { container: () => document.getElementById("svcMaterials"), addRow: addSvcMaterialRow },
   svcOtherMaterials: { container: () => document.getElementById("svcOtherMaterials"), addRow: addSvcOtherMaterialRow },
-  svcPipeTests:      { container: () => document.getElementById("svcPipeTests"),      addRow: addSvcPipeTestRow },
+  svcPipeTests: { container: () => document.getElementById("svcPipeTests"), addRow: addSvcPipeTestRow },
 
-  // Retirement
-  retSection:      { container: () => document.getElementById("retSection"),      addRow: addRetSectionRow },
-  retStructures:   { container: () => document.getElementById("retStructures"),   addRow: addRetStructuresRow },
+  retSection: { container: () => document.getElementById("retSection"), addRow: addRetSectionRow },
+  retStructures: { container: () => document.getElementById("retStructures"), addRow: addRetStructuresRow },
   retNewMaterials: { container: () => document.getElementById("retNewMaterials"), addRow: addRetNewMaterialsRow },
 };
 
-
-// Populates ONLY repeaters present in payload; ensures at least 1 row per repeater on the current page
 function populateRepeatersForPage(pageType, repeaters) {
   const pt = String(pageType || "").trim();
   const reps = normalizeRepeatersObj(repeaters);
-  
 
-  function logContainer(id) {
-  const el = document.getElementById(id);
-  console.log(`[repeater] #${id}:`, {
-    exists: !!el,
-    inDom: !!el && document.body.contains(el),
-    childRows: el ? el.querySelectorAll('[data-row]').length : 0
-  });
-}
-
-console.log("[repeater] pageType:", pageType);
-[
-  "pipeMaterials","otherMaterials","pipeTests",
-  "mainsMaterials","mainsOtherMaterials","mainsPipeTests",
-  "svcMaterials","svcOtherMaterials","svcPipeTests",
-  "retSection","retStructures","retNewMaterials"
-].forEach(logContainer);
-console.log("[repeater] payload keys:", Object.keys(repeaters || {}));
-
-  // Which repeaters belong to this page?
   const pageRepeaterKeys =
     pt === "Leak Repair" ? ["pipeMaterials","otherMaterials","pipeTests"] :
-    pt === "Mains"       ? ["mainsMaterials","mainsOtherMaterials","mainsPipeTests"] :
-    pt === "Services"    ? ["svcMaterials","svcOtherMaterials","svcPipeTests"] :
-    pt === "Retirement"  ? ["retSection","retStructures","retNewMaterials"] :
+    pt === "Mains" ? ["mainsMaterials","mainsOtherMaterials","mainsPipeTests"] :
+    pt === "Services" ? ["svcMaterials","svcOtherMaterials","svcPipeTests"] :
+    pt === "Retirement" ? ["retSection","retStructures","retNewMaterials"] :
     [];
 
-  // 1) Clear containers for this page (removes starter rows)
   pageRepeaterKeys.forEach(key => {
     const b = REPEATER_BINDINGS[key];
     if (b) clearRepeaterContainer(b.container());
   });
 
-  // 2) Add payload rows for those repeaters (or 1 blank if none)
   pageRepeaterKeys.forEach(key => {
     const b = REPEATER_BINDINGS[key];
     if (!b) return;
 
     const rows = Array.isArray(reps[key]) ? reps[key] : [];
     if (rows.length) rows.forEach(r => b.addRow(r || {}));
-    else b.addRow({}); // always show one row
+    else b.addRow({});
   });
 
   console.log("✅ Repeaters populated for", pt, "→", pageRepeaterKeys);
 }
 
-let _editLoading = false;
-
-// =====================================================
-// EDIT: Drop-in replacement loader + field population
-// =====================================================
-// ---------- field population (bulletproof) ----------
+/* =========================
+   Field population
+   ========================= */
 function attrValEsc_(s) {
-  // Escape for CSS attribute selector values inside double quotes
   return String(s ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 function fireInputChange_(el) {
-  try { el.dispatchEvent(new Event("input",  { bubbles: true })); } catch {}
+  try { el.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
   try { el.dispatchEvent(new Event("change", { bubbles: true })); } catch {}
-}
-
-function setElValue_(el, v) {
-  if (!el) return;
-  const t = (el.type || "").toLowerCase();
-
-  if (t === "checkbox") {
-    el.checked = isCheckedVal(v);
-    fireInputChange_(el);
-    return;
-  }
-
-  if (t === "radio") {
-    el.checked = (String(el.value) === String(v));
-    fireInputChange_(el);
-    return;
-  }
-
-  el.value = (v ?? "");
-  fireInputChange_(el);
-}
-
-function buildNameIndex_(root) {
-  // normalized-name -> list of elements
-  const idx = new Map();
-  const all = Array.from(root.querySelectorAll("input[name],select[name],textarea[name]"));
-  for (const el of all) {
-    const nk = normKey(el.name);
-    if (!nk) continue;
-    if (!idx.has(nk)) idx.set(nk, []);
-    idx.get(nk).push(el);
-  }
-  return idx;
-}
-
-function findElsByKey_(formEl, key, nameIndexDoc, nameIndexForm) {
-  const kRaw = String(key ?? "");
-  const kNorm = normKey(kRaw);
-
-  // 1) exact name inside form
-  let els = Array.from(formEl.querySelectorAll(`[name="${attrValEsc_(kRaw)}"]`));
-  if (els.length) return els;
-
-  // 2) exact name anywhere
-  els = Array.from(document.querySelectorAll(`[name="${attrValEsc_(kRaw)}"]`));
-  if (els.length) return els;
-
-  // 3) normalized name match (form first, then document)
-  if (kNorm) {
-    const inForm = nameIndexForm.get(kNorm);
-    if (inForm?.length) return inForm;
-
-    const inDoc = nameIndexDoc.get(kNorm);
-    if (inDoc?.length) return inDoc;
-  }
-
-  // 4) id match
-  const byId = document.getElementById(kRaw) || (kNorm ? document.getElementById(kNorm) : null);
-  if (byId) return [byId];
-
-  // 5) data-field match (optional)
-  const df = Array.from(document.querySelectorAll(`[data-field="${attrValEsc_(kRaw)}"]`));
-  if (df.length) return df;
-
-  return [];
 }
 
 function _attrEsc_(s) {
   return String(s ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
+
 function _fire_(el) {
-  try { el.dispatchEvent(new Event("input",  { bubbles: true })); } catch {}
+  try { el.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
   try { el.dispatchEvent(new Event("change", { bubbles: true })); } catch {}
 }
+
 function _set_(el, v) {
   if (!el) return;
   const t = (el.type || "").toLowerCase();
@@ -1017,12 +848,11 @@ function _set_(el, v) {
 }
 
 function populateFieldsSmart_(formEl, fieldsObj) {
-  const NEVER_BOOLISH = new Set([normKey("Quantity")]);  // ✅ normalized
+  const NEVER_BOOLISH = new Set([normKey("Quantity")]);
   const fields = (fieldsObj && typeof fieldsObj === "object") ? fieldsObj : {};
 
-  // Build normalized name index (form + document) to handle NBSP/spacing mismatches
   const idxForm = new Map();
-  const idxDoc  = new Map();
+  const idxDoc = new Map();
 
   const addToIdx = (idx, root) => {
     Array.from(root.querySelectorAll("input[name],select[name],textarea[name]")).forEach(el => {
@@ -1037,21 +867,15 @@ function populateFieldsSmart_(formEl, fieldsObj) {
   addToIdx(idxDoc, document);
 
   for (const [k, v] of Object.entries(fields)) {
-    const kRaw  = String(k ?? "");
+    const kRaw = String(k ?? "");
     const kNorm = normKey(kRaw);
-    const key   = kNorm || normKey(kRaw);
+    const key = kNorm || normKey(kRaw);
 
-    // 1) exact name inside form
     let els = Array.from(formEl.querySelectorAll(`[name="${_attrEsc_(kRaw)}"]`));
-
-    // 2) exact name anywhere
     if (!els.length) els = Array.from(document.querySelectorAll(`[name="${_attrEsc_(kRaw)}"]`));
-
-    // 3) normalized name match (form first, then doc)
     if (!els.length && kNorm) els = idxForm.get(kNorm) || [];
     if (!els.length && kNorm) els = idxDoc.get(kNorm) || [];
 
-    // 4) id match fallback (if some controls use id not name)
     if (!els.length) {
       const byId = document.getElementById(kRaw) || (kNorm ? document.getElementById(kNorm) : null);
       if (byId) els = [byId];
@@ -1059,35 +883,24 @@ function populateFieldsSmart_(formEl, fieldsObj) {
 
     if (!els.length) continue;
 
-    // ✅ Prefer visible matches if any exist (fixes Mains vs Services duplicates)
     const vis = els.filter(isVisible);
     if (vis.length) els = vis;
 
     const types = new Set(els.map(e => (e.type || "").toLowerCase()));
 
-    // ---- RADIO GROUP ----
     if (types.has("radio")) {
       els.forEach(r => _set_(r, v));
       continue;
     }
 
-    // ---- CHECKBOXES ----
     const cbs = els.filter(e => (e.type || "").toLowerCase() === "checkbox");
     if (cbs.length > 1 && cbs.length === els.length) {
-      // If payload is boolean-ish, treat as "same checkbox duplicated on page"
-      // (Mains + Services) and set them all the same.
-
       const isBoolish =
-      !NEVER_BOOLISH.has(key) && (
-        typeof v === "boolean" ||
-        (typeof v === "string" && ["true","false","yes","no","y","n","1","0","checked","on","off"].includes(v.trim().toLowerCase())) ||
-        typeof v === "number"
-      );
-       
-     // const isBoolish =
-       // typeof v === "boolean" ||
-        //(typeof v === "string" && ["true","false","yes","no","y","n","1","0","checked","on","off"].includes(v.trim().toLowerCase())) ||
-        //typeof v === "number";
+        !NEVER_BOOLISH.has(key) && (
+          typeof v === "boolean" ||
+          (typeof v === "string" && ["true","false","yes","no","y","n","1","0","checked","on","off"].includes(v.trim().toLowerCase())) ||
+          typeof v === "number"
+        );
 
       if (isBoolish) {
         const checked = isCheckedVal(v);
@@ -1095,7 +908,6 @@ function populateFieldsSmart_(formEl, fieldsObj) {
         continue;
       }
 
-      // Otherwise treat as a real checkbox group with distinct values
       const want = new Set(Array.isArray(v) ? v.map(String) : [String(v)]);
       cbs.forEach(cb => {
         cb.checked = want.has(String(cb.value));
@@ -1104,39 +916,20 @@ function populateFieldsSmart_(formEl, fieldsObj) {
       continue;
     }
 
-    // ---- SINGLE ELEMENT ----
     _set_(els[0], v);
   }
 }
 
-function populateRepeaters(rep) {
-  if (!rep) return;
-
-  // Example for Leak Repair
-  if (rep.pipeMaterials && pipeMaterialsEl) {
-    pipeMaterialsEl.innerHTML = "";
-    rep.pipeMaterials.forEach(r => addPipeMaterialRow(r));
-  }
-
-  if (rep.otherMaterials && otherMaterialsEl) {
-    otherMaterialsEl.innerHTML = "";
-    rep.otherMaterials.forEach(r => addOtherMaterialRow(r));
-  }
-
-  if (rep.pipeTests && pipeTestsEl) {
-    pipeTestsEl.innerHTML = "";
-    rep.pipeTests.forEach(r => addPipeTestRow(r));
-  }
-
-  // Repeat for mains, services, retirement as needed
-}
+/* =========================
+   Edit loading
+   ========================= */
+let _editLoading = false;
 
 document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(location.search);
-  const editId = params.get("edit");
-  if (editId) loadForEdit(editId);
+  const p = new URLSearchParams(location.search);
+  const id = p.get("edit");
+  if (id) loadForEdit(id);
 });
-
 
 async function loadForEdit(submissionId) {
   if (_editLoading) return;
@@ -1167,16 +960,13 @@ async function loadForEdit(submissionId) {
     const repeaters = p.repeaters || {};
     const hourlyRateReport = p.hourlyRateReport || {};
 
-    // ---- SET EDIT MODE + PRESERVE ORIGINAL CREATED TIME ----
     createdAtLocked = p.createdAt || null;
     editId = submissionId;
     currentId = submissionId;
     mode = "edit";
 
-    // Reset first (keeps it clean)
     form.reset();
 
-    // ---- SET PAGE TYPE FIRST + SHOW SECTION ----
     const pt = String(p.pageType || "Leak Repair").trim();
     console.log("EDIT pageType:", JSON.stringify(pt));
 
@@ -1187,87 +977,78 @@ async function loadForEdit(submissionId) {
     }
 
     // ---- SKETCH ----
-existingSketch = null;
-sketchDirty = false;
+    existingSketch = null;
+    sketchDirty = false;
 
-try {
-  const sketchUrl = p.media?.sketchUrl || "";
-  console.log("EDIT SKETCH:", {
-    hasEmbeddedDataUrl: !!p.sketch?.dataUrl,
-    sketchUrl,
-  });
+    try {
+      const sketchUrl = p.media?.sketchUrl || "";
+      console.log("EDIT SKETCH:", {
+        hasEmbeddedDataUrl: !!p.sketch?.dataUrl,
+        sketchUrl,
+      });
 
-  if (p.sketch?.dataUrl) {
-    existingSketch = p.sketch;
-    await drawDataUrlToCanvas_(p.sketch.dataUrl);
-    console.log("✅ drew embedded sketch dataUrl");
-  } else if (sketchUrl && /^https?:\/\//i.test(sketchUrl)) {
-    const dataUrl = await urlToDataUrlClient_(sketchUrl);
-    console.log("FETCHED SKETCH dataUrl len:", dataUrl ? dataUrl.length : 0);
+      if (p.sketch?.dataUrl) {
+        existingSketch = p.sketch;
+        await drawDataUrlToCanvas_(p.sketch.dataUrl);
+        console.log("✅ drew embedded sketch dataUrl");
+      } else if (sketchUrl && /^https?:\/\//i.test(sketchUrl)) {
+        const dataUrl = await urlToDataUrlClient_(sketchUrl);
+        console.log("FETCHED SKETCH dataUrl len:", dataUrl ? dataUrl.length : 0);
 
-    if (dataUrl) {
-      existingSketch = {
-        filename: p.sketch?.filename || `sketch_${submissionId}.png`,
-        dataUrl,
-      };
-      await drawDataUrlToCanvas_(dataUrl);
-      console.log("✅ drew sketch from media.sketchUrl");
-    } else {
-      console.warn("⚠️ sketchUrl fetch returned empty dataUrl");
+        if (dataUrl) {
+          existingSketch = {
+            filename: p.sketch?.filename || `sketch_${submissionId}.png`,
+            dataUrl,
+          };
+          await drawDataUrlToCanvas_(dataUrl);
+          console.log("✅ drew sketch from media.sketchUrl");
+        } else {
+          console.warn("⚠️ sketchUrl fetch returned empty dataUrl");
+        }
+      } else if (sketchUrl) {
+        console.warn("⚠️ invalid sketchUrl ignored:", sketchUrl);
+      } else {
+        console.warn("⚠️ no sketch found (no embedded dataUrl, no media.sketchUrl)");
+      }
+    } catch (err) {
+      console.error("⚠️ sketch load failed, continuing without sketch:", err);
+      existingSketch = null;
+      if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-  } else if (sketchUrl) {
-    console.warn("⚠️ invalid sketchUrl ignored:", sketchUrl);
-  } else {
-    console.warn("⚠️ no sketch found (no embedded dataUrl, no media.sketchUrl)");
-  }
-} catch (err) {
-  console.error("⚠️ sketch load failed, continuing without sketch:", err);
-  existingSketch = null;
-  if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-    // ---- REPEATERS ----
-    populateRepeatersForPage(pt, repeaters);
 
-    // ---- FIELDS ----
+    populateRepeatersForPage(pt, repeaters);
     populateFieldsSmart_(form, fields);
 
-    // ---- CUSTOM FORM DATA ----
     if (pt === "MTNG Hourly Rate Report") {
       loadHourlyRateReport(hourlyRateReport);
     }
 
     updatePageSections();
 
-    // Preserve original values so missing inputs on the form can't wipe data on save
     _loadedFieldsBaseline = { ...(fields || {}) };
-    _loadedRepeatersBaseline = JSON.parse(JSON.stringify(repeaters || {})); // deep copy
-    _loadedHourlyRateBaseline = JSON.parse(JSON.stringify(hourlyRateReport || {})); // deep copy
+    _loadedRepeatersBaseline = JSON.parse(JSON.stringify(repeaters || {}));
+    _loadedHourlyRateBaseline = JSON.parse(JSON.stringify(hourlyRateReport || {}));
 
-    // update submit button label
     const submitBtn = document.querySelector('button[type="submit"]');
-    // if (submitBtn) submitBtn.textContent = "Update Submission";
     if (submitBtn) submitBtn.disabled = true;
 
-    try {
-      setStatus("Edit mode ready ✅");
-      console.log("✅ Edit load complete for", submissionId);
-    } catch (err) {
-      console.error(err);
-      setStatus("Edit load failed: " + (err?.message || err));
-    } finally {
-      editReady = true;
-      _editLoading = false;
-      if (submitBtn) submitBtn.disabled = false;
-    }
+    setStatus("Edit mode ready ✅");
+    console.log("✅ Edit load complete for", submissionId);
+
+    editReady = true;
+    _editLoading = false;
+    if (submitBtn) submitBtn.disabled = false;
+
   } catch (err) {
     console.error(err);
     setStatus("Error: " + (err?.message || err));
     _editLoading = false;
   }
 }
-// =====================================================
-// Photos compression
-// =====================================================
+
+/* =========================
+   Photo / sketch helpers
+   ========================= */
 async function loadImg(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -1290,8 +1071,8 @@ async function fileToCompressedDataUrl(file, maxW = 1024, quality = 0.6) {
   const c = document.createElement("canvas");
   c.width = w;
   c.height = h;
-
   c.getContext("2d").drawImage(img, 0, 0, w, h);
+
   return c.toDataURL("image/jpeg", quality);
 }
 
@@ -1326,9 +1107,9 @@ async function drawDataUrlToCanvas_(dataUrl) {
   });
 }
 
-// ============================
-// EDIT BOOTSTRAP (RUN ON LOAD)
-// ============================
+/* =========================
+   Edit bootstrap
+   ========================= */
 function setSubmitButtonLabel_() {
   const submitBtn = document.querySelector('button[type="submit"]');
   if (!submitBtn) return;
@@ -1342,8 +1123,6 @@ window.addEventListener("load", async () => {
     if (editId) {
       console.log("BOOT: editId detected -> loading payload", editId);
       await loadForEdit(editId);
-      // loadForEdit() already sets mode/editId/currentId and updates button,
-      // but we’ll enforce the label again just in case:
       setSubmitButtonLabel_();
     } else {
       console.log("BOOT: no editId -> new form");
@@ -1354,21 +1133,10 @@ window.addEventListener("load", async () => {
   }
 });
 
-
-
-// =====================================================
-// Build payload
-// =====================================================
-// =====================================================
-// EDIT / MODE / ID LOCK (DROP-IN)
-// =====================================================
-//const params = new URLSearchParams(location.search);
-
-// Keep createdAt stable per record (important so edits don't look like "new" submissions)
+/* =========================
+   Payload build
+   ========================= */
 let createdAtLocked = null;
-
-// If you load an existing payload elsewhere, set createdAtLocked from it.
-// But even if you don't, this will still behave well.
 
 function collectHourlyRateReport() {
   const laborRows = Array.from(document.querySelectorAll("#hourlyLaborBody tr")).map((tr) => ({
@@ -1399,15 +1167,11 @@ function collectHourlyRateReport() {
   };
 }
 
-
-// =====================================================
-// buildPayload (DROP-IN REPLACEMENT)
-// =====================================================
 async function buildPayload() {
   const deviceId = getDeviceId();
 
-  const getF = (label) => fields[normKey(label)];
   let fields = gatherFieldsNormalized();
+  const getF = (label) => fields[normKey(label)];
 
   console.log("FIELD CHECK:", {
     pipeCondition: getF("Pipe Condition"),
@@ -1425,14 +1189,10 @@ async function buildPayload() {
   let repeaters = gatherRepeaters();
 
   if (mode === "edit") {
-    // Keep anything not present / not captured in the current form
     fields = { ..._loadedFieldsBaseline, ...fields };
-
-    // Preserve repeaters if current form doesn't capture them
     repeaters = { ..._loadedRepeatersBaseline, ...repeaters };
   }
 
-  // Preserve createdAt on edit; always set updatedAt
   const createdAt =
     (mode === "edit" && createdAtLocked)
       ? createdAtLocked
@@ -1440,7 +1200,6 @@ async function buildPayload() {
 
   const updatedAt = new Date().toISOString();
 
-  // Photos
   const photoInput = form.querySelector('input[type="file"][data-photos]');
   const files = Array.from(photoInput?.files || []).slice(0, 5);
 
@@ -1450,19 +1209,16 @@ async function buildPayload() {
     photos.push({ filename: f.name || `photo_${currentId}.jpg`, dataUrl });
   }
 
-  // Sketch
- let sketch = null;
-
-if (canvas && sketchDirty) {
-  // only send sketch if user actually changed it
-  sketch = {
-    filename: `sketch_${currentId}.png`,
-    dataUrl: canvas.toDataURL("image/png"),
-  };
-} else {
-  // unchanged sketch: do not resend
-  sketch = null;
-}
+  // Only send sketch if user changed it
+  let sketch = null;
+  if (canvas && sketchDirty) {
+    sketch = {
+      filename: `sketch_${currentId}.png`,
+      dataUrl: canvas.toDataURL("image/png"),
+    };
+  } else {
+    sketch = null;
+  }
 
   console.log("SKETCH DEBUG:", {
     canvas: !!canvas,
@@ -1488,17 +1244,14 @@ if (canvas && sketchDirty) {
     editId
   });
 
- // Add Hourly Rate Report details only for that form
-if (pageType === "MTNG Hourly Rate Report") {
-  const currentHourly = collectHourlyRateReport();
+  if (pageType === "MTNG Hourly Rate Report") {
+    const currentHourly = collectHourlyRateReport();
+    payload.hourlyRateReport = (mode === "edit")
+      ? { ...(_loadedHourlyRateBaseline || {}), ...currentHourly }
+      : currentHourly;
+    console.log("HOURLY PAYLOAD:", payload.hourlyRateReport);
+  }
 
-  payload.hourlyRateReport = (mode === "edit")
-    ? { ...(_loadedHourlyRateBaseline || {}), ...currentHourly }
-    : currentHourly;
-   console.log("HOURLY PAYLOAD:", payload.hourlyRateReport);
-}
-
-  // Safety guard: prevent accidental "edit becomes new"
   if (mode === "edit" && editId && payload.submissionId !== editId) {
     throw new Error(`Edit safety check failed: editId=${editId} payloadId=${payload.submissionId}`);
   }
@@ -1506,37 +1259,29 @@ if (pageType === "MTNG Hourly Rate Report") {
   return payload;
 }
 
-// ============================
-// SUBMIT / UPDATE (SERVER POST)
-// ============================
+/* =========================
+   Submit / update
+   ========================= */
 async function sendSubmission_(payload) {
-  // make absolutely sure the id is stable
   payload.submissionId = currentId;
 
   const url = new URL(API_URL);
-
-  // owner key (needed for your doGet and can also be used for doPost if you want)
   if (ownerKey) url.searchParams.set("key", ownerKey);
 
   if (mode === "edit") {
     url.searchParams.set("action", "update");
     url.searchParams.set("id", currentId);
-
-    // safety: also include in body (in case server starts reading action from body)
     payload.action = "update";
   } else {
-    // your server routes anything other than "update" to submit_()
     url.searchParams.set("action", "submit");
     payload.action = "submit";
   }
 
-     console.log("POST URL:", url.toString());
-     console.log("POST MODE/IDS:", { mode, editId, currentId, submissionId: payload.submissionId, action: payload.action });
-
-   console.log("FIELDS COUNT:", Object.keys(payload.fields || {}).length);
-   console.log("REPEATERS KEYS:", Object.keys(payload.repeaters || {}));
-   console.log("SKETCH?", !!payload.sketch, "PHOTOS:", (payload.photos || []).length);
-
+  console.log("POST URL:", url.toString());
+  console.log("POST MODE/IDS:", { mode, editId, currentId, submissionId: payload.submissionId, action: payload.action });
+  console.log("FIELDS COUNT:", Object.keys(payload.fields || {}).length);
+  console.log("REPEATERS KEYS:", Object.keys(payload.repeaters || {}));
+  console.log("SKETCH?", !!payload.sketch, "PHOTOS:", (payload.photos || []).length);
 
   const res = await fetch(url.toString(), {
     method: "POST",
@@ -1544,8 +1289,7 @@ async function sendSubmission_(payload) {
     body: JSON.stringify(payload),
   });
 
-   console.log("FETCH redirected?", res.redirected, "final url:", res.url, "status:", res.status);
-
+  console.log("FETCH redirected?", res.redirected, "final url:", res.url, "status:", res.status);
 
   const txt = await res.text();
   console.log("POST RESPONSE:", { status: res.status, txt });
@@ -1553,65 +1297,54 @@ async function sendSubmission_(payload) {
   let j = null;
   try { j = JSON.parse(txt); } catch {}
 
-   if (j?.message && String(j.message).includes("MTNG API OK")) {
-  throw new Error("Server returned doGet default response. Update did not run—check deployment/version.");
-}
+  if (j?.message && String(j.message).includes("MTNG API OK")) {
+    throw new Error("Server returned doGet default response. Update did not run—check deployment/version.");
+  }
 
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt.slice(0, 200)}`);
   if (j && j.ok === false) throw new Error(j.error || "Server returned ok:false");
-
   if (j && j.ok === true) return j;
-   if (j && j.ok === false) throw new Error(j.error || "Server returned ok:false");
 
-   // If server returned non-JSON but HTTP 200, treat as failure (prevents false success)
-   throw new Error("Unexpected server response: " + txt.slice(0, 160));
-   }
+  throw new Error("Unexpected server response: " + txt.slice(0, 160));
+}
 
-// ============================
-// FORM SUBMIT HANDLER
-// ============================
-
+/* =========================
+   Reset to new form
+   ========================= */
 function resetToNewForm() {
-  // reset state
   mode = "new";
   editId = "";
   editReady = false;
   createdAtLocked = null;
 
-  // new submission id
   currentId = newSubmissionId();
 
-  // clear form
   form?.reset();
-
-  // reset page type sections (shows correct section)
   updatePageSections?.();
 
-   const pt = pageTypeEl?.value || "Leak Repair";
-   populateRepeatersForPage?.(pt, {});   // clears repeater rows
+  const pt = pageTypeEl?.value || "Leak Repair";
+  populateRepeatersForPage?.(pt, {});
 
-  // clear sketch
   existingSketch = null;
   sketchDirty = false;
   if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // clear photos input
   const photoInput = form?.querySelector('input[type="file"][data-photos]');
   if (photoInput) photoInput.value = "";
 
-  // clean URL (remove edit)
   const u = new URL(window.location.href);
   u.searchParams.delete("edit");
   history.replaceState({}, "", u.toString());
 
-  // reset submit button label
   const submitBtn = document.querySelector('button[type="submit"]');
   if (submitBtn) submitBtn.textContent = "Submit Submission";
 
   setStatus?.("Ready");
 }
 
-
+/* =========================
+   Form submit
+   ========================= */
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -1633,7 +1366,6 @@ form?.addEventListener("submit", async (e) => {
   } catch (err) {
     console.error(err);
 
-    // Decide if this is an offline/network-style failure
     const msg = String(err?.message || err);
     const isNetworkish =
       !navigator.onLine ||
@@ -1642,112 +1374,34 @@ form?.addEventListener("submit", async (e) => {
       msg.includes("Load failed") ||
       msg.includes("TypeError: Failed to fetch");
 
-    // ✅ Queue instead of failing (only for "new" submissions unless you want edits queued too)
-   if (isNetworkish) {
-  // For EDITS: likely false failure after Apps Script already saved
-  if (!wasNew) {
-    setStatus("Update may have saved — please verify in dashboard.");
-    alert("The update may have already saved. Please verify before trying again.");
-    return;
-  }
+    if (isNetworkish) {
+      if (!wasNew) {
+        setStatus("Update may have saved — please verify in dashboard.");
+        alert("The update may have already saved. Please verify before trying again.");
+        return;
+      }
 
-  // For NEW submissions: queue is still fine
-  try {
-    await addToQueue_(navigator.onLine ? "network_error" : "offline");
-    setStatus("Queued ✅ (will sync when online)");
-    alert("No connection — saved to Queue and will sync when online.");
+      try {
+        await addToQueue_(navigator.onLine ? "network_error" : "offline");
+        setStatus("Queued ✅ (will sync when online)");
+        alert("No connection — saved to Queue and will sync when online.");
 
-    if (wasNew) resetToNewForm();
-    return;
-  } catch (qErr) {
-    console.error("Queue failed:", qErr);
-    setStatus("Queue failed: " + (qErr?.message || qErr));
-    alert("Queue failed: " + (qErr?.message || qErr));
-    return;
-  }
-}
+        if (wasNew) resetToNewForm();
+        return;
+      } catch (qErr) {
+        console.error("Queue failed:", qErr);
+        setStatus("Queue failed: " + (qErr?.message || qErr));
+        alert("Queue failed: " + (qErr?.message || qErr));
+        return;
+      }
+    }
 
-    // Otherwise: real error
     setStatus("Save failed: " + msg);
     alert("Save failed: " + msg);
   } finally {
     isSubmitting = false;
   }
 });
-
-   
-// --- helpers -------------------------------------------------
-function _nk(s) {
-  // use your normKey if present, otherwise fallback
-  const f = (typeof normKey === "function") ? normKey : (x) => String(x || "").trim();
-  return f(s);
-}
-
-function _setElValue(el, v) {
-  if (!el) return;
- if (el.type === "checkbox") el.checked = isCheckedVal(v);
-  else if (el.type === "radio") el.checked = (String(el.value) === String(v));
-  else el.value = (v ?? "");
-}
-
-// fill inputs inside ONE repeater row by matching data-k
-function applyRepeaterRowValues(rowEl, rowObj) {
-  if (!rowEl || !rowObj) return;
-
-  // build map of normalizedKey -> value from payload row
-  const map = {};
-  Object.entries(rowObj).forEach(([k, v]) => { map[_nk(k)] = v; });
-
-  // find any inputs/selects/textareas in this row that have data-k (and optionally data-r)
-  const inputs = rowEl.querySelectorAll("[data-k]");
-  inputs.forEach((el) => {
-    const k = _nk(el.dataset.k);
-    if (!(k in map)) return;
-
-    // radio groups: set the matching radio only
-    if (el.type === "radio") {
-      _setElValue(el, map[k]);
-    } else {
-      _setElValue(el, map[k]);
-    }
-  });
-}
-
-// remove only repeater rows
-function clearRepeaterContainer(containerEl) {
-  if (!containerEl) return;
-  containerEl.querySelectorAll("[data-row]").forEach(r => r.remove());
-}
-
-// add rows and then force-fill the new row
-function populateRepeater(bindingKey, rows) {
-  const binding = REPEATER_BINDINGS[bindingKey];
-  if (!binding) return;
-
-  const container = binding.container();
-  if (!container) return;
-
-  clearRepeaterContainer(container);
-
-  const arr = Array.isArray(rows) && rows.length ? rows : [{}];
-
-  arr.forEach((rowObj) => {
-    // count rows before
-    const before = container.querySelectorAll("[data-row]").length;
-
-    // create row (even if it ignores rowObj)
-    binding.addRow(rowObj || {});
-
-    // find the newly created row
-    const all = container.querySelectorAll("[data-row]");
-    const newRow = (all.length > before) ? all[all.length - 1] : null;
-
-    // force-apply values into that row
-    applyRepeaterRowValues(newRow, rowObj || {});
-  });
-
-  //console.log(`✅ populated ${bindingKey}:`, arr.length);
-}
 
 form?.addEventListener("keydown", (e) => {
   if (e.key !== "Enter") return;
@@ -1756,10 +1410,9 @@ form?.addEventListener("keydown", (e) => {
   e.preventDefault();
 });
 
-//==============================
-// OFFLINE: Drafts + Queue + Sync (wired to your HTML IDs)
-// ============================
-
+/* =========================
+   Offline: Drafts + Queue + Sync
+   ========================= */
 async function saveDraft_() {
   const payload = await buildPayload();
   await db.put("drafts", {
@@ -1799,7 +1452,6 @@ async function trySync() {
 
   for (const item of items) {
     try {
-      // keep IDs/mode stable for server routing
       currentId = item.submissionId;
       mode = item.mode === "edit" ? "edit" : "new";
       editId = item.editId || (mode === "edit" ? item.submissionId : "");
@@ -1819,7 +1471,6 @@ async function trySync() {
   setStatus(`Sync done ✅ (${ok}/${items.length})`);
 }
 
-// Simple viewer in debug pane (you can swap to a modal later)
 async function showStore_(storeName) {
   const items = await db.getAll(storeName);
 
@@ -1840,10 +1491,9 @@ async function showStore_(storeName) {
   );
 }
 
-// ============================
-// BUTTON WIRING (script tag is bottom of body)
-// ============================
-
+/* =========================
+   Button wiring
+   ========================= */
 document.getElementById("saveDraft")?.addEventListener("click", () => {
   saveDraft_().catch((e) => alert("Draft save failed: " + (e?.message || e)));
 });
@@ -1865,7 +1515,6 @@ document.getElementById("queueForSync")?.addEventListener("click", () => {
 });
 
 document.getElementById("openOwnerDash")?.addEventListener("click", () => {
-  // Use key from URL first, then sessionStorage, otherwise prompt
   let k =
     (ownerKey || "").trim() ||
     (sessionStorage.getItem("mtng_owner_key") || "").trim();
@@ -1878,73 +1527,10 @@ document.getElementById("openOwnerDash")?.addEventListener("click", () => {
 
   sessionStorage.setItem("mtng_owner_key", k);
 
-  // Go to owner dashboard (same folder as index.html)
   const url = new URL("./owner.html", window.location.href);
   url.searchParams.set("key", k);
   window.location.href = url.toString();
 });
 
-
 updatePageSections();
 updateNet();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
