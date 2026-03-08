@@ -109,8 +109,8 @@
             <input name="Contractor" />
           </div>
           <div>
-            <label id="mloLabel" form="mloInput">MLO Number</label>
-            <input id="mloLabel" name="MLO Number" />
+            <label id="mloLabel" for="mloInput">MLO Number</label>
+            <input id="mloInput" name="MLO Number" />
           </div>
          <div>
             <label>Register Number</label>
@@ -233,17 +233,17 @@
           <h4>Bore / Rock</h4>
           
           <div class="row">          
-            <div class="check">Bore<input type="" name="Bore" /></div>
+            <div class="check">Bore<input type="checkbox" name="Bore" /></div>
             <div class="check"><label>Bore Length (feet)</label><input name="Bore Length (feet)" /></div>
           </div>
           
           <div class="row">
-            <div class="check">Directional Bore <input type="" name="Directional Bore" /></div>
+            <div class="check">Directional Bore <input type="checkbox" name="Directional Bore" /></div>
             <div class="check"><label>Directional Bore Length (feet)</label><input name="Directional Bore Length (feet)" /></div>
           </div>
           
           <div class="row">
-            <div class="check">Rock Bore<input type="" name="Rock Bore" /></div>
+            <div class="check">Rock Bore<input type="checkbox" name="Rock Bore" /></div>
             <div class="check"><label>Rock Bore Length (feet)</label><input name="Rock Bore Length (feet)" /></div>
           </div>
           
@@ -376,17 +376,17 @@
           <h4>Bore / Rock</h4>
           
           <div class="row">          
-            <div class="check">Bore<input type="" name="Bore" /></div>
+            <div class="check">Bore<input type="checkbox" name="Bore" /></div>
             <div class="check"><label>Bore Length (feet)</label><input name="Bore Length (feet)" /></div>
           </div>
           
           <div class="row">
-            <div class="check">Directional Bore <input type="" name="Directional Bore" /></div>
+            <div class="check">Directional Bore <input type="checkbox" name="Directional Bore" /></div>
             <div class="check"><label>Directional Bore Length (feet)</label><input name="Directional Bore Length (feet)" /></div>
           </div>
           
           <div class="row">
-            <div class="check">Rock Bore<input type="" name="Rock Bore" /></div>
+            <div class="check">Rock Bore<input type="checkbox" name="Rock Bore" /></div>
             <div class="check"><label>Rock Bore Length (feet)</label><input name="Rock Bore Length (feet)" /></div>
           </div>
           
@@ -546,9 +546,9 @@
     </div>
   </div>
 </section>
-      <div class="btnrow" style="margin-top:12px;">
+      <!--div class="btnrow" style="margin-top:12px;">
   <button type="submit">Submit Now (if online)</button>
-</div>
+    </div-->
 
      <!-- ===================================================== -->
 <!-- SHARED: SKETCH + PHOTOS + SUBMIT (ALL PAGES)           -->
@@ -568,12 +568,9 @@
     <button type="submit">Submit Now (if online)</button>
   </div>
 
-  <div class="small" id="formMeta"></div>
-</section>
-
-      
-      <div class="small" id="formMeta"></div>
-    </form>
+    <div class="small" id="formMeta"></div>
+  </section>
+</form>
 
     <div class="card" id="listCard" style="display:none;"></div>
   </main>
@@ -584,6 +581,7 @@
   <script type="module" src="./app.js?v=2026-03-06-2"></script>
 </body>
 </html>
+
 
 
 
