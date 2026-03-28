@@ -324,13 +324,21 @@ pageTypeEl?.addEventListener("change", updatePageSections);
 updatePageSections();
 
 function updateJobNumberLabel(pageType) {
-  const label = document.getElementById("mloLabel");
-  if (!label) return;
+  const mloLabel = document.getElementById("mloLabel");
+  const registerLabel = document.getElementById("registerLabel");
 
   const pt = String(pageType || "").trim();
-  if (pt === "Services" || pt === "Retirement") label.textContent = "SLO Number";
-  else if (pt === "Leak Repair") label.textContent = "LRO Number";
-  else label.textContent = "MLO Number";
+
+  if (mloLabel) {
+    if (pt === "Services" || pt === "Retirement") mloLabel.textContent = "SLO Number";
+    else if (pt === "Leak Repair") mloLabel.textContent = "LRO Number";
+    else mloLabel.textContent = "MLO Number";
+  }
+
+  if (registerLabel) {
+    if (pt === "Mains") registerLabel.textContent = "Location Code";
+    else registerLabel.textContent = "CO Number";
+  }
 }
 
 /* =========================
