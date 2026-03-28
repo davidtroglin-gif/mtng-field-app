@@ -336,7 +336,7 @@ function updateJobNumberLabel(pageType) {
   }
 
   if (registerLabel) {
-    if (pt === "Mains") registerLabel.textContent = "Location Code";
+    if (pt === "Services") registerLabel.textContent = "Location Code";
     else registerLabel.textContent = "CO Number";
   }
 }
